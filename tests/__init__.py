@@ -1,1 +1,1 @@
-"""Test package for pdmt5."""
+"""Tests for REST API functionality."""

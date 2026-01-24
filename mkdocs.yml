@@ -1,10 +1,10 @@
-site_name: pdmt5 API Documentation
+site_name: pdmt5-api API Documentation
 site_description: Pandas-based data handler for MetaTrader 5
 site_author: dceoy
-site_url: https://github.com/dceoy/pdmt5
+site_url: https://github.com/dceoy/pdmt5-api
 
-repo_name: dceoy/pdmt5
-repo_url: https://github.com/dceoy/pdmt5
+repo_name: dceoy/pdmt5-api
+repo_url: https://github.com/dceoy/pdmt5-api
 
 theme:
   name: material
