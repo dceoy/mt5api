@@ -23,7 +23,7 @@ nssm install pdmt5-api
 4. Set the application path and arguments:
 
 - Path: `C:\Path\To\Python\python.exe`
-- Arguments: `-m uvicorn pdmt5.api.main:app --host 0.0.0.0 --port 8000`
+- Arguments: `-m uvicorn pdmt5api.main:app --host 0.0.0.0 --port 8000`
 - Startup directory: your project directory
 
 5. Set environment variables in the NSSM GUI:

@@ -25,7 +25,7 @@ export API_CORS_ORIGINS="*"
 ## Running the API
 
 ```bash
-uvicorn pdmt5.api.main:app --host 0.0.0.0 --port 8000
+uvicorn pdmt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 Access the docs at:
@@ -60,7 +60,7 @@ curl -H "X-API-Key: your-secret-api-key" \
 ## Response Formatter Utilities
 
 If you are extending the API with custom endpoints, use the formatter helpers
-in `pdmt5.api.formatters` to keep JSON and Parquet responses consistent:
+in `pdmt5api.formatters` to keep JSON and Parquet responses consistent:
 
 - `format_response(data, response_format)`: Unified formatter for DataFrame or
   dict data.

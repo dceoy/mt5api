@@ -58,6 +58,9 @@ dev = [
 source-include = ["pdmt5api/**", "LICENSE"]
 source-exclude = ["tests/**"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["pdmt5api"]
+
 [tool.ruff]
 line-length = 88
 exclude = ["build", ".venv"]
@@ -165,6 +168,7 @@ reportUnknownMemberType = "none"
 reportUnknownVariableType = "none"
 reportUnknownParameterType = "none"
 reportUnknownLambdaType = "none"
+reportMissingTypeStubs = "none"
 
 [tool.pytest.ini_options]
 addopts = [

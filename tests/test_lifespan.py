@@ -14,7 +14,7 @@ def test_lifespan_calls_shutdown_on_exit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test shutdown hook runs when TestClient context exits."""
-    from pdmt5.api import main  # noqa: PLC0415
+    from pdmt5api import main  # noqa: PLC0415
 
     shutdown_called = {"value": False}
 

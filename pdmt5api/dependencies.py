@@ -6,7 +6,6 @@ import asyncio
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
 from fastapi import Header, Query, Request
-
 from pdmt5.dataframe import Mt5Config, Mt5DataClient
 
 from .models import ResponseFormat

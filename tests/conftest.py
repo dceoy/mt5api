@@ -185,9 +185,9 @@ def client(mock_mt5_client: Mock, monkeypatch: pytest.MonkeyPatch) -> TestClient
         FastAPI test client.
     """
     # Import after setting environment variable and mocking MetaTrader5
-    from pdmt5.api import dependencies  # noqa: PLC0415
-    from pdmt5.api.main import app  # noqa: PLC0415
-    from pdmt5.api.routers import health  # noqa: PLC0415
+    from pdmt5api import dependencies  # noqa: PLC0415
+    from pdmt5api.main import app  # noqa: PLC0415
+    from pdmt5api.routers import health  # noqa: PLC0415
 
     # Patch get_mt5_client where it's called directly
     monkeypatch.setattr(health, "get_mt5_client", lambda: mock_mt5_client)
@@ -225,7 +225,7 @@ def reset_mt5_client_singleton() -> Generator[None, None, None]:
     Yields:
         None
     """
-    from pdmt5.api import dependencies  # noqa: PLC0415
+    from pdmt5api import dependencies  # noqa: PLC0415
 
     # Reset singleton before test
     dependencies._mt5_client = None  # pyright: ignore[reportPrivateUsage]

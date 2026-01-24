@@ -32,7 +32,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: http://localhost:8000
+  - url: https://localhost:8000
     description: Local development server
   - url: https://localhost:8443
     description: Local HTTPS server
@@ -61,7 +61,8 @@ paths:
       summary: Health check
       description: Check API and MT5 terminal connection status
       operationId: getHealth
-      security: []  # No authentication required
+      security:
+        - ApiKeyAuth: []
       responses:
         '200':
           description: API is healthy
@@ -513,6 +514,7 @@ components:
             - type: array
               items:
                 type: object
+              maxItems: 100000
             - type: object
           description: Response data (array for multiple records, object for single record)
         count:

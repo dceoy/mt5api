@@ -9,13 +9,12 @@ from typing import TYPE_CHECKING
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
+from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import ValidationError
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
-
-from pdmt5.mt5 import Mt5RuntimeError
 
 from .models import ErrorResponse
 
