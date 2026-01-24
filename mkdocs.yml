@@ -1,0 +1,76 @@
+site_name: pdmt5 API Documentation
+site_description: Pandas-based data handler for MetaTrader 5
+site_author: dceoy
+site_url: https://github.com/dceoy/pdmt5
+
+repo_name: dceoy/pdmt5
+repo_url: https://github.com/dceoy/pdmt5
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            docstring_style: google
+            docstring_section_style: table
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            show_if_no_docstring: true
+
+nav:
+  - Home: index.md
+  - API Reference:
+    - Overview: api/index.md
+    - MetaTrader5: api/mt5.md
+    - DataFrame: api/dataframe.md
+    - Trading: api/trading.md
+    - Utilities: api/utils.md
+    - REST API: api/rest-api.md
+    - Deployment: api/deployment.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true

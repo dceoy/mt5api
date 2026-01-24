@@ -1,0 +1,200 @@
+[project]
+name = "pdmt5"
+version = "0.3.0"
+description = "Pandas-based data handler for MetaTrader 5"
+authors = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
+maintainers = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">= 3.11, < 3.14"
+dependencies = [
+  "MetaTrader5 >= 5.0.4424; sys_platform == 'win32'",
+  "pandas >= 2.2.2",
+  "pydantic >= 2.9.0",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Topic :: Office/Business :: Financial :: Investment",
+]
+
+[project.urls]
+Repository = "https://github.com/dceoy/pdmt5.git"
+
+[tool.uv]
+required-environments = ["platform_system == 'Windows'"]
+
+[dependency-groups]
+dev = [
+  "ruff >= 0.11.0",
+  "pyright >= 1.1.407",
+  "pytest >= 8.0.0",
+  "pytest-asyncio >= 0.25.2",
+  "pytest-mock >= 3.12.0",
+  "pytest-cov >= 5.0.0",
+  "pandas-stubs >= 2.2.3.250527",
+  "types-pygments >= 2.19.0.20250516",
+  "types-colorama >= 0.4.15.20240311",
+  "types-pexpect >= 4.9.0.20250516",
+  "mkdocs >= 1.6.1",
+  "mkdocs-material >= 9.6.15",
+  "mkdocstrings[python] >= 0.29.1",
+]
+api = [
+  "fastapi >= 0.115.0",
+  "uvicorn[standard] >= 0.32.0",
+  "pyarrow >= 18.0.0",
+  "python-multipart >= 0.0.9",
+  "python-jose[cryptography] >= 3.3.0",
+  "passlib[bcrypt] >= 1.7.4",
+  "slowapi >= 0.1.9",
+  "httpx >= 0.27.0",
+]
+
+[tool.uv.build-backend]
+source-include = ["pdmt5/**", "LICENSE"]
+source-exclude = ["tests/**"]
+
+[tool.ruff]
+line-length = 88
+exclude = ["build", ".venv"]
+preview = true
+
+[tool.ruff.lint]
+select = [
+  "F",      # Pyflakes (F)
+  "E",      # pycodestyle error (E)
+  "W",      # pycodestyle warning (W)
+  "C90",    # mccabe (C90)
+  "I",      # isort (I)
+  "N",      # pep8-naming (N)
+  "D",      # pydocstyle (D)
+  "UP",     # pyupgrade (UP)
+  "S",      # flake8-bandit (S)
+  "B",      # flake8-bugbear (B)
+  "C4",     # flake8-comprehensions (C4)
+  "SIM",    # flake8-simplify (SIM)
+  "ARG",    # flake8-unused-arguments (ARG)
+  "PD",     # pandas-vet (PD)
+  "PLC",    # Pylint convention (PLC)
+  "PLE",    # Pylint error (PLE)
+  "PLR",    # Pylint refactor (PLR)
+  "PLW",    # Pylint warning (PLW)
+  "FLY",    # flynt (FLY)
+  "NPY",    # NumPy-specific rules (NPY)
+  "PERF",   # Perflint (PERF)
+  "FURB",   # refurb (FURB)
+  "RUF",    # Ruff-specific rules (RUF)
+  "YTT",    # flake8-2020 (YTT)
+  "ANN",    # flake8-annotations (ANN)
+  "ASYNC",  # flake8-async (ASYNC)
+  "BLE",    # flake8-blind-except (BLE)
+  "FBT",    # flake8-boolean-trap (FBT)
+  "A",      # flake8-builtins (A)
+  "COM",    # flake8-commas (COM)
+  # "CPY",    # flake8-copyright (CPY)
+  "DTZ",    # flake8-datetimez (DTZ)
+  "T10",    # flake8-debugger (T10)
+  "DJ",     # flake8-django (DJ)
+  "EM",     # flake8-errmsg (EM)
+  "EXE",    # flake8-executable (EXE)
+  "FA",     # flake8-future-annotations (FA)
+  "ISC",    # flake8-implicit-str-concat (ISC)
+  "ICN",    # flake8-import-conventions (ICN)
+  "LOG",    # flake8-logging (LOG)
+  "G",      # flake8-logging-format (G)
+  "INP",    # flake8-no-pep420 (INP)
+  "PIE",    # flake8-pie (PIE)
+  "T20",    # flake8-print (T20)
+  "PYI",    # flake8-pyi (PYI)
+  "PT",     # flake8-pytest-style (PT)
+  "Q",      # flake8-quotes (Q)
+  "RSE",    # flake8-raise (RSE)
+  # "RET",    # flake8-return (RET)
+  "SLF",    # flake8-self (SLF)
+  "SLOT",   # flake8-slots (SLOT)
+  "TID",    # flake8-tidy-imports (TID)
+  "TCH",    # flake8-type-checking (TCH)
+  "INT",    # flake8-gettext (INT)
+  "PTH",    # flake8-use-pathlib (PTH)
+  "TD",     # flake8-todos (TD)
+  "FIX",    # flake8-fixme (FIX)
+  "ERA",    # eradicate (ERA)
+  "PGH",    # pygrep-hooks (PGH)
+  "TRY",    # tryceratops (TRY)
+  "FAST",   # FastAPI (FAST)
+  "AIR",    # Airflow (AIR)
+  "DOC",    # pydoclint (DOC)
+]
+ignore = [
+  "COM812",   # missing-trailing-comma
+  "FBT001",   # boolean-type-hint-positional-argument
+  "FBT002",   # boolean-default-value-positional-argument
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+  "DOC201",   # Missing return documentation
+  "DOC501",   # Raised exception missing from docstring
+  "PLC2701",  # Private name import
+  "PLR0904",  # Too many public methods
+  "PLR2004",  # Magic value used in comparison
+  "PLR6301",  # Method could be function/static/classmethod
+  "S101",     # Use of assert (acceptable in tests)
+  "S106",     # Possible hardcoded password
+  "SLF001",   # Private member accessed
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-public-methods = 40
+
+[tool.pyright]
+exclude = ["build", ".venv"]
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "strict"
+reportUnknownArgumentType = "none"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportUnknownLambdaType = "none"
+
+[tool.pytest.ini_options]
+addopts = [
+  "--cov=pdmt5",
+  "--cov-branch",
+  "--doctest-modules",
+  "--capture=no",
+]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+minversion = "6.0"
+
+[tool.coverage.run]
+source = ["pdmt5"]
+omit = [
+  "**/__init__.py",
+  "tests/**",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+exclude_lines = ["if TYPE_CHECKING:"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
