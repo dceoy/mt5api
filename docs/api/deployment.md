@@ -8,7 +8,7 @@ alongside the MetaTrader 5 terminal.
 - Windows 10/11
 - MetaTrader 5 installed and logged in
 - Python 3.11+
-- `pdmt5[api]` installed
+- `mt5api` installed
 
 ## Service Setup (NSSM)
 

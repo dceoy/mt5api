@@ -1,5 +1,5 @@
 site_name: mt5api API Documentation
-site_description: Pandas-based data handler for MetaTrader 5
+site_description: MetaTrader 5 REST API using FastAPI
 site_author: dceoy
 site_url: https://github.com/dceoy/mt5api
 

@@ -1,90 +1,57 @@
-# pdmt5 API Documentation
+# mt5api Documentation
 
-Pandas-based data handler for MetaTrader 5 trading platform.
+FastAPI-based REST API for MetaTrader 5 market data and account information.
 
 ## Overview
 
-pdmt5 is a Python library that provides a pandas-based interface for handling MetaTrader 5 trading data. It simplifies data manipulation and analysis tasks for financial trading applications.
+mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
+`pdmt5` client for MT5 connectivity and adds authentication, rate limiting,
+and response formatting suitable for analytics workflows.
 
 ## Features
 
-- **MetaTrader 5 Integration**: Direct connection to MetaTrader 5 platform (Windows only)
-- **Pandas-based**: Leverages pandas for efficient data manipulation
-- **Type Safety**: Built with pydantic for robust data validation
-- **Financial Focus**: Designed specifically for trading and financial data analysis
-
-## Installation
-
-```bash
-pip install pdmt5
-```
-
-### Quick Start
-
-```python
-from pdmt5 import Mt5Client, Mt5Config, Mt5DataClient, Mt5TradingClient
-import MetaTrader5 as mt5
-from datetime import datetime
-
-# Configure connection
-config = Mt5Config(
-    login=12345678,
-    password="your_password",
-    server="YourBroker-Server",
-    timeout=60000,
-    portable=False
-)
-
-# Low-level API access with context manager
-with Mt5Client() as client:
-    client.initialize()
-    client.login(config.login, config.password, config.server)
-    account = client.account_info()
-    rates = client.copy_rates_from("EURUSD", mt5.TIMEFRAME_H1, datetime.now(), 100)
-
-# Pandas-friendly interface with automatic initialization
-with Mt5DataClient(config=config) as client:
-    # Get symbol information as DataFrame
-    symbols_df = client.get_symbols_as_df()
-    # Get OHLCV data as DataFrame
-    rates_df = client.copy_rates_from_as_df(
-        "EURUSD", mt5.TIMEFRAME_H1, datetime.now(), 100
-    )
-    # Get account info as DataFrame
-    account_df = client.get_account_info_as_df()
-
-# Trading operations with dry run support
-with Mt5TradingClient(config=config, dry_run=True) as client:
-    # Check open positions as DataFrame
-    positions_df = client.get_positions_as_df()
-    # Close positions for specific symbol (dry run)
-    results = client.close_open_positions("EURUSD")
-```
+- Read-only REST endpoints for symbols, market data, account info, orders, and history
+- JSON and Apache Parquet responses
+- API key authentication and rate limiting
+- Structured JSON logging and configurable CORS
+- OpenAPI/Swagger docs built in
 
 ## Requirements
 
 - Python 3.11+
-- Windows OS (MetaTrader 5 requirement)
-- MetaTrader 5 platform
+- Windows OS with MetaTrader 5 terminal installed and logged in
+
+## Installation
+
+```bash
+pip install mt5api
+```
+
+## Quick Start
+
+```bash
+export MT5_API_KEY="your-secret-api-key"
+uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+```
+
+```bash
+curl http://localhost:8000/api/v1/health
+```
+
+```bash
+curl -H "X-API-Key: your-secret-api-key" \
+  "http://localhost:8000/api/v1/symbols?group=*USD*"
+```
 
 ## API Reference
 
-Browse the API documentation to learn about available modules and functions:
-
-- [Mt5Client](api/mt5.md) - Base client for low-level MT5 API access with context manager support
-- [Mt5DataClient & Mt5Config](api/dataframe.md) - Pandas-friendly data client with DataFrame conversions
-- [Mt5TradingClient](api/trading.md) - Advanced trading operations with position management
-- [Utility Functions](api/utils.md) - Helper decorators and functions for data processing
-
-## Development
-
-This project follows strict code quality standards:
-
-- Type hints required (strict mode)
-- Comprehensive linting with Ruff
-- Test coverage tracking
-- Google-style docstrings
+- [REST API](api/rest-api.md) - Endpoint overview, auth, and formats
+- [Deployment](api/deployment.md) - Windows service setup
+- [Mt5Client](api/mt5.md) - pdmt5 low-level MT5 client
+- [Mt5DataClient & Mt5Config](api/dataframe.md) - pdmt5 DataFrame helpers
+- [Mt5TradingClient](api/trading.md) - pdmt5 trading utilities
+- [Utilities](api/utils.md) - pdmt5 decorators and helpers
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/dceoy/pdmt5/blob/main/LICENSE) file for details.
+MIT License - see [LICENSE](https://github.com/dceoy/mt5api/blob/main/LICENSE).

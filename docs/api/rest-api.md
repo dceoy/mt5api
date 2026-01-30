@@ -1,14 +1,12 @@
 # REST API
 
 The mt5api REST API exposes read-only MetaTrader 5 data via FastAPI. It supports
-JSON and Apache Parquet responses for efficient analytics workflows.
+JSON and Apache Parquet responses for analytics workflows.
 
 ## Installation
 
-Install pdmt5 with API dependencies:
-
 ```bash
-pip install pdmt5[api]
+pip install mt5api
 ```
 
 ## Configuration
@@ -21,6 +19,9 @@ export API_LOG_LEVEL="INFO"
 export API_RATE_LIMIT="100"
 export API_CORS_ORIGINS="*"
 ```
+
+MT5 connection details are managed by `pdmt5` (for example login/server/path
+settings defined in that package).
 
 ## Running the API
 
@@ -42,6 +43,11 @@ curl -H "X-API-Key: your-secret-api-key" \
   http://localhost:8000/api/v1/symbols
 ```
 
+## Rate Limiting
+
+Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
+`API_RATE_LIMIT` to an integer for a different per-minute cap.
+
 ## Format Negotiation
 
 Use `Accept` header or `format` query parameter:
@@ -56,6 +62,42 @@ curl -H "X-API-Key: your-secret-api-key" \
 curl -H "X-API-Key: your-secret-api-key" \
   "http://localhost:8000/api/v1/symbols?format=json"
 ```
+
+## Endpoints
+
+All endpoints are read-only.
+
+### Health
+
+- `GET /api/v1/health` (no auth)
+- `GET /api/v1/version`
+
+### Symbols
+
+- `GET /api/v1/symbols` (`group`, `format`)
+- `GET /api/v1/symbols/{symbol}` (`format`)
+- `GET /api/v1/symbols/{symbol}/tick` (`format`)
+
+### Market Data
+
+- `GET /api/v1/rates/from` (`symbol`, `timeframe`, `date_from`, `count`, `format`)
+- `GET /api/v1/rates/from-pos` (`symbol`, `timeframe`, `start_pos`, `count`, `format`)
+- `GET /api/v1/rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
+- `GET /api/v1/ticks/from` (`symbol`, `date_from`, `count`, `flags`, `format`)
+- `GET /api/v1/ticks/range` (`symbol`, `date_from`, `date_to`, `flags`, `format`)
+- `GET /api/v1/market-book/{symbol}` (`format`)
+
+### Account & Trading State
+
+- `GET /api/v1/account` (`format`)
+- `GET /api/v1/terminal` (`format`)
+- `GET /api/v1/positions` (`symbol`, `group`, `ticket`, `format`)
+- `GET /api/v1/orders` (`symbol`, `group`, `ticket`, `format`)
+
+### History
+
+- `GET /api/v1/history/orders` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
+- `GET /api/v1/history/deals` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
 
 ## Response Formatter Utilities
 
@@ -138,14 +180,6 @@ Errors follow RFC 7807 Problem Details:
   "instance": "/api/v1/rates/from"
 }
 ```
-
-## Performance Benchmarks
-
-Target benchmarks for production readiness:
-
-- Health check latency < 500ms under normal load
-- Market data queries < 2s for typical datasets (<1000 records)
-- 100 concurrent requests without significant degradation
 
 ## Security Checklist
 
