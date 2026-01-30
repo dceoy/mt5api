@@ -60,7 +60,7 @@ def main() -> None:
 
     logging.getLogger(__name__).info("Starting MT5 REST API on %s:%s", host, port)
     uvicorn.run(
-        "pdmt5api.main:app",
+        "mt5api.main:app",
         host=host,
         port=port,
         log_level=log_level,

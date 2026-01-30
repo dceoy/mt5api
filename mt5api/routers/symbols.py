@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import APIRouter, Depends
 from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
 
-from pdmt5api.auth import verify_api_key
-from pdmt5api.dependencies import (
+from mt5api.auth import verify_api_key
+from mt5api.dependencies import (
     get_mt5_client,
     get_response_format,
     run_in_threadpool,
 )
-from pdmt5api.formatters import format_response
-from pdmt5api.models import (
+from mt5api.formatters import format_response
+from mt5api.models import (
     DataResponse,
     ResponseFormat,
     SymbolInfoRequest,

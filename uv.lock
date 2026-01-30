@@ -923,7 +923,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pdmt5-api"
+name = "mt5api"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [

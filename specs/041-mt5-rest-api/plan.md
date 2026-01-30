@@ -208,7 +208,7 @@ Will document:
 
 - **Installation**: `pip install pdmt5[api]` (with optional API dependencies)
 - **Configuration**: Environment variables for API keys, MT5 connection
-- **Running the API**: `uvicorn pdmt5api.main:app --host 0.0.0.0 --port 8000`
+- **Running the API**: `uvicorn mt5api.main:app --host 0.0.0.0 --port 8000`
 - **Example Requests**: curl/httpie examples for each endpoint
 - **Format Selection**: How to request JSON vs Parquet responses
 - **Authentication**: How to use API keys

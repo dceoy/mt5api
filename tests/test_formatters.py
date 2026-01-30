@@ -8,14 +8,14 @@ import pandas as pd
 import pytest
 from fastapi.responses import Response
 
-from pdmt5api.formatters import (
+from mt5api.formatters import (
     format_dataframe_to_json,
     format_dataframe_to_parquet,
     format_dict_to_json,
     format_dict_to_parquet,
     format_response,
 )
-from pdmt5api.models import DataResponse, ResponseFormat
+from mt5api.models import DataResponse, ResponseFormat
 
 
 def test_format_dataframe_to_json_returns_data_response() -> None:
@@ -125,7 +125,7 @@ def test_format_response_rejects_invalid_format() -> None:
 
 def test_get_response_format_from_query_parameter() -> None:
     """Test format negotiation via query parameter."""
-    from pdmt5api.dependencies import get_response_format  # noqa: PLC0415
+    from mt5api.dependencies import get_response_format  # noqa: PLC0415
 
     # Query parameter takes priority
     result = get_response_format(
@@ -138,7 +138,7 @@ def test_get_response_format_from_query_parameter() -> None:
 
 def test_get_response_format_from_accept_header() -> None:
     """Test format negotiation via Accept header."""
-    from pdmt5api.dependencies import get_response_format  # noqa: PLC0415
+    from mt5api.dependencies import get_response_format  # noqa: PLC0415
 
     result = get_response_format(accept="application/parquet", format_param=None)
 
@@ -147,7 +147,7 @@ def test_get_response_format_from_accept_header() -> None:
 
 def test_get_response_format_defaults_to_json() -> None:
     """Test format negotiation defaults to JSON."""
-    from pdmt5api.dependencies import get_response_format  # noqa: PLC0415
+    from mt5api.dependencies import get_response_format  # noqa: PLC0415
 
     result = get_response_format(accept=None, format_param=None)
 
@@ -156,7 +156,7 @@ def test_get_response_format_defaults_to_json() -> None:
 
 def test_get_response_format_from_accept_header_json() -> None:
     """Test format negotiation via JSON Accept header."""
-    from pdmt5api.dependencies import get_response_format  # noqa: PLC0415
+    from mt5api.dependencies import get_response_format  # noqa: PLC0415
 
     result = get_response_format(accept="application/json", format_param=None)
 
@@ -165,7 +165,7 @@ def test_get_response_format_from_accept_header_json() -> None:
 
 def test_get_response_format_from_unrecognized_accept_header() -> None:
     """Test format negotiation defaults to JSON for unknown Accept header."""
-    from pdmt5api.dependencies import get_response_format  # noqa: PLC0415
+    from mt5api.dependencies import get_response_format  # noqa: PLC0415
 
     result = get_response_format(accept="text/plain", format_param=None)
 
@@ -174,7 +174,7 @@ def test_get_response_format_from_unrecognized_accept_header() -> None:
 
 def test_get_response_format_handles_complex_accept_header() -> None:
     """Test format negotiation with complex Accept header."""
-    from pdmt5api.dependencies import get_response_format  # noqa: PLC0415
+    from mt5api.dependencies import get_response_format  # noqa: PLC0415
 
     result = get_response_format(
         accept="text/html, application/parquet;q=0.9, */*;q=0.8",

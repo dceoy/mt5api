@@ -10,7 +10,7 @@ from starlette.requests import Request
 
 def test_get_request_info_extracts_request_data() -> None:
     """Test request info extraction."""
-    from pdmt5api.dependencies import get_request_info  # noqa: PLC0415
+    from mt5api.dependencies import get_request_info  # noqa: PLC0415
 
     scope: dict[str, Any] = {
         "type": "http",
@@ -38,7 +38,7 @@ def test_get_mt5_client_initializes_and_returns_singleton(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test MT5 client initialization success path."""
-    from pdmt5api import dependencies  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     class DummyClient:
         def __init__(self, config: str) -> None:
@@ -64,7 +64,7 @@ def test_get_mt5_client_returns_existing_singleton(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test returning existing MT5 client without reinitialization."""
-    from pdmt5api import dependencies  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     existing_client = object()
     monkeypatch.setattr(dependencies, "_mt5_client", existing_client)
@@ -78,7 +78,7 @@ def test_get_mt5_client_raises_runtime_error_on_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test MT5 client initialization failure path."""
-    from pdmt5api import dependencies  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     class FailingClient:
         def __init__(self, config: str) -> None:
@@ -115,7 +115,7 @@ def test_shutdown_mt5_client_resets_singleton(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test shutdown clears singleton and calls shutdown."""
-    from pdmt5api import dependencies  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     class DummyClient:
         def __init__(self) -> None:
@@ -148,7 +148,7 @@ def test_shutdown_mt5_client_noop_when_none(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test shutdown is a no-op when no singleton is set."""
-    from pdmt5api import dependencies  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     monkeypatch.setattr(dependencies, "_mt5_client", None)
 

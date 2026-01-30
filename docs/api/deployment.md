@@ -1,6 +1,6 @@
 # Deployment Guide (Windows Service)
 
-This guide describes how to deploy the pdmt5 REST API as a Windows service
+This guide describes how to deploy the mt5api REST API as a Windows service
 alongside the MetaTrader 5 terminal.
 
 ## Prerequisites
@@ -17,13 +17,13 @@ alongside the MetaTrader 5 terminal.
 3. Create a service:
 
 ```powershell
-nssm install pdmt5-api
+nssm install mt5api
 ```
 
 4. Set the application path and arguments:
 
 - Path: `C:\Path\To\Python\python.exe`
-- Arguments: `-m uvicorn pdmt5api.main:app --host 0.0.0.0 --port 8000`
+- Arguments: `-m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000`
 - Startup directory: your project directory
 
 5. Set environment variables in the NSSM GUI:
@@ -38,7 +38,7 @@ API_CORS_ORIGINS=*
 6. Start the service:
 
 ```powershell
-nssm start pdmt5-api
+nssm start mt5api
 ```
 
 ## Validation

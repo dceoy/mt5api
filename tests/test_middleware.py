@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import BaseModel
 
-from pdmt5api.middleware import _create_error_response, add_middleware
+from mt5api.middleware import _create_error_response, add_middleware
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -93,19 +93,19 @@ Output: `API_KEY=xK9vP2mN8hQ5wR7tY4uI0oL3jF6gH1sA2zX`
 
 ```bash
 # Start the API server
-uvicorn pdmt5api.main:app --host 0.0.0.0 --port 8000
+uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Method 2: Using Python module
 
 ```bash
-python -m pdmt5api
+python -m mt5api
 ```
 
 ### Method 3: Development mode with auto-reload
 
 ```bash
-uvicorn pdmt5api.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn mt5api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ### Verify API is running
@@ -504,7 +504,7 @@ uv run pytest tests/test_api/ -v
 uv run pytest tests/test_api/test_health.py -v
 
 # Run with coverage
-uv run pytest tests/test_api/ --cov=pdmt5api --cov-report=html
+uv run pytest tests/test_api/ --cov=mt5api --cov-report=html
 ```
 
 ### Manual Testing with httpie
@@ -533,7 +533,7 @@ http GET localhost:8000/api/v1/symbols/EURUSD \
 **Solution**: Install API extras: `pip install pdmt5[api]`
 
 **Problem**: `Address already in use`
-**Solution**: Change port: `uvicorn pdmt5api.main:app --port 8001`
+**Solution**: Change port: `uvicorn mt5api.main:app --port 8001`
 
 ### MT5 Connection Issues
 
@@ -582,7 +582,7 @@ http GET localhost:8000/api/v1/symbols/EURUSD \
 choco install nssm
 
 # Create Windows service
-nssm install MT5-API "C:\Python311\Scripts\uvicorn.exe" "pdmt5api.main:app --host 0.0.0.0 --port 8000"
+nssm install MT5-API "C:\Python311\Scripts\uvicorn.exe" "mt5api.main:app --host 0.0.0.0 --port 8000"
 
 # Set working directory
 nssm set MT5-API AppDirectory "C:\path\to\pdmt5"
@@ -601,7 +601,7 @@ nssm start MT5-API
 openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
 
 # Run with HTTPS
-uvicorn pdmt5api.main:app \
+uvicorn mt5api.main:app \
     --host 0.0.0.0 \
     --port 8443 \
     --ssl-keyfile=key.pem \
