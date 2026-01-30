@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="dceoy">
-        <link rel="canonical" href="https://github.com/dceoy/pdmt5-api/api/deployment/">
+        <link rel="canonical" href="https://github.com/dceoy/mt5api/api/deployment/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
-        <title>Deployment - pdmt5-api API Documentation</title>
+        <title>Deployment - mt5api API Documentation</title>
         <link href="../../css/bootstrap.min.css" rel="stylesheet">
         <link href="../../css/fontawesome.min.css" rel="stylesheet">
         <link href="../../css/brands.min.css" rel="stylesheet">
@@ -25,7 +25,7 @@
     <body>
         <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
-                <a class="navbar-brand" href="../..">pdmt5-api API Documentation</a>
+                <a class="navbar-brand" href="../..">mt5api API Documentation</a>
                 <!-- Expander button -->
                 <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -90,7 +90,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="https://github.com/dceoy/pdmt5-api/edit/master/docs/api/deployment.md" class="nav-link">Edit on dceoy/pdmt5-api
+                                <a href="https://github.com/dceoy/mt5api/edit/master/docs/api/deployment.md" class="nav-link">Edit on dceoy/mt5api
                                     </a>
                             </li>
                     </ul>
@@ -137,7 +137,7 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="deployment-guide-windows-service">Deployment Guide (Windows Service)<a class="headerlink" href="#deployment-guide-windows-service" title="Permanent link">&para;</a></h1>
-<p>This guide describes how to deploy the pdmt5 REST API as a Windows service
+<p>This guide describes how to deploy the mt5api REST API as a Windows service
 alongside the MetaTrader 5 terminal.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
@@ -152,7 +152,7 @@ alongside the MetaTrader 5 terminal.</p>
 <li>Open an elevated PowerShell session.</li>
 <li>Create a service:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">nssm</span> <span class="n">install</span> <span class="n">pdmt5-api</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">nssm</span> <span class="n">install</span> <span class="n">mt5api</span>
 </code></pre></div>
 <ol>
 <li>
@@ -161,7 +161,7 @@ alongside the MetaTrader 5 terminal.</p>
 <li>
 <p>Path: <code>C:\Path\To\Python\python.exe</code></p>
 </li>
-<li>Arguments: <code>-m uvicorn pdmt5api.main:app --host 0.0.0.0 --port 8000</code></li>
+<li>Arguments: <code>-m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000</code></li>
 <li>
 <p>Startup directory: your project directory</p>
 </li>
@@ -177,7 +177,7 @@ alongside the MetaTrader 5 terminal.</p>
 <ol>
 <li>Start the service:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">nssm</span> <span class="nb">start </span><span class="n">pdmt5-api</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">nssm</span> <span class="nb">start </span><span class="n">mt5api</span>
 </code></pre></div>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">curl </span><span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">health</span>

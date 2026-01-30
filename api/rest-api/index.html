@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="dceoy">
-        <link rel="canonical" href="https://github.com/dceoy/pdmt5-api/api/rest-api/">
+        <link rel="canonical" href="https://github.com/dceoy/mt5api/api/rest-api/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
-        <title>REST API - pdmt5-api API Documentation</title>
+        <title>REST API - mt5api API Documentation</title>
         <link href="../../css/bootstrap.min.css" rel="stylesheet">
         <link href="../../css/fontawesome.min.css" rel="stylesheet">
         <link href="../../css/brands.min.css" rel="stylesheet">
@@ -25,7 +25,7 @@
     <body>
         <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
-                <a class="navbar-brand" href="../..">pdmt5-api API Documentation</a>
+                <a class="navbar-brand" href="../..">mt5api API Documentation</a>
                 <!-- Expander button -->
                 <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -90,7 +90,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="https://github.com/dceoy/pdmt5-api/edit/master/docs/api/rest-api.md" class="nav-link">Edit on dceoy/pdmt5-api
+                                <a href="https://github.com/dceoy/mt5api/edit/master/docs/api/rest-api.md" class="nav-link">Edit on dceoy/mt5api
                                     </a>
                             </li>
                     </ul>
@@ -161,7 +161,7 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="rest-api">REST API<a class="headerlink" href="#rest-api" title="Permanent link">&para;</a></h1>
-<p>The pdmt5 REST API exposes read-only MetaTrader 5 data via FastAPI. It supports
+<p>The mt5api REST API exposes read-only MetaTrader 5 data via FastAPI. It supports
 JSON and Apache Parquet responses for efficient analytics workflows.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>Install pdmt5 with API dependencies:</p>
@@ -175,7 +175,7 @@ JSON and Apache Parquet responses for efficient analytics workflows.</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">API_CORS_ORIGINS</span><span class="o">=</span><span class="s2">&quot;*&quot;</span>
 </code></pre></div>
 <h2 id="running-the-api">Running the API<a class="headerlink" href="#running-the-api" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uvicorn<span class="w"> </span>pdmt5api.main:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uvicorn<span class="w"> </span>mt5api.main:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </code></pre></div>
 <p>Access the docs at:</p>
 <ul>
@@ -198,7 +198,7 @@ JSON and Apache Parquet responses for efficient analytics workflows.</p>
 </code></pre></div>
 <h2 id="response-formatter-utilities">Response Formatter Utilities<a class="headerlink" href="#response-formatter-utilities" title="Permanent link">&para;</a></h2>
 <p>If you are extending the API with custom endpoints, use the formatter helpers
-in <code>pdmt5api.formatters</code> to keep JSON and Parquet responses consistent:</p>
+in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:</p>
 <ul>
 <li><code>format_response(data, response_format)</code>: Unified formatter for DataFrame or
   dict data.</li>
