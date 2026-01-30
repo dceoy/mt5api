@@ -129,7 +129,15 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-bs-level="2"><a href="#rate-limiting" class="nav-link">Rate Limiting</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-bs-level="2"><a href="#format-negotiation" class="nav-link">Format Negotiation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#endpoints" class="nav-link">Endpoints</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -142,10 +150,6 @@
               </ul>
             </li>
             <li class="nav-item" data-bs-level="2"><a href="#error-responses" class="nav-link">Error Responses</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#performance-benchmarks" class="nav-link">Performance Benchmarks</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -162,10 +166,9 @@
 
 <h1 id="rest-api">REST API<a class="headerlink" href="#rest-api" title="Permanent link">&para;</a></h1>
 <p>The mt5api REST API exposes read-only MetaTrader 5 data via FastAPI. It supports
-JSON and Apache Parquet responses for efficient analytics workflows.</p>
+JSON and Apache Parquet responses for analytics workflows.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>Install pdmt5 with API dependencies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pdmt5<span class="o">[</span>api<span class="o">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mt5api
 </code></pre></div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Set the API key and optional limits via environment variables:</p>
@@ -174,6 +177,8 @@ JSON and Apache Parquet responses for efficient analytics workflows.</p>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">API_RATE_LIMIT</span><span class="o">=</span><span class="s2">&quot;100&quot;</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">API_CORS_ORIGINS</span><span class="o">=</span><span class="s2">&quot;*&quot;</span>
 </code></pre></div>
+<p>MT5 connection details are managed by <code>pdmt5</code> (for example login/server/path
+settings defined in that package).</p>
 <h2 id="running-the-api">Running the API<a class="headerlink" href="#running-the-api" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uvicorn<span class="w"> </span>mt5api.main:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </code></pre></div>
@@ -187,6 +192,9 @@ JSON and Apache Parquet responses for efficient analytics workflows.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>http://localhost:8000/api/v1/symbols
 </code></pre></div>
+<h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
+<p>Rate limiting uses <code>slowapi</code> with a default limit of <code>100/minute</code>. Set
+<code>API_RATE_LIMIT</code> to an integer for a different per-minute cap.</p>
 <h2 id="format-negotiation">Format Negotiation<a class="headerlink" href="#format-negotiation" title="Permanent link">&para;</a></h2>
 <p>Use <code>Accept</code> header or <code>format</code> query parameter:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -196,6 +204,40 @@ JSON and Apache Parquet responses for efficient analytics workflows.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="s2">&quot;http://localhost:8000/api/v1/symbols?format=json&quot;</span>
 </code></pre></div>
+<h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">&para;</a></h2>
+<p>All endpoints are read-only.</p>
+<h3 id="health">Health<a class="headerlink" href="#health" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/health</code> (no auth)</li>
+<li><code>GET /api/v1/version</code></li>
+</ul>
+<h3 id="symbols">Symbols<a class="headerlink" href="#symbols" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/symbols</code> (<code>group</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/symbols/{symbol}</code> (<code>format</code>)</li>
+<li><code>GET /api/v1/symbols/{symbol}/tick</code> (<code>format</code>)</li>
+</ul>
+<h3 id="market-data">Market Data<a class="headerlink" href="#market-data" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/rates/from</code> (<code>symbol</code>, <code>timeframe</code>, <code>date_from</code>, <code>count</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/rates/from-pos</code> (<code>symbol</code>, <code>timeframe</code>, <code>start_pos</code>, <code>count</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/rates/range</code> (<code>symbol</code>, <code>timeframe</code>, <code>date_from</code>, <code>date_to</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/ticks/from</code> (<code>symbol</code>, <code>date_from</code>, <code>count</code>, <code>flags</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/ticks/range</code> (<code>symbol</code>, <code>date_from</code>, <code>date_to</code>, <code>flags</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/market-book/{symbol}</code> (<code>format</code>)</li>
+</ul>
+<h3 id="account-trading-state">Account &amp; Trading State<a class="headerlink" href="#account-trading-state" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/account</code> (<code>format</code>)</li>
+<li><code>GET /api/v1/terminal</code> (<code>format</code>)</li>
+<li><code>GET /api/v1/positions</code> (<code>symbol</code>, <code>group</code>, <code>ticket</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/orders</code> (<code>symbol</code>, <code>group</code>, <code>ticket</code>, <code>format</code>)</li>
+</ul>
+<h3 id="history">History<a class="headerlink" href="#history" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/history/orders</code> (<code>date_from</code>, <code>date_to</code>, <code>ticket</code>, <code>position</code>, <code>group</code>, <code>symbol</code>, <code>format</code>)</li>
+<li><code>GET /api/v1/history/deals</code> (<code>date_from</code>, <code>date_to</code>, <code>ticket</code>, <code>position</code>, <code>group</code>, <code>symbol</code>, <code>format</code>)</li>
+</ul>
 <h2 id="response-formatter-utilities">Response Formatter Utilities<a class="headerlink" href="#response-formatter-utilities" title="Permanent link">&para;</a></h2>
 <p>If you are extending the API with custom endpoints, use the formatter helpers
 in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:</p>
@@ -216,7 +258,7 @@ in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>http://localhost:8000/api/v1/version
 </code></pre></div>
-<h3 id="symbols">Symbols<a class="headerlink" href="#symbols" title="Permanent link">&para;</a></h3>
+<h3 id="symbols_1">Symbols<a class="headerlink" href="#symbols_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>http://localhost:8000/api/v1/symbols
 </code></pre></div>
@@ -249,13 +291,6 @@ in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:
 <a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="nt">&quot;instance&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/api/v1/rates/from&quot;</span>
 <a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="performance-benchmarks">Performance Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>
-<p>Target benchmarks for production readiness:</p>
-<ul>
-<li>Health check latency &lt; 500ms under normal load</li>
-<li>Market data queries &lt; 2s for typical datasets (&lt;1000 records)</li>
-<li>100 concurrent requests without significant degradation</li>
-</ul>
 <h2 id="security-checklist">Security Checklist<a class="headerlink" href="#security-checklist" title="Permanent link">&para;</a></h2>
 <p>Minimum security posture for deployments:</p>
 <ul>
