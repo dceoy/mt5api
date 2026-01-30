@@ -48,7 +48,7 @@ def test_version_endpoint_accepts_valid_api_key(
 
 def test_get_api_key_missing_env_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test get_api_key raises when environment variable is missing."""
-    from pdmt5api.auth import get_api_key  # noqa: PLC0415
+    from mt5api.auth import get_api_key  # noqa: PLC0415
 
     monkeypatch.delenv("MT5_API_KEY", raising=False)
 

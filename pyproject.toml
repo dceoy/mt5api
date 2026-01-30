@@ -1,5 +1,5 @@
 [project]
-name = "pdmt5-api"
+name = "mt5api"
 version = "0.0.1"
 description = "MetaTrader 5 REST API using FastAPI"
 authors = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
@@ -32,7 +32,7 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/dceoy/pdmt5-api.git"
+Repository = "https://github.com/dceoy/mt5api.git"
 
 [tool.uv]
 required-environments = ["platform_system == 'Windows'"]
@@ -55,11 +55,11 @@ dev = [
 ]
 
 [tool.uv.build-backend]
-source-include = ["pdmt5api/**", "LICENSE"]
+source-include = ["mt5api/**", "LICENSE"]
 source-exclude = ["tests/**"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pdmt5api"]
+packages = ["mt5api"]
 
 [tool.ruff]
 line-length = 88
@@ -172,7 +172,7 @@ reportMissingTypeStubs = "none"
 
 [tool.pytest.ini_options]
 addopts = [
-  "--cov=pdmt5api",
+  "--cov=mt5api",
   "--cov-branch",
   "--doctest-modules",
   "--capture=no",
@@ -185,7 +185,7 @@ python_functions = ["test_*"]
 minversion = "6.0"
 
 [tool.coverage.run]
-source = ["pdmt5api"]
+source = ["mt5api"]
 omit = [
   "**/__init__.py",
   "tests/**",

@@ -26,13 +26,13 @@ def test_main_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
         captured_args = _args
         captured_kwargs = kwargs
 
-    from pdmt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # noqa: PLC0415
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
     api_main.main()
 
-    assert captured_args == ("pdmt5api.main:app",)
+    assert captured_args == ("mt5api.main:app",)
     assert captured_kwargs is not None
     assert (
         captured_kwargs["host"] == api_main._DEFAULT_HOST  # pyright: ignore[reportPrivateUsage]
@@ -53,7 +53,7 @@ def test_main_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
         nonlocal captured_kwargs
         captured_kwargs = kwargs
 
-    from pdmt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # noqa: PLC0415
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
@@ -75,7 +75,7 @@ def test_main_handles_invalid_port(monkeypatch: pytest.MonkeyPatch) -> None:
         nonlocal captured_kwargs
         captured_kwargs = kwargs
 
-    from pdmt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # noqa: PLC0415
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
@@ -95,7 +95,7 @@ def test_main_handles_out_of_range_port(monkeypatch: pytest.MonkeyPatch) -> None
         nonlocal captured_kwargs
         captured_kwargs = kwargs
 
-    from pdmt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # noqa: PLC0415
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
@@ -117,8 +117,8 @@ def test_module_entrypoint_invokes_main(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr(uvicorn, "run", fake_run)
 
-    sys.modules.pop("pdmt5api.__main__", None)
-    runpy.run_module("pdmt5api.__main__", run_name="__main__")
+    sys.modules.pop("mt5api.__main__", None)
+    runpy.run_module("mt5api.__main__", run_name="__main__")
 
     assert captured_kwargs is not None
     assert captured_kwargs["port"] == 8001

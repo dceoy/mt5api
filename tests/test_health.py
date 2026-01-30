@@ -77,7 +77,7 @@ async def test_get_health_handles_runtime_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health handles MT5 runtime errors gracefully."""
-    from pdmt5api.routers import health  # noqa: PLC0415
+    from mt5api.routers import health  # noqa: PLC0415
 
     def raise_runtime_error() -> None:
         error_message = "MT5 unavailable"
@@ -95,7 +95,7 @@ async def test_get_health_handles_empty_version_dict(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health handles empty version info."""
-    from pdmt5api.routers import health  # noqa: PLC0415
+    from mt5api.routers import health  # noqa: PLC0415
 
     class DummyClient:
         def version_as_dict(self) -> dict[str, str]:

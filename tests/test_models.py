@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from pdmt5api.models import HistoryOrdersRequest
+from mt5api.models import HistoryOrdersRequest
 
 
 def test_history_request_requires_filters() -> None:
