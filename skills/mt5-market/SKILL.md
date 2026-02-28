@@ -119,4 +119,4 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 2. Gather the required parameters (symbol, timeframe, dates, count).
 3. Construct and run the appropriate `curl` command.
 4. Parse the JSON response and summarize the data (number of records, date range covered, OHLCV summary, etc.).
-5. If the user requests Parquet format, add `&format=parquet` and note the binary response.
+5. If the user requests Parquet format, append `format=parquet` as a query parameter (use `?` if the URL has no existing parameters, or `&` if it does) and note the binary response.
