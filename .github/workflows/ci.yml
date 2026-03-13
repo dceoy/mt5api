@@ -11,8 +11,7 @@ on:
       - opened
       - synchronize
       - reopened
-      - ready_for_review
-  workflow_dispatch: {}
+  workflow_dispatch:
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -21,7 +20,7 @@ jobs:
   python-lint-and-scan:
     if: >
       github.event_name == 'push'
-      || (github.event_name == 'pull_request' && github.event.action != 'ready_for_review')
+      || github.event_name == 'pull_request'
       || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
@@ -32,7 +31,7 @@ jobs:
   python-test:
     if: >
       github.event_name == 'push'
-      || (github.event_name == 'pull_request' && github.event.action != 'ready_for_review')
+      || github.event_name == 'pull_request'
       || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
@@ -65,43 +64,6 @@ jobs:
       create-releases: ${{ github.event_name == 'workflow_dispatch' }}
     secrets:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  claude-code-review:
-    if: >
-      github.event_name == 'pull_request'
-      && github.event.pull_request.draft == false
-      && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
-      && (! startsWith(github.head_ref, 'dependabot/'))
-      && (! startsWith(github.head_ref, 'renovate/'))
-      && (! (failure() || cancelled()))
-    needs:
-      - python-lint-and-scan
-      - python-test
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
-      actions: read
-    uses: dceoy/gh-actions-for-devops/.github/workflows/claude-code-review.yml@main   # zizmor: ignore[unpinned-uses]
-    secrets:
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  claude-code-bot:
-    if: >
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
-      || (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
-      || (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
-      || (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
-      actions: read
-    uses: dceoy/gh-actions-for-devops/.github/workflows/claude-code-bot.yml@main  # zizmor: ignore[unpinned-uses]
-    secrets:
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   dependabot-auto-merge:
     if: >
