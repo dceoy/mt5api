@@ -23,12 +23,12 @@ curl -s "${MT5_API_URL:-http://localhost:8000}/api/v1/health" | python -m json.t
 
 Returns:
 
-| Field          | Type    | Description                    |
-|----------------|---------|--------------------------------|
-| status         | string  | `healthy` or `unhealthy`       |
-| mt5_connected  | bool    | MT5 terminal connection status |
-| mt5_version    | string? | MT5 terminal version string    |
-| api_version    | string  | API version (e.g., `1.0.0`)   |
+| Field         | Type    | Description                    |
+| ------------- | ------- | ------------------------------ |
+| status        | string  | `healthy` or `unhealthy`       |
+| mt5_connected | bool    | MT5 terminal connection status |
+| mt5_version   | string? | MT5 terminal version string    |
+| api_version   | string  | API version (e.g., `1.0.0`)    |
 
 ### MT5 Version (requires API key)
 

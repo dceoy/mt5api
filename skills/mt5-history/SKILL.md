@@ -24,11 +24,11 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   "${MT5_API_URL:-http://localhost:8000}/api/v1/positions" | python -m json.tool
 ```
 
-| Parameter | Type   | Required | Description              |
-|-----------|--------|----------|--------------------------|
-| symbol    | string | no       | Filter by symbol         |
-| group     | string | no       | Filter by group pattern  |
-| ticket    | int    | no       | Filter by position ticket|
+| Parameter | Type   | Required | Description               |
+| --------- | ------ | -------- | ------------------------- |
+| symbol    | string | no       | Filter by symbol          |
+| group     | string | no       | Filter by group pattern   |
+| ticket    | int    | no       | Filter by position ticket |
 
 Example with symbol filter:
 
@@ -46,11 +46,11 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   "${MT5_API_URL:-http://localhost:8000}/api/v1/orders" | python -m json.tool
 ```
 
-| Parameter | Type   | Required | Description            |
-|-----------|--------|----------|------------------------|
-| symbol    | string | no       | Filter by symbol       |
-| group     | string | no       | Filter by group pattern|
-| ticket    | int    | no       | Filter by order ticket |
+| Parameter | Type   | Required | Description             |
+| --------- | ------ | -------- | ----------------------- |
+| symbol    | string | no       | Filter by symbol        |
+| group     | string | no       | Filter by group pattern |
+| ticket    | int    | no       | Filter by order ticket  |
 
 ### Historical Orders
 
@@ -62,14 +62,14 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Description                                           |
-|-----------|----------|----------|-------------------------------------------------------|
-| date_from | datetime | cond.    | Start date (required if no ticket/position)            |
-| date_to   | datetime | cond.    | End date (required if no ticket/position)              |
-| ticket    | int      | cond.    | Filter by ticket (alternative to date range)           |
-| position  | int      | cond.    | Filter by position ID (alternative to date range)      |
-| symbol    | string   | no       | Filter by symbol                                       |
-| group     | string   | no       | Filter by group pattern                                |
+| Parameter | Type     | Required | Description                                       |
+| --------- | -------- | -------- | ------------------------------------------------- |
+| date_from | datetime | cond.    | Start date (required if no ticket/position)       |
+| date_to   | datetime | cond.    | End date (required if no ticket/position)         |
+| ticket    | int      | cond.    | Filter by ticket (alternative to date range)      |
+| position  | int      | cond.    | Filter by position ID (alternative to date range) |
+| symbol    | string   | no       | Filter by symbol                                  |
+| group     | string   | no       | Filter by group pattern                           |
 
 Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
 
@@ -91,14 +91,14 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Description                                           |
-|-----------|----------|----------|-------------------------------------------------------|
-| date_from | datetime | cond.    | Start date (required if no ticket/position)            |
-| date_to   | datetime | cond.    | End date (required if no ticket/position)              |
-| ticket    | int      | cond.    | Filter by ticket (alternative to date range)           |
-| position  | int      | cond.    | Filter by position ID (alternative to date range)      |
-| symbol    | string   | no       | Filter by symbol                                       |
-| group     | string   | no       | Filter by group pattern                                |
+| Parameter | Type     | Required | Description                                       |
+| --------- | -------- | -------- | ------------------------------------------------- |
+| date_from | datetime | cond.    | Start date (required if no ticket/position)       |
+| date_to   | datetime | cond.    | End date (required if no ticket/position)         |
+| ticket    | int      | cond.    | Filter by ticket (alternative to date range)      |
+| position  | int      | cond.    | Filter by position ID (alternative to date range) |
+| symbol    | string   | no       | Filter by symbol                                  |
+| group     | string   | no       | Filter by group pattern                           |
 
 Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
 

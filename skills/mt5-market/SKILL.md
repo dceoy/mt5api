@@ -25,12 +25,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Description                                     |
-|-----------|----------|----------|-------------------------------------------------|
-| symbol    | string   | yes      | Symbol name                                     |
-| timeframe | int      | yes      | Timeframe in minutes (1, 5, 15, 60, 240, 1440)  |
-| date_from | datetime | yes      | Start date (ISO 8601)                           |
-| count     | int      | yes      | Number of candles (1–100000)                    |
+| Parameter | Type     | Required | Description                                    |
+| --------- | -------- | -------- | ---------------------------------------------- |
+| symbol    | string   | yes      | Symbol name                                    |
+| timeframe | int      | yes      | Timeframe in minutes (1, 5, 15, 60, 240, 1440) |
+| date_from | datetime | yes      | Start date (ISO 8601)                          |
+| count     | int      | yes      | Number of candles (1–100000)                   |
 
 ### Rates from Position
 
@@ -43,7 +43,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ```
 
 | Parameter | Type | Required | Description                      |
-|-----------|------|----------|----------------------------------|
+| --------- | ---- | -------- | -------------------------------- |
 | symbol    | str  | yes      | Symbol name                      |
 | timeframe | int  | yes      | Timeframe in minutes             |
 | start_pos | int  | yes      | Start position (0 = current bar) |
@@ -59,12 +59,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Description          |
-|-----------|----------|----------|----------------------|
-| symbol    | string   | yes      | Symbol name          |
-| timeframe | int      | yes      | Timeframe in minutes |
-| date_from | datetime | yes      | Start date (ISO 8601)|
-| date_to   | datetime | yes      | End date (ISO 8601)  |
+| Parameter | Type     | Required | Description           |
+| --------- | -------- | -------- | --------------------- |
+| symbol    | string   | yes      | Symbol name           |
+| timeframe | int      | yes      | Timeframe in minutes  |
+| date_from | datetime | yes      | Start date (ISO 8601) |
+| date_to   | datetime | yes      | End date (ISO 8601)   |
 
 ### Ticks from Date
 
@@ -76,12 +76,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Default | Description                              |
-|-----------|----------|----------|---------|------------------------------------------|
-| symbol    | string   | yes      |         | Symbol name                              |
-| date_from | datetime | yes      |         | Start date (ISO 8601)                    |
-| count     | int      | yes      |         | Number of ticks (1–100000)               |
-| flags     | int      | no       | 6       | Tick flags (2=INFO, 4=TRADE, 6=ALL)      |
+| Parameter | Type     | Required | Default | Description                         |
+| --------- | -------- | -------- | ------- | ----------------------------------- |
+| symbol    | string   | yes      |         | Symbol name                         |
+| date_from | datetime | yes      |         | Start date (ISO 8601)               |
+| count     | int      | yes      |         | Number of ticks (1–100000)          |
+| flags     | int      | no       | 6       | Tick flags (2=INFO, 4=TRADE, 6=ALL) |
 
 ### Ticks in Range
 
@@ -94,7 +94,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ```
 
 | Parameter | Type     | Required | Default | Description                         |
-|-----------|----------|----------|---------|-------------------------------------|
+| --------- | -------- | -------- | ------- | ----------------------------------- |
 | symbol    | string   | yes      |         | Symbol name                         |
 | date_from | datetime | yes      |         | Start date (ISO 8601)               |
 | date_to   | datetime | yes      |         | End date (ISO 8601)                 |
@@ -110,7 +110,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ```
 
 | Parameter | Type   | Required | Description |
-|-----------|--------|----------|-------------|
+| --------- | ------ | -------- | ----------- |
 | symbol    | string | yes      | Symbol name |
 
 ## Procedure

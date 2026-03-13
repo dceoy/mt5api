@@ -25,6 +25,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ```
 
 Returns a `DataResponse` containing account fields such as:
+
 - `login` - Account number
 - `balance` - Account balance
 - `equity` - Account equity

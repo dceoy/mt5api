@@ -25,7 +25,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 Optional query parameters:
 
 | Parameter | Type   | Description                                   |
-|-----------|--------|-----------------------------------------------|
+| --------- | ------ | --------------------------------------------- |
 | group     | string | Symbol group filter (e.g., `*USD*`, `Forex*`) |
 
 Example with filter:
@@ -44,9 +44,9 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 
 Path parameters:
 
-| Parameter | Type   | Description                   |
-|-----------|--------|-------------------------------|
-| symbol    | string | Symbol name (e.g., `EURUSD`)  |
+| Parameter | Type   | Description                  |
+| --------- | ------ | ---------------------------- |
+| symbol    | string | Symbol name (e.g., `EURUSD`) |
 
 ### Get Latest Tick
 
@@ -57,9 +57,9 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 
 Path parameters:
 
-| Parameter | Type   | Description  |
-|-----------|--------|--------------|
-| symbol    | string | Symbol name  |
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| symbol    | string | Symbol name |
 
 ## Procedure
 
