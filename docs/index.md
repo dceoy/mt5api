@@ -8,6 +8,11 @@ mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
 `pdmt5` client for MT5 connectivity and adds authentication, rate limiting,
 and response formatting suitable for analytics workflows.
 
+The API server must run on Windows because the `MetaTrader5` Python package is
+supported only on Windows. Host `mt5api` on the same Windows machine, or
+another Windows host, that has a logged-in MetaTrader 5 terminal. API clients
+can connect from any operating system.
+
 ## Features
 
 - Read-only REST endpoints for symbols, market data, account info, orders, and history
@@ -20,26 +25,29 @@ and response formatting suitable for analytics workflows.
 
 - Python 3.11+
 - Windows OS with MetaTrader 5 terminal installed and logged in
+- Linux and macOS are not supported for the API server runtime
 
 ## Installation
 
-```bash
+Install `mt5api` on the Windows host that runs MetaTrader 5.
+
+```powershell
 pip install mt5api
 ```
 
 ## Quick Start
 
-```bash
-export MT5_API_KEY="your-secret-api-key"
-uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+```powershell
+$env:MT5_API_KEY = "your-secret-api-key"
+python -m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
-```bash
-curl http://localhost:8000/api/v1/health
+```powershell
+curl.exe http://localhost:8000/api/v1/health
 ```
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/symbols?group=*USD*"
 ```
 

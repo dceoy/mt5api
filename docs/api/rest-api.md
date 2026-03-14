@@ -3,9 +3,22 @@
 The mt5api REST API exposes read-only MetaTrader 5 data via FastAPI. It supports
 JSON and Apache Parquet responses for analytics workflows.
 
+The API server must run on Windows because the `MetaTrader5` Python package is
+supported only on Windows. Host `mt5api` on a Windows machine with MetaTrader 5
+installed and logged in. HTTP clients can access the API from any operating
+system.
+
+## Runtime Requirements
+
+- Python 3.11+
+- Windows host with MetaTrader 5 terminal installed and logged in
+- Linux and macOS are not supported for the API server runtime
+
 ## Installation
 
-```bash
+Install the package on the Windows host that will run the API server.
+
+```powershell
 pip install mt5api
 ```
 
@@ -13,11 +26,11 @@ pip install mt5api
 
 Set the API key and optional limits via environment variables:
 
-```bash
-export MT5_API_KEY="your-secret-api-key"
-export API_LOG_LEVEL="INFO"
-export API_RATE_LIMIT="100"
-export API_CORS_ORIGINS="*"
+```powershell
+$env:MT5_API_KEY = "your-secret-api-key"
+$env:API_LOG_LEVEL = "INFO"
+$env:API_RATE_LIMIT = "100"
+$env:API_CORS_ORIGINS = "*"
 ```
 
 MT5 connection details are managed by `pdmt5` (for example login/server/path
@@ -25,8 +38,8 @@ settings defined in that package).
 
 ## Running the API
 
-```bash
-uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+```powershell
+python -m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 Access the docs at:
@@ -116,8 +129,8 @@ in `mt5api.formatters` to keep JSON and Parquet responses consistent:
 
 ### Health Check (No Auth)
 
-```bash
-curl http://localhost:8000/api/v1/health
+```powershell
+curl.exe http://localhost:8000/api/v1/health
 ```
 
 ### MT5 Version

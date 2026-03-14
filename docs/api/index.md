@@ -3,6 +3,10 @@
 This section contains the API documentation for mt5api and the underlying
 `pdmt5` client modules.
 
+The API server must run on Windows because the `MetaTrader5` Python package is
+Windows-only. Run `mt5api` on a Windows host with MetaTrader 5 installed and
+logged in. Clients can call the HTTP API from any operating system.
+
 ## Modules
 
 ### [REST API](rest-api.md)
@@ -54,13 +58,13 @@ mt5api adds a FastAPI layer on top of pdmt5:
 
 ## Quick Start
 
-```bash
-export MT5_API_KEY="your-secret-api-key"
-uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+```powershell
+$env:MT5_API_KEY = "your-secret-api-key"
+python -m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
