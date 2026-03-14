@@ -63,6 +63,23 @@ def test_symbols_endpoint_requires_authentication(
     assert "Missing API key" in data["detail"]
 
 
+def test_symbols_endpoint_rejects_invalid_api_key(
+    client: TestClient,
+    mock_mt5_client: Mock,
+) -> None:
+    """Test symbols endpoint rejects invalid API key."""
+    headers = {"X-API-Key": "wrong-key"}
+    response = client.get("/api/v1/symbols?group=*USD*", headers=headers)
+
+    assert response.status_code == 401
+    mock_mt5_client.symbols_get_as_df.assert_not_called()
+
+    data = response.json()["detail"]
+    assert data["type"] == "/errors/unauthorized"
+    assert data["title"] == "Authentication Failed"
+    assert "Invalid API key" in data["detail"]
+
+
 def test_version_endpoint_allows_requests_when_auth_disabled(
     client: TestClient,
     monkeypatch: MonkeyPatch,

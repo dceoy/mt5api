@@ -42,6 +42,8 @@ $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
+Once the API is running, use these `curl` examples from any client machine.
+
 Replace `windows-host` with the DNS name or IP address of the Windows machine
 running `mt5api`. If you run the request on that Windows host, `localhost` also
 works. In PowerShell, use `curl.exe` if `curl` resolves to
