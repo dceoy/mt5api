@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from unittest.mock import Mock
+
     from _pytest.monkeypatch import MonkeyPatch
     from fastapi.testclient import TestClient
 
@@ -45,6 +47,22 @@ def test_version_endpoint_accepts_valid_api_key(
     assert response.status_code == 200
 
 
+def test_symbols_endpoint_requires_authentication(
+    client: TestClient,
+    mock_mt5_client: Mock,
+) -> None:
+    """Test router-level protected endpoints require API key."""
+    response = client.get("/api/v1/symbols?group=*USD*")
+
+    assert response.status_code == 401
+    mock_mt5_client.symbols_get_as_df.assert_not_called()
+
+    data = response.json()["detail"]
+    assert data["type"] == "/errors/unauthorized"
+    assert data["title"] == "Authentication Required"
+    assert "Missing API key" in data["detail"]
+
+
 def test_version_endpoint_allows_requests_when_auth_disabled(
     client: TestClient,
     monkeypatch: MonkeyPatch,
@@ -57,6 +75,22 @@ def test_version_endpoint_allows_requests_when_auth_disabled(
     response = client.get("/api/v1/version")
 
     assert response.status_code == 200
+
+
+def test_symbols_endpoint_allows_requests_when_auth_disabled(
+    client: TestClient,
+    mock_mt5_client: Mock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test router-level protected endpoints work without API key."""
+    from mt5api import auth  # noqa: PLC0415
+
+    monkeypatch.setattr(auth, "_API_KEY", None)
+
+    response = client.get("/api/v1/symbols?group=*USD*")
+
+    assert response.status_code == 200
+    mock_mt5_client.symbols_get_as_df.assert_called_with(group="*USD*")
 
 
 def test_get_api_key_returns_none_when_auth_is_disabled(
@@ -87,3 +121,4 @@ def test_openapi_does_not_require_api_key_when_auth_disabled(
     schema = response.json()
     assert "securitySchemes" not in schema.get("components", {})
     assert "security" not in schema["paths"]["/api/v1/version"]["get"]
+    assert "security" not in schema["paths"]["/api/v1/symbols"]["get"]
