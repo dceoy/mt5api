@@ -48,8 +48,10 @@ nssm start mt5api
 
 ## Validation
 
-```powershell
-curl.exe http://localhost:8000/api/v1/health
+In PowerShell, use `curl.exe` if `curl` resolves to `Invoke-WebRequest`.
+
+```console
+curl "http://localhost:8000/api/v1/health"
 ```
 
 Expected status: `healthy` (or `unhealthy` if MT5 is not connected).

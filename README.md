@@ -50,31 +50,24 @@ Docs:
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-## Example Requests from Linux/macOS
+## Example Requests with curl
 
 Replace `windows-host` with the DNS name or IP address of the Windows machine
-running `mt5api`.
+running `mt5api`. If you run the request on that Windows host, `localhost` also
+works. In PowerShell, use `curl.exe` if `curl` resolves to
+`Invoke-WebRequest`.
 
-```bash
-API_URL=http://windows-host:8000
-curl "$API_URL/api/v1/health"
+```console
+curl "http://windows-host:8000/api/v1/health"
 ```
 
-```bash
-API_URL=http://windows-host:8000
-API_KEY=your-secret-api-key
-
+```console
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols?group=*USD*"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?group=*USD*"
 ```
 
-```bash
-API_URL=http://windows-host:8000
-API_KEY=your-secret-api-key
-
-curl -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/parquet" \
-  "$API_URL/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+```console
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Endpoints (Read-Only)

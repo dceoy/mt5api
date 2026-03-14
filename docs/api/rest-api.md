@@ -48,15 +48,10 @@ Access the docs at the Windows host address, for example:
 - Swagger UI: `http://windows-host:8000/docs`
 - OpenAPI JSON: `http://windows-host:8000/openapi.json`
 
-## Unix-like Client Setup
-
-If you are calling the API from Linux or macOS, point your client at the
-Windows host that runs `mt5api`.
-
-```bash
-API_URL=http://windows-host:8000
-API_KEY=your-secret-api-key  # Only when MT5_API_KEY is configured on the server
-```
+Replace `windows-host` with the DNS name or IP address of the Windows machine
+running `mt5api`. If you run the request on that Windows host, `localhost` also
+works. In PowerShell, use `curl.exe` if `curl` resolves to
+`Invoke-WebRequest`.
 
 ## Authentication
 
@@ -64,8 +59,8 @@ When `MT5_API_KEY` is set, all endpoints except `/api/v1/health` require an
 `X-API-Key` header. When `MT5_API_KEY` is unset or empty, authentication is
 disabled and those endpoints are accessible without authorization.
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols"
 ```
 
 ## Rate Limiting
@@ -77,14 +72,12 @@ Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
 
 Use `Accept` header or `format` query parameter:
 
-```bash
-curl -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/parquet" \
-  "$API_URL/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+```console
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols?format=json"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?format=json"
 ```
 
 ## Endpoints
@@ -140,50 +133,48 @@ in `mt5api.formatters` to keep JSON and Parquet responses consistent:
 
 ### Health Check (No Auth)
 
-```bash
-curl "$API_URL/api/v1/health"
+```console
+curl "http://windows-host:8000/api/v1/health"
 ```
 
 ### MT5 Version
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/version"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/version"
 ```
 
 ### Symbols
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols"
 ```
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols?group=*USD*"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?group=*USD*"
 ```
 
 ### Symbol Details
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols/EURUSD"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols/EURUSD"
 ```
 
 ### Rates (OHLCV)
 
-```bash
-curl -H "X-API-Key: $API_KEY" \
-  "$API_URL/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ### Account Info
 
-```bash
-curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/account"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/account"
 ```
 
 ### History Orders
 
-```bash
-curl -H "X-API-Key: $API_KEY" \
-  "$API_URL/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
 ```
 
 ## Error Responses
