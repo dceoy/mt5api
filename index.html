@@ -152,8 +152,8 @@
 <p>FastAPI-based REST API for MetaTrader 5 market data and account information.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
-<code>pdmt5</code> client for MT5 connectivity and adds authentication, rate limiting,
-and response formatting suitable for analytics workflows.</p>
+<code>pdmt5</code> client for MT5 connectivity and adds optional authentication, rate
+limiting, and response formatting suitable for analytics workflows.</p>
 <p>The API server must run on Windows because the <code>MetaTrader5</code> Python package is
 Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 installed and
 logged in. API clients can connect from any operating system.</p>
@@ -161,7 +161,7 @@ logged in. API clients can connect from any operating system.</p>
 <ul>
 <li>Read-only REST endpoints for symbols, market data, account info, orders, and history</li>
 <li>JSON and Apache Parquet responses</li>
-<li>API key authentication and rate limiting</li>
+<li>Optional API key authentication and rate limiting</li>
 <li>Structured JSON logging and configurable CORS</li>
 <li>OpenAPI/Swagger docs built in</li>
 </ul>
@@ -176,13 +176,14 @@ logged in. API clients can connect from any operating system.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">mt5api</span>
 </code></pre></div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:MT5_API_KEY</span> <span class="p">=</span> <span class="s2">&quot;your-secret-api-key&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:MT5_API_KEY</span> <span class="p">=</span> <span class="s2">&quot;your-secret-api-key&quot;</span>  <span class="c"># Optional: omit to disable auth</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">health</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/symbols?group=*USD*&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c"># Include X-API-Key only when MT5_API_KEY is configured on the server.</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/symbols?group=*USD*&quot;</span>
 </code></pre></div>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 <ul>
@@ -276,5 +277,5 @@ logged in. API clients can connect from any operating system.</p>
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-03-14 11:34:58.423229+00:00
+Build Date UTC : 2026-03-14 15:37:58.398115+00:00
 -->
