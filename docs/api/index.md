@@ -59,11 +59,12 @@ mt5api adds a FastAPI layer on top of pdmt5:
 ## Quick Start
 
 ```powershell
-$env:MT5_API_KEY = "your-secret-api-key"
+$env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ```powershell
+# Include X-API-Key only when MT5_API_KEY is configured on the server.
 curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```

@@ -7,11 +7,13 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
 from starlette.middleware.cors import CORSMiddleware
 
+from .auth import is_auth_enabled
 from .dependencies import shutdown_mt5_client
 from .middleware import add_middleware
 from .routers import account, health, history, market, symbols
@@ -63,6 +65,61 @@ def _get_cors_origins() -> list[str]:
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
+def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
+    """Remove API key requirements from OpenAPI when auth is disabled."""
+    openapi_schema.pop("security", None)
+
+    components = openapi_schema.get("components")
+    if isinstance(components, dict):
+        security_schemes = components.get("securitySchemes")
+        if isinstance(security_schemes, dict):
+            security_schemes.pop("APIKeyHeader", None)
+            if not security_schemes:
+                components.pop("securitySchemes", None)
+
+    for methods in openapi_schema.get("paths", {}).values():
+        if not isinstance(methods, dict):
+            continue
+        for operation in methods.values():
+            if isinstance(operation, dict):
+                operation.pop("security", None)
+
+
+def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
+    """Build OpenAPI schema for the current authentication mode.
+
+    Returns:
+        OpenAPI schema for the current auth configuration.
+    """
+    auth_enabled = is_auth_enabled()
+    cached_auth_enabled = getattr(app.state, "openapi_auth_enabled", None)
+
+    if app.openapi_schema and cached_auth_enabled == auth_enabled:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    if not auth_enabled:
+        _strip_auth_from_openapi(openapi_schema)
+
+    app.openapi_schema = openapi_schema
+    app.state.openapi_auth_enabled = auth_enabled
+    return openapi_schema
+
+
+def _custom_openapi() -> dict[str, Any]:
+    """Build OpenAPI schema for the current application instance.
+
+    Returns:
+        OpenAPI schema for the application.
+    """
+    return _build_openapi_schema(app)
+
+
 _configure_logging()
 logger = logging.getLogger(__name__)
 
@@ -106,6 +163,7 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+app.openapi = _custom_openapi
 
 # Add CORS middleware
 app.add_middleware(
