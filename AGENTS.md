@@ -2,24 +2,64 @@
 
 ## Project Structure & Module Organization
 
-The core application lives in the `mt5api/` package, with request handlers organized under `mt5api/routers/` by API surface area. Tests are in `tests/` and should mirror the module layout. Documentation lives in `docs/`, while feature and design notes live in `specs/`. The MkDocs site is configured by `mkdocs.yml` and should be kept aligned with `docs/` content.
+- `mt5api/` contains the FastAPI application.
+- `main.py` wires logging, middleware, CORS, and lifespan handling.
+- `routers/` holds the read-only endpoint groups: `health.py`, `symbols.py`, `market.py`, `account.py`, and `history.py`.
+- Shared logic lives in top-level modules such as `auth.py`, `dependencies.py`, `formatters.py`, and `models.py`.
+- Tests live in `tests/` and follow the package layout with `test_*.py` files.
+- Documentation is under `docs/` with MkDocs config in `mkdocs.yml`.
 
 ## Build, Test, and Development Commands
 
-Use `uv` for all environment and task execution. Typical commands: `uv sync` to install dependencies; `uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000` to run the API; `uv run pytest` for tests; `uv run ruff check .` and `uv run ruff format .` for lint/format; `uv run pyright` for type checks; `uv run mkdocs serve` for local docs preview.
+Use `uv` for local work:
+
+- Before each code or documentation change, run linting,formatting, and tests using `local-qa` skill.
+- `uv sync --dev` installs runtime and development dependencies.
+- `uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000` starts the API locally.
+- `uv run python -m mt5api` starts the app using `API_HOST`, `API_PORT`, and `API_LOG_LEVEL`.
+- `uv run mkdocs serve` previews the docs site.
 
 ## Coding Style & Naming Conventions
 
-Ruff is authoritative with line length 88. Pyright runs in strict mode. Use Google-style docstrings for public modules, classes, and functions. Name modules and functions in `snake_case`, classes in `CapWords`, and tests in files named `test_*.py`.
-
-## Testing Guidelines
-
-Use `pytest` with `pytest-asyncio` for async coverage. Enforce coverage via `pytest-cov` with a `fail_under` target of 100. New features must include tests that cover success, error, and edge cases, keeping `tests/` organized by feature area.
+- Target Python 3.11+ with 4-space indentation and an 88-character line limit.
+- Keep modules and functions in `snake_case`.
+- Classes use `PascalCase`.
+- Constants use `UPPER_SNAKE_CASE`.
+- Type annotations are expected.
+- Docstrings should follow the Google convention configured in Ruff.
+- Keep endpoint code grouped by domain under `mt5api/routers/`.
+- Parametrized tests for input/result matrices using `pytest.mark.parametrize` (pytest)
 
 ## Commit & Pull Request Guidelines
 
-Commit messages must be sentence-case and imperative, e.g., "Fix QA checks and docs" or "Bump python-multipart". Keep PRs focused, include test updates, and note any changes to `docs/` or `specs/` when behavior or interfaces change.
+- Run QA using `local-qa` before committing or creating a PR.
+- Include request/response examples or screenshots when docs or OpenAPI-visible behavior changes.
+- Keep PRs focused and include: concise summary, affected workflow paths, linked issue/context, and regenerated `README.md` when workflow inventory changes.
+- Branch names use appropriate prefixes on creation (e.g., `feature/short-description`, `bugfix/short-description`).
+- When instructed to create a PR, create it as a draft with appropriate labels by default.
 
 ## Security & Configuration Tips
 
-`MT5_API_KEY` is required for authenticated access. Configure `API_RATE_LIMIT` and `API_CORS_ORIGINS` per environment and never commit secrets. Runtime access depends on a Windows host with an installed and running MetaTrader 5 terminal; ensure the terminal is available before starting the API.
+- Do not commit real MT5 credentials or API keys.
+- Configure `MT5_API_KEY`, `API_RATE_LIMIT`, `API_CORS_ORIGINS`, and `API_LOG_LEVEL` through environment variables.
+- The API server must run on Windows with a logged-in MetaTrader 5 terminal.
+- Linux and macOS are for HTTP clients and local non-runtime work only.
+
+## Code Design Principles
+
+Always prefer the simplest design that works.
+
+- **KISS**: Choose straightforward solutions and avoid unnecessary abstraction.
+- **DRY**: Remove duplication when it improves clarity and maintainability.
+- **YAGNI**: Do not add features, hooks, or flexibility until they are needed.
+- **SOLID/Clean Code**: Apply these as tools, only when they keep the design simpler and easier to change.
+
+## Development Methodology
+
+Keep delivery incremental, test-backed, and easy to review.
+
+- Make small, safe, reversible changes.
+- Prefer `Red -> Green -> Refactor`.
+- Do not mix feature work and refactoring in the same commit.
+- Refactor when it improves clarity or removes real duplication (Rule of Three).
+- Keep tests fast, focused, and self-validating.

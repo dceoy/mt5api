@@ -3,12 +3,16 @@
 This guide describes how to deploy the mt5api REST API as a Windows service
 alongside the MetaTrader 5 terminal.
 
+This is a Windows-only deployment target. The API server cannot run on Linux or
+macOS because the `MetaTrader5` Python package is supported only on Windows.
+
 ## Prerequisites
 
 - Windows 10/11
 - MetaTrader 5 installed and logged in
 - Python 3.11+
 - `mt5api` installed
+- PowerShell access with permission to install and manage services
 
 ## Service Setup (NSSM)
 
@@ -44,7 +48,7 @@ nssm start mt5api
 ## Validation
 
 ```powershell
-curl http://localhost:8000/api/v1/health
+curl.exe http://localhost:8000/api/v1/health
 ```
 
 Expected status: `healthy` (or `unhealthy` if MT5 is not connected).
