@@ -1,13 +1,12 @@
 # API Reference
 
-This section contains the API documentation for mt5api and the underlying
-`pdmt5` client modules.
+This section contains the public documentation for mt5api.
 
 The API server must run on Windows because the `MetaTrader5` Python package is
 Windows-only. Run `mt5api` on a Windows host with MetaTrader 5 installed and
 logged in. Clients can call the HTTP API from any operating system.
 
-## Modules
+## Guides
 
 ### [REST API](rest-api.md)
 
@@ -18,35 +17,14 @@ Parquet support.
 
 Windows service deployment guide for hosting the REST API alongside MetaTrader 5.
 
-### [Mt5Client](mt5.md)
-
-Base client class for MetaTrader 5 operations with connection management, low-level
-API access, and error handling (`Mt5RuntimeError`).
-
-### [Mt5DataClient & Mt5Config](dataframe.md)
-
-Core data client functionality and configuration, providing pandas-friendly interface
-to MetaTrader 5.
-
-### [Mt5TradingClient](trading.md)
-
-Advanced trading operations including position management, order analysis, and
-trading performance metrics with dry run support.
-
-### [Utilities](utils.md)
-
-Helper functions for time conversion and DataFrame manipulation.
-
 ## Architecture Overview
 
-mt5api adds a FastAPI layer on top of pdmt5:
+mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:
 
 1. **API Layer** (`mt5api.main`, `mt5api.routers`): FastAPI app, routers, and response formatting
-2. **Dependency Layer** (`mt5api.dependencies`): MT5 singleton client and format negotiation
-3. **Base Layer** (`pdmt5.mt5`): Low-level MT5 API access and `Mt5RuntimeError`
-4. **Data Layer** (`pdmt5.dataframe`): DataFrame conversion and configuration (`Mt5Config`)
-5. **Trading Layer** (`pdmt5.trading`): Trading utilities and `Mt5TradingError`
-6. **Utilities** (`pdmt5.utils`): Time conversion and DataFrame helpers
+2. **Dependency Layer** (`mt5api.dependencies`): MT5 client lifecycle and format negotiation
+3. **Model Layer** (`mt5api.models`): Response schemas and timeframe metadata helpers
+4. **Formatter Layer** (`mt5api.formatters`): JSON and Parquet serialization helpers
 
 ## Usage Guidelines
 
@@ -75,4 +53,4 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/
 
 ## Examples
 
-See individual module pages for detailed usage examples and code samples.
+See the [REST API](rest-api.md) guide for endpoint examples and request syntax.

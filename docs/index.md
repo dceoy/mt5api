@@ -5,7 +5,7 @@ FastAPI-based REST API for MetaTrader 5 market data and account information.
 ## Overview
 
 mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
-`pdmt5` client for MT5 connectivity and adds optional authentication, rate
+underlying MT5 client library for connectivity and adds optional authentication, rate
 limiting, and response formatting suitable for analytics workflows.
 
 The API server must run on Windows because the `MetaTrader5` Python package is
@@ -62,10 +62,6 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbol
 
 - [REST API](api/rest-api.md) - Endpoint overview, auth, and formats
 - [Deployment](api/deployment.md) - Windows service setup
-- [Mt5Client](api/mt5.md) - pdmt5 low-level MT5 client
-- [Mt5DataClient & Mt5Config](api/dataframe.md) - pdmt5 DataFrame helpers
-- [Mt5TradingClient](api/trading.md) - pdmt5 trading utilities
-- [Utilities](api/utils.md) - pdmt5 decorators and helpers
 
 ## License
 

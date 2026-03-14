@@ -34,8 +34,8 @@ $env:API_RATE_LIMIT = "100"
 $env:API_CORS_ORIGINS = "*"
 ```
 
-MT5 connection details are managed by `pdmt5` (for example login/server/path
-settings defined in that package).
+MT5 connection details are managed by the underlying MT5 client configuration
+(for example login/server/path settings).
 
 ## Running the API
 
