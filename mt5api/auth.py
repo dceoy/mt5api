@@ -12,40 +12,38 @@ from fastapi.security import APIKeyHeader
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
-def get_api_key() -> str:
-    """Get API key from environment variable.
+def get_api_key() -> str | None:
+    """Get API key from environment variable if configured.
 
     Returns:
-        API key string from MT5_API_KEY environment variable.
-
-    Raises:
-        RuntimeError: If MT5_API_KEY environment variable is not set.
+        API key string from MT5_API_KEY environment variable, or ``None`` if
+        authentication is disabled.
     """
-    api_key = os.getenv("MT5_API_KEY")
-    if not api_key:
-        error_message = (
-            "MT5_API_KEY environment variable not set. "
-            "Please set it to enable API authentication."
-        )
-        raise RuntimeError(error_message)
-    return api_key
+    return os.getenv("MT5_API_KEY") or None
+
+
+def is_auth_enabled() -> bool:
+    """Return whether API key authentication is enabled."""
+    return get_api_key() is not None
 
 
 def verify_api_key(
     api_key_header_value: Annotated[str | None, Security(api_key_header)],
-) -> str:
+) -> str | None:
     """Verify API key from request header.
 
     Args:
         api_key_header_value: API key from X-API-Key header.
 
     Returns:
-        Verified API key.
+        Verified API key when authentication is enabled, otherwise ``None``.
 
     Raises:
         HTTPException: 401 if API key is missing or invalid.
     """
     expected_key = get_api_key()
+    if expected_key is None:
+        return None
 
     if not api_key_header_value:
         raise HTTPException(

@@ -24,10 +24,10 @@ pip install mt5api
 
 ## Configuration
 
-Set the API key and optional limits via environment variables:
+Set the optional API key and other limits via environment variables:
 
 ```powershell
-$env:MT5_API_KEY = "your-secret-api-key"
+$env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:API_LOG_LEVEL = "INFO"
 $env:API_RATE_LIMIT = "100"
 $env:API_CORS_ORIGINS = "*"
@@ -49,7 +49,9 @@ Access the docs at:
 
 ## Authentication
 
-All endpoints except `/api/v1/health` require an API key header:
+When `MT5_API_KEY` is set, all endpoints except `/api/v1/health` require an
+`X-API-Key` header. When `MT5_API_KEY` is unset or empty, authentication is
+disabled and those endpoints are accessible without authorization.
 
 ```powershell
 curl.exe -H "X-API-Key: your-secret-api-key" `
@@ -198,7 +200,7 @@ Errors follow RFC 7807 Problem Details:
 
 Minimum security posture for deployments:
 
-- API key authentication enabled (`MT5_API_KEY`)
+- Set `MT5_API_KEY` to enable API key authentication when needed
 - Rate limiting enabled (`API_RATE_LIMIT`)
 - Run behind HTTPS in production
 - Restrict CORS origins (`API_CORS_ORIGINS`) for public deployments

@@ -5,8 +5,8 @@ MetaTrader 5 REST API using FastAPI
 [![CI/CD](https://github.com/dceoy/mt5api/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/mt5api/actions/workflows/ci.yml)
 
 mt5api exposes read-only MT5 market data, account info, and trading history
-over HTTP. It uses the `pdmt5` client internally and adds auth, rate limiting,
-and JSON/Parquet response formatting.
+over HTTP. It uses the `pdmt5` client internally and adds optional API-key
+auth, rate limiting, and JSON/Parquet response formatting.
 
 The API server must run on Windows. The `MetaTrader5` Python package used by
 `pdmt5` is supported only on Windows, so you must host `mt5api` on a Windows
@@ -17,7 +17,7 @@ any operating system.
 
 - Read-only REST endpoints for symbols, market data, account info, orders, and history
 - JSON and Apache Parquet responses (content negotiation)
-- API key authentication with per-minute rate limiting
+- Optional API key authentication with per-minute rate limiting
 - Structured JSON logging and configurable CORS
 - OpenAPI/Swagger docs built into the API
 
@@ -40,7 +40,7 @@ uv sync
 ## Running the API
 
 ```powershell
-$env:MT5_API_KEY = "your-secret-api-key"
+$env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -56,6 +56,7 @@ curl.exe http://localhost:8000/api/v1/health
 ```
 
 ```powershell
+# Include X-API-Key only when MT5_API_KEY is configured on the server.
 curl.exe -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/symbols?group=*USD*"
 ```
 
