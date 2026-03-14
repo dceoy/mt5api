@@ -1,7 +1,7 @@
 [project]
 name = "mt5api"
-version = "0.0.1"
-description = "MetaTrader 5 REST API using FastAPI"
+version = "0.0.2"
+description = "MetaTrader 5 REST API"
 authors = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
 maintainers = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
 license = "MIT"
