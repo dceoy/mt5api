@@ -47,22 +47,6 @@
 </li>
                                     
 <li>
-    <a href="api/mt5/" class="dropdown-item">MetaTrader5</a>
-</li>
-                                    
-<li>
-    <a href="api/dataframe/" class="dropdown-item">DataFrame</a>
-</li>
-                                    
-<li>
-    <a href="api/trading/" class="dropdown-item">Trading</a>
-</li>
-                                    
-<li>
-    <a href="api/utils/" class="dropdown-item">Utilities</a>
-</li>
-                                    
-<li>
     <a href="api/rest-api/" class="dropdown-item">REST API</a>
 </li>
                                     
@@ -152,7 +136,7 @@
 <p>FastAPI-based REST API for MetaTrader 5 market data and account information.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
-<code>pdmt5</code> client for MT5 connectivity and adds optional authentication, rate
+underlying MT5 client library for connectivity and adds optional authentication, rate
 limiting, and response formatting suitable for analytics workflows.</p>
 <p>The API server must run on Windows because the <code>MetaTrader5</code> Python package is
 Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 installed and
@@ -194,10 +178,6 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 <ul>
 <li><a href="api/rest-api/">REST API</a> - Endpoint overview, auth, and formats</li>
 <li><a href="api/deployment/">Deployment</a> - Windows service setup</li>
-<li><a href="api/mt5/">Mt5Client</a> - pdmt5 low-level MT5 client</li>
-<li><a href="api/dataframe/">Mt5DataClient &amp; Mt5Config</a> - pdmt5 DataFrame helpers</li>
-<li><a href="api/trading/">Mt5TradingClient</a> - pdmt5 trading utilities</li>
-<li><a href="api/utils/">Utilities</a> - pdmt5 decorators and helpers</li>
 </ul>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
 <p>MIT License - see <a href="https://github.com/dceoy/mt5api/blob/main/LICENSE">LICENSE</a>.</p></div>
@@ -282,5 +262,5 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-03-14 18:55:34.739557+00:00
+Build Date UTC : 2026-03-14 20:52:40.550833+00:00
 -->

@@ -47,22 +47,6 @@
 </li>
                                     
 <li>
-    <a href="mt5/" class="dropdown-item">MetaTrader5</a>
-</li>
-                                    
-<li>
-    <a href="dataframe/" class="dropdown-item">DataFrame</a>
-</li>
-                                    
-<li>
-    <a href="trading/" class="dropdown-item">Trading</a>
-</li>
-                                    
-<li>
-    <a href="utils/" class="dropdown-item">Utilities</a>
-</li>
-                                    
-<li>
     <a href="rest-api/" class="dropdown-item">REST API</a>
 </li>
                                     
@@ -85,7 +69,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="mt5/" class="nav-link">
+                                <a rel="next" href="rest-api/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -113,7 +97,7 @@
             
             <li class="nav-item" data-bs-level="1"><a href="#api-reference" class="nav-link">API Reference</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#modules" class="nav-link">Modules</a>
+            <li class="nav-item" data-bs-level="2"><a href="#guides" class="nav-link">Guides</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -141,37 +125,23 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
-<p>This section contains the API documentation for mt5api and the underlying
-<code>pdmt5</code> client modules.</p>
+<p>This section contains the public documentation for mt5api.</p>
 <p>The API server must run on Windows because the <code>MetaTrader5</code> Python package is
 Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 installed and
 logged in. Clients can call the HTTP API from any operating system.</p>
-<h2 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">&para;</a></h2>
+<h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="rest-api"><a href="rest-api/">REST API</a><a class="headerlink" href="#rest-api" title="Permanent link">&para;</a></h3>
 <p>FastAPI-based REST API that exposes read-only MT5 data over HTTP with JSON and
 Parquet support.</p>
 <h3 id="deployment"><a href="deployment/">Deployment</a><a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h3>
 <p>Windows service deployment guide for hosting the REST API alongside MetaTrader 5.</p>
-<h3 id="mt5client"><a href="mt5/">Mt5Client</a><a class="headerlink" href="#mt5client" title="Permanent link">&para;</a></h3>
-<p>Base client class for MetaTrader 5 operations with connection management, low-level
-API access, and error handling (<code>Mt5RuntimeError</code>).</p>
-<h3 id="mt5dataclient-mt5config"><a href="dataframe/">Mt5DataClient &amp; Mt5Config</a><a class="headerlink" href="#mt5dataclient-mt5config" title="Permanent link">&para;</a></h3>
-<p>Core data client functionality and configuration, providing pandas-friendly interface
-to MetaTrader 5.</p>
-<h3 id="mt5tradingclient"><a href="trading/">Mt5TradingClient</a><a class="headerlink" href="#mt5tradingclient" title="Permanent link">&para;</a></h3>
-<p>Advanced trading operations including position management, order analysis, and
-trading performance metrics with dry run support.</p>
-<h3 id="utilities"><a href="utils/">Utilities</a><a class="headerlink" href="#utilities" title="Permanent link">&para;</a></h3>
-<p>Helper functions for time conversion and DataFrame manipulation.</p>
 <h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
-<p>mt5api adds a FastAPI layer on top of pdmt5:</p>
+<p>mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:</p>
 <ol>
 <li><strong>API Layer</strong> (<code>mt5api.main</code>, <code>mt5api.routers</code>): FastAPI app, routers, and response formatting</li>
-<li><strong>Dependency Layer</strong> (<code>mt5api.dependencies</code>): MT5 singleton client and format negotiation</li>
-<li><strong>Base Layer</strong> (<code>pdmt5.mt5</code>): Low-level MT5 API access and <code>Mt5RuntimeError</code></li>
-<li><strong>Data Layer</strong> (<code>pdmt5.dataframe</code>): DataFrame conversion and configuration (<code>Mt5Config</code>)</li>
-<li><strong>Trading Layer</strong> (<code>pdmt5.trading</code>): Trading utilities and <code>Mt5TradingError</code></li>
-<li><strong>Utilities</strong> (<code>pdmt5.utils</code>): Time conversion and DataFrame helpers</li>
+<li><strong>Dependency Layer</strong> (<code>mt5api.dependencies</code>): MT5 client lifecycle and format negotiation</li>
+<li><strong>Model Layer</strong> (<code>mt5api.models</code>): Response schemas and timeframe metadata helpers</li>
+<li><strong>Formatter Layer</strong> (<code>mt5api.formatters</code>): JSON and Parquet serialization helpers</li>
 </ol>
 <h2 id="usage-guidelines">Usage Guidelines<a class="headerlink" href="#usage-guidelines" title="Permanent link">&para;</a></h2>
 <ul>
@@ -193,7 +163,7 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<p>See individual module pages for detailed usage examples and code samples.</p></div>
+<p>See the <a href="rest-api/">REST API</a> guide for endpoint examples and request syntax.</p></div>
             </div>
         </div>
 
