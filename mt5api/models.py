@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TC003
-from enum import StrEnum
-from typing import Any, Self
+from enum import IntEnum, StrEnum
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import BaseModel, Field, model_validator
+
+if TYPE_CHECKING:
+    from pydantic import GetJsonSchemaHandler
+    from pydantic.json_schema import JsonSchemaValue
+    from pydantic_core import CoreSchema
 
 
 class ResponseFormat(StrEnum):
@@ -14,6 +19,52 @@ class ResponseFormat(StrEnum):
 
     JSON = "json"
     PARQUET = "parquet"
+
+
+class Mt5Timeframe(IntEnum):
+    """Valid MetaTrader5 TIMEFRAME constants."""
+
+    TIMEFRAME_M1 = 1
+    TIMEFRAME_M2 = 2
+    TIMEFRAME_M3 = 3
+    TIMEFRAME_M4 = 4
+    TIMEFRAME_M5 = 5
+    TIMEFRAME_M6 = 6
+    TIMEFRAME_M10 = 10
+    TIMEFRAME_M12 = 12
+    TIMEFRAME_M15 = 15
+    TIMEFRAME_M20 = 20
+    TIMEFRAME_M30 = 30
+    TIMEFRAME_H1 = 16385
+    TIMEFRAME_H2 = 16386
+    TIMEFRAME_H3 = 16387
+    TIMEFRAME_H4 = 16388
+    TIMEFRAME_H6 = 16390
+    TIMEFRAME_H8 = 16392
+    TIMEFRAME_H12 = 16396
+    TIMEFRAME_D1 = 16408
+    TIMEFRAME_W1 = 32769
+    TIMEFRAME_MN1 = 49153
+
+    @classmethod
+    def __get_pydantic_json_schema__(  # noqa: PLW3201
+        cls,
+        core_schema: CoreSchema,
+        handler: GetJsonSchemaHandler,
+    ) -> JsonSchemaValue:
+        """Attach shared OpenAPI metadata for MT5 timeframe values.
+
+        Returns:
+            The JSON schema for the shared MT5 timeframe enum.
+        """
+        json_schema = handler(core_schema)
+        json_schema["description"] = _TIMEFRAME_DESCRIPTION
+        json_schema["examples"] = _TIMEFRAME_EXAMPLES
+        return json_schema
+
+
+_TIMEFRAME_DESCRIPTION = "MetaTrader5 TIMEFRAME constant"
+_TIMEFRAME_EXAMPLES = [1, 5, 15, 30, 16385, 16388, 16408, 32769, 49153]
 
 
 class ErrorResponse(BaseModel):
@@ -131,16 +182,10 @@ class RatesFromRequest(BaseModel):
     """Request parameters for rates from date endpoint."""
 
     symbol: str = Field(..., description="Symbol name")
-    timeframe: int = Field(
+    timeframe: Mt5Timeframe = Field(
         ...,
-        description=(
-            "MetaTrader5 TIMEFRAME constant "
-            "(e.g. TIMEFRAME_M1=1, TIMEFRAME_M5=5, TIMEFRAME_M15=15, "
-            "TIMEFRAME_M30=30, TIMEFRAME_H1=16385, TIMEFRAME_H4=16388, "
-            "TIMEFRAME_D1=16408, TIMEFRAME_W1=32769, TIMEFRAME_MN1=49153)"
-        ),
-        ge=1,
-        examples=[1, 5, 15, 30, 16385, 16388, 16408, 32769, 49153],
+        description=_TIMEFRAME_DESCRIPTION,
+        examples=_TIMEFRAME_EXAMPLES,
     )
     date_from: datetime = Field(
         ...,
@@ -164,15 +209,10 @@ class RatesFromPosRequest(BaseModel):
     """Request parameters for rates from position endpoint."""
 
     symbol: str = Field(..., description="Symbol name")
-    timeframe: int = Field(
+    timeframe: Mt5Timeframe = Field(
         ...,
-        description=(
-            "MetaTrader5 TIMEFRAME constant "
-            "(e.g. TIMEFRAME_M1=1, TIMEFRAME_M5=5, TIMEFRAME_M15=15, "
-            "TIMEFRAME_M30=30, TIMEFRAME_H1=16385, TIMEFRAME_H4=16388, "
-            "TIMEFRAME_D1=16408, TIMEFRAME_W1=32769, TIMEFRAME_MN1=49153)"
-        ),
-        ge=1,
+        description=_TIMEFRAME_DESCRIPTION,
+        examples=_TIMEFRAME_EXAMPLES,
     )
     start_pos: int = Field(
         ...,
@@ -193,15 +233,10 @@ class RatesRangeRequest(BaseModel):
     """Request parameters for rates range endpoint."""
 
     symbol: str = Field(..., description="Symbol name")
-    timeframe: int = Field(
+    timeframe: Mt5Timeframe = Field(
         ...,
-        description=(
-            "MetaTrader5 TIMEFRAME constant "
-            "(e.g. TIMEFRAME_M1=1, TIMEFRAME_M5=5, TIMEFRAME_M15=15, "
-            "TIMEFRAME_M30=30, TIMEFRAME_H1=16385, TIMEFRAME_H4=16388, "
-            "TIMEFRAME_D1=16408, TIMEFRAME_W1=32769, TIMEFRAME_MN1=49153)"
-        ),
-        ge=1,
+        description=_TIMEFRAME_DESCRIPTION,
+        examples=_TIMEFRAME_EXAMPLES,
     )
     date_from: datetime = Field(
         ...,

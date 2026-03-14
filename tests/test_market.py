@@ -11,6 +11,32 @@ if TYPE_CHECKING:
     from fastapi.testclient import TestClient
 
 
+VALID_TIMEFRAME_VALUES = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    10,
+    12,
+    15,
+    20,
+    30,
+    16385,
+    16386,
+    16387,
+    16388,
+    16390,
+    16392,
+    16396,
+    16408,
+    32769,
+    49153,
+]
+TIMEFRAME_EXAMPLES = [1, 5, 15, 30, 16385, 16388, 16408, 32769, 49153]
+
+
 def test_get_rates_from_returns_json(
     client: TestClient,
     api_headers: dict[str, str],
@@ -184,6 +210,53 @@ def test_get_rates_range_returns_parquet(
         date_from=ANY,
         date_to=ANY,
     )
+
+
+def test_get_rates_from_rejects_invalid_mt5_timeframe(
+    client: TestClient,
+    api_headers: dict[str, str],
+) -> None:
+    """GET /api/v1/rates/from rejects unsupported MT5 timeframe values."""
+    response = client.get(
+        "/api/v1/rates/from",
+        params={
+            "symbol": "EURUSD",
+            "timeframe": 60,
+            "date_from": "2024-01-01T00:00:00Z",
+            "count": 2,
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "enum"
+
+
+def test_openapi_documents_mt5_timeframes_consistently(
+    client: TestClient,
+) -> None:
+    """Rates endpoints should expose the same MT5 timeframe enum and examples."""
+    openapi = client.get("/openapi.json").json()
+    timeframe_schema = openapi["components"]["schemas"]["Mt5Timeframe"]
+    paths = (
+        "/api/v1/rates/from",
+        "/api/v1/rates/from-pos",
+        "/api/v1/rates/range",
+    )
+
+    assert timeframe_schema["enum"] == VALID_TIMEFRAME_VALUES
+    assert timeframe_schema["examples"] == TIMEFRAME_EXAMPLES
+    assert timeframe_schema["description"] == "MetaTrader5 TIMEFRAME constant"
+
+    for path in paths:
+        parameters = openapi["paths"][path]["get"]["parameters"]
+        timeframe_parameter = next(
+            parameter for parameter in parameters if parameter["name"] == "timeframe"
+        )
+
+        assert (
+            timeframe_parameter["schema"]["$ref"] == "#/components/schemas/Mt5Timeframe"
+        )
 
 
 def test_get_ticks_from_returns_json(
