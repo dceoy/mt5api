@@ -91,10 +91,7 @@ def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
     Returns:
         OpenAPI schema for the current auth configuration.
     """
-    auth_enabled = is_auth_enabled()
-    cached_auth_enabled = getattr(app.state, "openapi_auth_enabled", None)
-
-    if app.openapi_schema and cached_auth_enabled == auth_enabled:
+    if app.openapi_schema:
         return app.openapi_schema
 
     openapi_schema = get_openapi(
@@ -103,11 +100,10 @@ def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
         description=app.description,
         routes=app.routes,
     )
-    if not auth_enabled:
+    if not is_auth_enabled():
         _strip_auth_from_openapi(openapi_schema)
 
     app.openapi_schema = openapi_schema
-    app.state.openapi_auth_enabled = auth_enabled
     return openapi_schema
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pytest
+    from _pytest.monkeypatch import MonkeyPatch
     from fastapi.testclient import TestClient
 
 
@@ -47,33 +47,38 @@ def test_version_endpoint_accepts_valid_api_key(
 
 def test_version_endpoint_allows_requests_when_auth_disabled(
     client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Test protected endpoints work without API key when auth is disabled."""
-    monkeypatch.delenv("MT5_API_KEY", raising=False)
+    from mt5api import auth  # noqa: PLC0415
+
+    monkeypatch.setattr(auth, "_API_KEY", None)
 
     response = client.get("/api/v1/version")
 
     assert response.status_code == 200
 
 
-def test_get_api_key_missing_env_returns_none(
-    monkeypatch: pytest.MonkeyPatch,
+def test_get_api_key_returns_none_when_auth_is_disabled(
+    monkeypatch: MonkeyPatch,
 ) -> None:
-    """Test get_api_key returns None when environment variable is missing."""
-    from mt5api.auth import get_api_key  # noqa: PLC0415
+    """Test get_api_key returns None when authentication is disabled."""
+    from mt5api import auth  # noqa: PLC0415
 
-    monkeypatch.delenv("MT5_API_KEY", raising=False)
+    monkeypatch.setattr(auth, "_API_KEY", None)
 
-    assert get_api_key() is None
+    assert auth.get_api_key() is None
 
 
 def test_openapi_does_not_require_api_key_when_auth_disabled(
     client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Test OpenAPI omits API key security when auth is disabled."""
-    monkeypatch.delenv("MT5_API_KEY", raising=False)
+    from mt5api import auth, main  # noqa: PLC0415
+
+    monkeypatch.setattr(auth, "_API_KEY", None)
+    monkeypatch.setattr(main.app, "openapi_schema", None)
 
     response = client.get("/openapi.json")
 
