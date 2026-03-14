@@ -25,7 +25,8 @@ any operating system.
 
 - Python 3.11+
 - Windows host with MetaTrader 5 terminal installed and logged in
-- Linux and macOS are not supported for the API server runtime
+- Linux and macOS are not supported for the API server runtime, but they work
+  for HTTP clients
 
 ## Installation
 
@@ -37,7 +38,7 @@ cd mt5api
 uv sync
 ```
 
-## Running the API
+## Running the API on Windows
 
 ```powershell
 $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
@@ -49,19 +50,31 @@ Docs:
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-## Example Requests
+## Example Requests from Linux/macOS
 
-```powershell
-curl.exe http://localhost:8000/api/v1/health
+Replace `windows-host` with the DNS name or IP address of the Windows machine
+running `mt5api`.
+
+```bash
+API_URL=http://windows-host:8000
+curl "$API_URL/api/v1/health"
 ```
 
-```powershell
+```bash
+API_URL=http://windows-host:8000
+API_KEY=your-secret-api-key
+
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl.exe -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/symbols?group=*USD*"
+curl -H "X-API-Key: $API_KEY" "$API_URL/api/v1/symbols?group=*USD*"
 ```
 
-```powershell
-curl.exe -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+```bash
+API_URL=http://windows-host:8000
+API_KEY=your-secret-api-key
+
+curl -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/parquet" \
+  "$API_URL/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Endpoints (Read-Only)
