@@ -14,11 +14,37 @@ from fastapi.testclient import TestClient
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+_MT5_TIMEFRAME_VALUES = {
+    "TIMEFRAME_M1": 1,
+    "TIMEFRAME_M2": 2,
+    "TIMEFRAME_M3": 3,
+    "TIMEFRAME_M4": 4,
+    "TIMEFRAME_M5": 5,
+    "TIMEFRAME_M6": 6,
+    "TIMEFRAME_M10": 10,
+    "TIMEFRAME_M12": 12,
+    "TIMEFRAME_M15": 15,
+    "TIMEFRAME_M20": 20,
+    "TIMEFRAME_M30": 30,
+    "TIMEFRAME_H1": 16385,
+    "TIMEFRAME_H2": 16386,
+    "TIMEFRAME_H3": 16387,
+    "TIMEFRAME_H4": 16388,
+    "TIMEFRAME_H6": 16390,
+    "TIMEFRAME_H8": 16392,
+    "TIMEFRAME_H12": 16396,
+    "TIMEFRAME_D1": 16408,
+    "TIMEFRAME_W1": 32769,
+    "TIMEFRAME_MN1": 49153,
+}
+
 # Mock MetaTrader5 module before any imports
 # This prevents ModuleNotFoundError on non-Windows systems
 if "MetaTrader5" not in sys.modules:
     mock_mt5_module = Mock()
     mock_mt5_module.__name__ = "MetaTrader5"
+    for name, value in _MT5_TIMEFRAME_VALUES.items():
+        setattr(mock_mt5_module, name, value)
     sys.modules["MetaTrader5"] = mock_mt5_module
 
 # Set test API key before importing app
