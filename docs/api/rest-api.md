@@ -73,7 +73,7 @@ Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
 Use `Accept` header or `format` query parameter:
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ```console
@@ -97,6 +97,9 @@ All endpoints are read-only.
 
 ### Market Data
 
+- `timeframe` and `flags` accept either the official MetaTrader 5 constant
+  name (for example `TIMEFRAME_M1`, `COPY_TICKS_ALL`) or the equivalent integer
+  value.
 - `GET /api/v1/rates/from` (`symbol`, `timeframe`, `date_from`, `count`, `format`)
 - `GET /api/v1/rates/from-pos` (`symbol`, `timeframe`, `start_pos`, `count`, `format`)
 - `GET /api/v1/rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
@@ -162,7 +165,7 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbol
 ### Rates (OHLCV)
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ### Account Info

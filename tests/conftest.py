@@ -37,6 +37,11 @@ _MT5_TIMEFRAME_VALUES = {
     "TIMEFRAME_W1": 32769,
     "TIMEFRAME_MN1": 49153,
 }
+_MT5_COPY_TICKS_VALUES = {
+    "COPY_TICKS_INFO": 1,
+    "COPY_TICKS_TRADE": 2,
+    "COPY_TICKS_ALL": 3,
+}
 
 # Mock MetaTrader5 module before any imports
 # This prevents ModuleNotFoundError on non-Windows systems
@@ -44,6 +49,8 @@ if "MetaTrader5" not in sys.modules:
     mock_mt5_module = Mock()
     mock_mt5_module.__name__ = "MetaTrader5"
     for name, value in _MT5_TIMEFRAME_VALUES.items():
+        setattr(mock_mt5_module, name, value)
+    for name, value in _MT5_COPY_TICKS_VALUES.items():
         setattr(mock_mt5_module, name, value)
     sys.modules["MetaTrader5"] = mock_mt5_module
 
