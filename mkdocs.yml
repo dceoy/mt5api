@@ -55,10 +55,6 @@ nav:
   - Home: index.md
   - API Reference:
     - Overview: api/index.md
-    - MetaTrader5: api/mt5.md
-    - DataFrame: api/dataframe.md
-    - Trading: api/trading.md
-    - Utilities: api/utils.md
     - REST API: api/rest-api.md
     - Deployment: api/deployment.md
 
