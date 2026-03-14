@@ -133,9 +133,14 @@ class RatesFromRequest(BaseModel):
     symbol: str = Field(..., description="Symbol name")
     timeframe: int = Field(
         ...,
-        description="Timeframe in minutes (MT5 constant)",
+        description=(
+            "MetaTrader5 TIMEFRAME constant "
+            "(e.g. TIMEFRAME_M1=1, TIMEFRAME_M5=5, TIMEFRAME_M15=15, "
+            "TIMEFRAME_M30=30, TIMEFRAME_H1=16385, TIMEFRAME_H4=16388, "
+            "TIMEFRAME_D1=16408, TIMEFRAME_W1=32769, TIMEFRAME_MN1=49153)"
+        ),
         ge=1,
-        examples=[1, 5, 15, 60, 240, 1440],
+        examples=[1, 5, 15, 30, 16385, 16388, 16408, 32769, 49153],
     )
     date_from: datetime = Field(
         ...,
@@ -161,7 +166,12 @@ class RatesFromPosRequest(BaseModel):
     symbol: str = Field(..., description="Symbol name")
     timeframe: int = Field(
         ...,
-        description="Timeframe in minutes",
+        description=(
+            "MetaTrader5 TIMEFRAME constant "
+            "(e.g. TIMEFRAME_M1=1, TIMEFRAME_M5=5, TIMEFRAME_M15=15, "
+            "TIMEFRAME_M30=30, TIMEFRAME_H1=16385, TIMEFRAME_H4=16388, "
+            "TIMEFRAME_D1=16408, TIMEFRAME_W1=32769, TIMEFRAME_MN1=49153)"
+        ),
         ge=1,
     )
     start_pos: int = Field(
@@ -183,7 +193,16 @@ class RatesRangeRequest(BaseModel):
     """Request parameters for rates range endpoint."""
 
     symbol: str = Field(..., description="Symbol name")
-    timeframe: int = Field(..., description="Timeframe in minutes", ge=1)
+    timeframe: int = Field(
+        ...,
+        description=(
+            "MetaTrader5 TIMEFRAME constant "
+            "(e.g. TIMEFRAME_M1=1, TIMEFRAME_M5=5, TIMEFRAME_M15=15, "
+            "TIMEFRAME_M30=30, TIMEFRAME_H1=16385, TIMEFRAME_H4=16388, "
+            "TIMEFRAME_D1=16408, TIMEFRAME_W1=32769, TIMEFRAME_MN1=49153)"
+        ),
+        ge=1,
+    )
     date_from: datetime = Field(
         ...,
         description="Start date (ISO 8601)",
