@@ -184,7 +184,8 @@ macOS because the <code>MetaTrader5</code> Python package is supported only on W
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">nssm</span> <span class="nb">start </span><span class="n">mt5api</span>
 </code></pre></div>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">health</span>
+<p>In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to <code>Invoke-WebRequest</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">curl &quot;http://localhost:8000/api/v1/health&quot;</span>
 </code></pre></div>
 <p>Expected status: <code>healthy</code> (or <code>unhealthy</code> if MT5 is not connected).</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>

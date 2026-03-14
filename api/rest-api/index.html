@@ -179,7 +179,8 @@ system.</p>
 <ul>
 <li>Python 3.11+</li>
 <li>Windows host with MetaTrader 5 terminal installed and logged in</li>
-<li>Linux and macOS are not supported for the API server runtime</li>
+<li>Linux and macOS are not supported for the API server runtime, but they work
+  for HTTP clients</li>
 </ul>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>Install the package on the Windows host that will run the API server.</p>
@@ -197,29 +198,29 @@ settings defined in that package).</p>
 <h2 id="running-the-api">Running the API<a class="headerlink" href="#running-the-api" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
-<p>Access the docs at:</p>
+<p>Access the docs at the Windows host address, for example:</p>
 <ul>
-<li>Swagger UI: <code>http://localhost:8000/docs</code></li>
-<li>OpenAPI JSON: <code>http://localhost:8000/openapi.json</code></li>
+<li>Swagger UI: <code>http://windows-host:8000/docs</code></li>
+<li>OpenAPI JSON: <code>http://windows-host:8000/openapi.json</code></li>
 </ul>
+<p>Replace <code>windows-host</code> with the DNS name or IP address of the Windows machine
+running <code>mt5api</code>. If you run the request on that Windows host, <code>localhost</code> also
+works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
+<code>Invoke-WebRequest</code>.</p>
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
 <p>When <code>MT5_API_KEY</code> is set, all endpoints except <code>/api/v1/health</code> require an
 <code>X-API-Key</code> header. When <code>MT5_API_KEY</code> is unset or empty, authentication is
 disabled and those endpoints are accessible without authorization.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">symbols</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols&quot;</span>
 </code></pre></div>
 <h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
 <p>Rate limiting uses <code>slowapi</code> with a default limit of <code>100/minute</code>. Set
 <code>API_RATE_LIMIT</code> to an integer for a different per-minute cap.</p>
 <h2 id="format-negotiation">Format Negotiation<a class="headerlink" href="#format-negotiation" title="Permanent link">&para;</a></h2>
 <p>Use <code>Accept</code> header or <code>format</code> query parameter:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  <span class="n">-H</span> <span class="s2">&quot;Accept: application/parquet&quot;</span> <span class="p">`</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; -H &quot;Accept: application/parquet&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/symbols?format=json&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols?format=json&quot;</span>
 </code></pre></div>
 <h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">&para;</a></h2>
 <p>All endpoints are read-only.</p>
@@ -269,34 +270,27 @@ in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:
 </ul>
 <h2 id="example-requests">Example Requests<a class="headerlink" href="#example-requests" title="Permanent link">&para;</a></h2>
 <h3 id="health-check-no-auth">Health Check (No Auth)<a class="headerlink" href="#health-check-no-auth" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">health</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">curl &quot;http://windows-host:8000/api/v1/health&quot;</span>
 </code></pre></div>
 <h3 id="mt5-version">MT5 Version<a class="headerlink" href="#mt5-version" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">version</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/version&quot;</span>
 </code></pre></div>
 <h3 id="symbols_1">Symbols<a class="headerlink" href="#symbols_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">symbols</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols&quot;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/symbols?group=*USD*&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols?group=*USD*&quot;</span>
 </code></pre></div>
 <h3 id="symbol-details">Symbol Details<a class="headerlink" href="#symbol-details" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">symbols</span><span class="p">/</span><span class="n">EURUSD</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols/EURUSD&quot;</span>
 </code></pre></div>
 <h3 id="rates-ohlcv">Rates (OHLCV)<a class="headerlink" href="#rates-ohlcv" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
 </code></pre></div>
 <h3 id="account-info">Account Info<a class="headerlink" href="#account-info" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>  <span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">v1</span><span class="p">/</span><span class="n">account</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/account&quot;</span>
 </code></pre></div>
 <h3 id="history-orders">History Orders<a class="headerlink" href="#history-orders" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">curl</span><span class="p">.</span><span class="n">exe</span> <span class="n">-H</span> <span class="s2">&quot;X-API-Key: your-secret-api-key&quot;</span> <span class="p">`</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  <span class="s2">&quot;http://localhost:8000/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&amp;date_to=2024-01-02T00:00:00Z&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&amp;date_to=2024-01-02T00:00:00Z&quot;</span>
 </code></pre></div>
 <h2 id="error-responses">Error Responses<a class="headerlink" href="#error-responses" title="Permanent link">&para;</a></h2>
 <p>Errors follow RFC 7807 Problem Details:</p>
