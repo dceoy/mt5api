@@ -23,7 +23,7 @@ mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:
 
 1. **API Layer** (`mt5api.main`, `mt5api.routers`): FastAPI app, routers, and response formatting
 2. **Dependency Layer** (`mt5api.dependencies`): MT5 client lifecycle and format negotiation
-3. **Model Layer** (`mt5api.models`): Response schemas and timeframe metadata helpers
+3. **Model Layer** (`mt5api.models`): Response schemas and MT5 constant metadata helpers
 4. **Formatter Layer** (`mt5api.formatters`): JSON and Parquet serialization helpers
 
 ## Usage Guidelines
@@ -48,7 +48,7 @@ works. In PowerShell, use `curl.exe` if `curl` resolves to
 
 ```console
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Examples

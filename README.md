@@ -1,6 +1,6 @@
 # mt5api
 
-MetaTrader 5 REST API using FastAPI
+MetaTrader 5 REST API
 
 [![CI/CD](https://github.com/dceoy/mt5api/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/mt5api/actions/workflows/ci.yml)
 
@@ -67,8 +67,11 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbol
 ```
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
+
+Market-data endpoints accept MetaTrader 5 constants either by official name
+(`TIMEFRAME_M1`, `COPY_TICKS_ALL`) or by their integer value.
 
 ## Endpoints (Read-Only)
 
