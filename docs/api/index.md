@@ -63,10 +63,16 @@ $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
-```powershell
+From Linux or macOS, replace `windows-host` with the DNS name or IP address of
+the Windows machine running `mt5api`.
+
+```bash
+API_URL=http://windows-host:8000
+API_KEY=your-secret-api-key
+
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl.exe -H "X-API-Key: your-secret-api-key" `
-  "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: $API_KEY" \
+  "$API_URL/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Examples
