@@ -10,21 +10,23 @@ from fastapi.security import APIKeyHeader
 
 # API key security scheme
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+# Auth mode is fixed for the lifetime of the process.
+_API_KEY: str | None = os.getenv("MT5_API_KEY") or None  # treat empty string as unset
 
 
 def get_api_key() -> str | None:
-    """Get API key from environment variable if configured.
+    """Get the API key configured at startup, if any.
 
     Returns:
-        API key string from MT5_API_KEY environment variable, or ``None`` if
-        authentication is disabled.
+        API key string from ``MT5_API_KEY``, or ``None`` if authentication is
+        disabled.
     """
-    return os.getenv("MT5_API_KEY") or None
+    return _API_KEY
 
 
 def is_auth_enabled() -> bool:
     """Return whether API key authentication is enabled."""
-    return get_api_key() is not None
+    return _API_KEY is not None
 
 
 def verify_api_key(
