@@ -9,9 +9,8 @@ mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
 and response formatting suitable for analytics workflows.
 
 The API server must run on Windows because the `MetaTrader5` Python package is
-supported only on Windows. Host `mt5api` on the same Windows machine, or
-another Windows host, that has a logged-in MetaTrader 5 terminal. API clients
-can connect from any operating system.
+Windows-only. Run `mt5api` on a Windows host with MetaTrader 5 installed and
+logged in. API clients can connect from any operating system.
 
 ## Features
 
@@ -39,7 +38,7 @@ pip install mt5api
 
 ```powershell
 $env:MT5_API_KEY = "your-secret-api-key"
-python -m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ```powershell

@@ -39,7 +39,7 @@ settings defined in that package).
 ## Running the API
 
 ```powershell
-python -m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 Access the docs at:
@@ -51,8 +51,8 @@ Access the docs at:
 
 All endpoints except `/api/v1/health` require an API key header:
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   http://localhost:8000/api/v1/symbols
 ```
 
@@ -65,14 +65,14 @@ Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
 
 Use `Accept` header or `format` query parameter:
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
-  -H "Accept: application/parquet" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
+  -H "Accept: application/parquet" `
   "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/symbols?format=json"
 ```
 
@@ -135,48 +135,48 @@ curl.exe http://localhost:8000/api/v1/health
 
 ### MT5 Version
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   http://localhost:8000/api/v1/version
 ```
 
 ### Symbols
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   http://localhost:8000/api/v1/symbols
 ```
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/symbols?group=*USD*"
 ```
 
 ### Symbol Details
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   http://localhost:8000/api/v1/symbols/EURUSD
 ```
 
 ### Rates (OHLCV)
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ### Account Info
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   http://localhost:8000/api/v1/account
 ```
 
 ### History Orders
 
-```bash
-curl -H "X-API-Key: your-secret-api-key" \
+```powershell
+curl.exe -H "X-API-Key: your-secret-api-key" `
   "http://localhost:8000/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
 ```
 

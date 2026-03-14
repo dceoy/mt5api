@@ -25,7 +25,7 @@ any operating system.
 
 - Python 3.11+
 - Windows host with MetaTrader 5 terminal installed and logged in
-- Do not run the API server on Linux or macOS
+- Linux and macOS are not supported for the API server runtime
 
 ## Installation
 
@@ -40,6 +40,7 @@ uv sync
 ## Running the API
 
 ```powershell
+$env:MT5_API_KEY = "your-secret-api-key"
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 

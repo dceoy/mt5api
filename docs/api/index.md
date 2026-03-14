@@ -60,7 +60,7 @@ mt5api adds a FastAPI layer on top of pdmt5:
 
 ```powershell
 $env:MT5_API_KEY = "your-secret-api-key"
-python -m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ```powershell
