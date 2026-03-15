@@ -11,47 +11,29 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.mt5_constants import (
+    MT5_BOOK_TYPE_VALUES,
+    MT5_COPY_TICKS_VALUES,
+    MT5_ORDER_TYPE_VALUES,
+    MT5_TIMEFRAME_VALUES,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Generator
-
-_MT5_TIMEFRAME_VALUES = {
-    "TIMEFRAME_M1": 1,
-    "TIMEFRAME_M2": 2,
-    "TIMEFRAME_M3": 3,
-    "TIMEFRAME_M4": 4,
-    "TIMEFRAME_M5": 5,
-    "TIMEFRAME_M6": 6,
-    "TIMEFRAME_M10": 10,
-    "TIMEFRAME_M12": 12,
-    "TIMEFRAME_M15": 15,
-    "TIMEFRAME_M20": 20,
-    "TIMEFRAME_M30": 30,
-    "TIMEFRAME_H1": 16385,
-    "TIMEFRAME_H2": 16386,
-    "TIMEFRAME_H3": 16387,
-    "TIMEFRAME_H4": 16388,
-    "TIMEFRAME_H6": 16390,
-    "TIMEFRAME_H8": 16392,
-    "TIMEFRAME_H12": 16396,
-    "TIMEFRAME_D1": 16408,
-    "TIMEFRAME_W1": 32769,
-    "TIMEFRAME_MN1": 49153,
-}
-_MT5_COPY_TICKS_VALUES = {
-    "COPY_TICKS_INFO": 1,
-    "COPY_TICKS_TRADE": 2,
-    "COPY_TICKS_ALL": 3,
-}
 
 # Mock MetaTrader5 module before any imports
 # This prevents ModuleNotFoundError on non-Windows systems
 if "MetaTrader5" not in sys.modules:
     mock_mt5_module = Mock()
     mock_mt5_module.__name__ = "MetaTrader5"
-    for name, value in _MT5_TIMEFRAME_VALUES.items():
-        setattr(mock_mt5_module, name, value)
-    for name, value in _MT5_COPY_TICKS_VALUES.items():
-        setattr(mock_mt5_module, name, value)
+    for constants in (
+        MT5_TIMEFRAME_VALUES,
+        MT5_COPY_TICKS_VALUES,
+        MT5_BOOK_TYPE_VALUES,
+        MT5_ORDER_TYPE_VALUES,
+    ):
+        for name, value in constants.items():
+            setattr(mock_mt5_module, name, value)
     sys.modules["MetaTrader5"] = mock_mt5_module
 
 # Set test API key before importing app
@@ -168,8 +150,16 @@ def mock_mt5_client() -> Mock:
 
     # Mock market book returning DataFrame
     client.market_book_get_as_df.return_value = pd.DataFrame([
-        {"type": 1, "price": 1.08500, "volume": 1.0},
-        {"type": 2, "price": 1.08520, "volume": 1.5},
+        {
+            "type": MT5_BOOK_TYPE_VALUES["BOOK_TYPE_SELL"],
+            "price": 1.08500,
+            "volume": 1.0,
+        },
+        {
+            "type": MT5_BOOK_TYPE_VALUES["BOOK_TYPE_BUY"],
+            "price": 1.08520,
+            "volume": 1.5,
+        },
     ])
 
     # Mock positions_get returning DataFrame
@@ -190,7 +180,7 @@ def mock_mt5_client() -> Mock:
         {
             "ticket": 789012,
             "symbol": "GBPUSD",
-            "type": 2,  # Buy limit
+            "type": MT5_ORDER_TYPE_VALUES["ORDER_TYPE_BUY_LIMIT"],
             "volume": 0.10,
             "price_open": 1.25000,
         },

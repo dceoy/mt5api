@@ -13,6 +13,7 @@ from mt5api.models import (
     get_mt5_timeframe_names,
     get_mt5_timeframe_values,
 )
+from tests.mt5_constants import MT5_COPY_TICKS_VALUES, MT5_TIMEFRAME_VALUES
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -26,6 +27,8 @@ TIMEFRAME_EXAMPLES = get_mt5_timeframe_example_names()
 VALID_TICK_FLAG_VALUES = list(get_mt5_copy_ticks_values())
 VALID_TICK_FLAG_NAMES = list(get_mt5_copy_ticks_names())
 TICK_FLAG_EXAMPLES = get_mt5_copy_ticks_example_names()
+TIMEFRAME_M1 = MT5_TIMEFRAME_VALUES["TIMEFRAME_M1"]
+COPY_TICKS_ALL = MT5_COPY_TICKS_VALUES["COPY_TICKS_ALL"]
 
 
 def test_get_rates_from_returns_json(
@@ -52,7 +55,7 @@ def test_get_rates_from_returns_json(
 
     mock_mt5_client.copy_rates_from_as_df.assert_called_with(
         symbol="EURUSD",
-        timeframe=1,
+        timeframe=TIMEFRAME_M1,
         date_from=ANY,
         count=2,
     )
@@ -68,7 +71,7 @@ def test_get_rates_from_returns_parquet(
         "/api/v1/rates/from",
         params={
             "symbol": "EURUSD",
-            "timeframe": 1,
+            "timeframe": TIMEFRAME_M1,
             "date_from": "2024-01-01T00:00:00Z",
             "count": 2,
             "format": "parquet",
@@ -81,7 +84,7 @@ def test_get_rates_from_returns_parquet(
 
     mock_mt5_client.copy_rates_from_as_df.assert_called_with(
         symbol="EURUSD",
-        timeframe=1,
+        timeframe=TIMEFRAME_M1,
         date_from=ANY,
         count=2,
     )
@@ -97,7 +100,7 @@ def test_get_rates_from_pos_returns_parquet(
         "/api/v1/rates/from-pos",
         params={
             "symbol": "EURUSD",
-            "timeframe": 1,
+            "timeframe": TIMEFRAME_M1,
             "start_pos": 0,
             "count": 2,
             "format": "parquet",
@@ -110,7 +113,7 @@ def test_get_rates_from_pos_returns_parquet(
 
     mock_mt5_client.copy_rates_from_pos_as_df.assert_called_with(
         symbol="EURUSD",
-        timeframe=1,
+        timeframe=TIMEFRAME_M1,
         start_pos=0,
         count=2,
     )
@@ -126,7 +129,7 @@ def test_get_rates_from_pos_returns_json(
         "/api/v1/rates/from-pos",
         params={
             "symbol": "EURUSD",
-            "timeframe": 1,
+            "timeframe": TIMEFRAME_M1,
             "start_pos": 0,
             "count": 2,
         },
@@ -139,7 +142,7 @@ def test_get_rates_from_pos_returns_json(
 
     mock_mt5_client.copy_rates_from_pos_as_df.assert_called_with(
         symbol="EURUSD",
-        timeframe=1,
+        timeframe=TIMEFRAME_M1,
         start_pos=0,
         count=2,
     )
@@ -155,7 +158,7 @@ def test_get_rates_range_returns_json(
         "/api/v1/rates/range",
         params={
             "symbol": "EURUSD",
-            "timeframe": 1,
+            "timeframe": TIMEFRAME_M1,
             "date_from": "2024-01-01T00:00:00Z",
             "date_to": "2024-01-02T00:00:00Z",
         },
@@ -168,7 +171,7 @@ def test_get_rates_range_returns_json(
 
     mock_mt5_client.copy_rates_range_as_df.assert_called_with(
         symbol="EURUSD",
-        timeframe=1,
+        timeframe=TIMEFRAME_M1,
         date_from=ANY,
         date_to=ANY,
     )
@@ -184,7 +187,7 @@ def test_get_rates_range_returns_parquet(
         "/api/v1/rates/range",
         params={
             "symbol": "EURUSD",
-            "timeframe": 1,
+            "timeframe": TIMEFRAME_M1,
             "date_from": "2024-01-01T00:00:00Z",
             "date_to": "2024-01-02T00:00:00Z",
             "format": "parquet",
@@ -197,7 +200,7 @@ def test_get_rates_range_returns_parquet(
 
     mock_mt5_client.copy_rates_range_as_df.assert_called_with(
         symbol="EURUSD",
-        timeframe=1,
+        timeframe=TIMEFRAME_M1,
         date_from=ANY,
         date_to=ANY,
     )
@@ -310,7 +313,7 @@ def test_get_ticks_from_returns_json(
         symbol="EURUSD",
         date_from=ANY,
         count=1,
-        flags=3,
+        flags=COPY_TICKS_ALL,
     )
 
 
@@ -326,7 +329,7 @@ def test_get_ticks_from_returns_parquet(
             "symbol": "EURUSD",
             "date_from": "2024-01-01T00:00:00Z",
             "count": 1,
-            "flags": 3,
+            "flags": COPY_TICKS_ALL,
             "format": "parquet",
         },
         headers=api_headers,
@@ -339,7 +342,7 @@ def test_get_ticks_from_returns_parquet(
         symbol="EURUSD",
         date_from=ANY,
         count=1,
-        flags=3,
+        flags=COPY_TICKS_ALL,
     )
 
 
@@ -366,7 +369,7 @@ def test_get_ticks_range_returns_parquet(
         symbol="EURUSD",
         date_from=ANY,
         date_to=ANY,
-        flags=3,
+        flags=COPY_TICKS_ALL,
     )
 
 
@@ -394,7 +397,7 @@ def test_get_ticks_range_returns_json(
         symbol="EURUSD",
         date_from=ANY,
         date_to=ANY,
-        flags=3,
+        flags=COPY_TICKS_ALL,
     )
 
 

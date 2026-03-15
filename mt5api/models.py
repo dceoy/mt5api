@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime  # noqa: TC003
 from enum import StrEnum
-from functools import cache
-from typing import TYPE_CHECKING, Annotated, Any, Self, TypeAlias, cast
+from functools import cache, cached_property
+from typing import TYPE_CHECKING, Annotated, Any, LiteralString, Self, TypeAlias, cast
 
 from pdmt5.mt5 import Mt5Client
 from pydantic import BaseModel, BeforeValidator, Field, WithJsonSchema, model_validator
+from pydantic_core import PydanticCustomError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,6 +48,51 @@ _COPY_TICKS_NAMES = (
     "COPY_TICKS_TRADE",
     "COPY_TICKS_ALL",
 )
+_TIMEFRAME_VALIDATION_DESCRIPTION = "MetaTrader5 TIMEFRAME constant"
+_COPY_TICKS_VALIDATION_DESCRIPTION = "MetaTrader5 COPY_TICKS constant"
+
+
+@dataclass(frozen=True)
+class Mt5ConstantSpec:
+    """Metadata and cached values for an MT5 constant family."""
+
+    validation_description: str
+    schema_description: str
+    prefix: str = ""
+    names: tuple[str, ...] = ()
+    example_names: tuple[str, ...] = ()
+
+    @cached_property
+    def members(self) -> dict[str, int]:
+        """Return MT5 constant names and values from the pdmt5 MT5 module copy."""
+        mt5 = _get_mt5_module()
+        if self.names:
+            return {name: int(getattr(mt5, name)) for name in self.names}
+        return {
+            name: int(getattr(mt5, name))
+            for name in dir(mt5)
+            if name.startswith(self.prefix) and isinstance(getattr(mt5, name), int)
+        }
+
+    @cached_property
+    def sorted_names(self) -> tuple[str, ...]:
+        """Return sorted MT5 constant names."""
+        return tuple(sorted(self.members))
+
+    @cached_property
+    def sorted_values(self) -> tuple[int, ...]:
+        """Return sorted MT5 constant values."""
+        return tuple(sorted(self.members.values()))
+
+    @cached_property
+    def example_values(self) -> list[int]:
+        """Return MT5 constant value examples."""
+        return [self.members[name] for name in self.example_names]
+
+    @cached_property
+    def example_name_list(self) -> list[str]:
+        """Return MT5 constant name examples."""
+        return list(self.example_names)
 
 
 @cache
@@ -57,78 +104,24 @@ def _get_mt5_module() -> ModuleType:
     return factory()
 
 
-@cache
-def _get_mt5_constant_members(
-    prefix: str = "",
-    *,
-    names: tuple[str, ...] = (),
-) -> dict[str, int]:
-    """Return MT5 constant names and values from the pdmt5 MT5 module copy."""
-    mt5 = _get_mt5_module()
-    if names:
-        return {name: int(getattr(mt5, name)) for name in names}
-    return {
-        name: int(getattr(mt5, name))
-        for name in dir(mt5)
-        if name.startswith(prefix) and isinstance(getattr(mt5, name), int)
-    }
-
-
-@cache
-def _get_mt5_timeframe_members() -> dict[str, int]:
-    """Return MT5 timeframe names and values from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_members("TIMEFRAME_")
-
-
-@cache
-def _get_mt5_copy_ticks_members() -> dict[str, int]:
-    """Return MT5 COPY_TICKS names and values from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_members(names=_COPY_TICKS_NAMES)
-
-
-@cache
-def _get_mt5_constant_names(
-    prefix: str = "",
-    *,
-    names: tuple[str, ...] = (),
-) -> tuple[str, ...]:
-    """Return sorted MT5 constant names."""
-    return tuple(sorted(_get_mt5_constant_members(prefix, names=names)))
-
-
-@cache
-def _get_mt5_constant_values(
-    prefix: str = "",
-    *,
-    names: tuple[str, ...] = (),
-) -> tuple[int, ...]:
-    """Return sorted MT5 constant values."""
-    return tuple(sorted(_get_mt5_constant_members(prefix, names=names).values()))
-
-
-@cache
-def _get_mt5_constant_value_examples(
-    example_names: tuple[str, ...],
-    prefix: str = "",
-    *,
-    names: tuple[str, ...] = (),
-) -> list[int]:
-    """Return MT5 constant value examples based on the provided names."""
-    members = _get_mt5_constant_members(prefix, names=names)
-    return [members[name] for name in example_names]
-
-
-@cache
-def _get_mt5_constant_name_examples(example_names: tuple[str, ...]) -> list[str]:
-    """Return MT5 constant name examples."""
-    return list(example_names)
+_TIMEFRAME_SPEC = Mt5ConstantSpec(
+    validation_description=_TIMEFRAME_VALIDATION_DESCRIPTION,
+    schema_description=_TIMEFRAME_DESCRIPTION,
+    prefix="TIMEFRAME_",
+    example_names=_TIMEFRAME_EXAMPLE_NAMES,
+)
+_COPY_TICKS_SPEC = Mt5ConstantSpec(
+    validation_description=_COPY_TICKS_VALIDATION_DESCRIPTION,
+    schema_description=_COPY_TICKS_DESCRIPTION,
+    names=_COPY_TICKS_NAMES,
+    example_names=_COPY_TICKS_NAMES,
+)
 
 
 def _parse_mt5_constant(
     value: object,
     *,
-    members: dict[str, int],
-    description: str,
+    spec: Mt5ConstantSpec,
 ) -> int:
     """Parse an MT5 constant name or integer value.
 
@@ -136,29 +129,36 @@ def _parse_mt5_constant(
         The validated integer constant value.
 
     Raises:
+        PydanticCustomError: If the value type is not supported.
         ValueError: If the value is not a supported constant name or integer.
     """
+    type_error_code = "mt5_constant_type"
+    type_error_template: LiteralString = (
+        "{description} must be specified by constant name or integer value"
+    )
+    type_error_context = {"description": spec.validation_description}
+    type_error_message = type_error_template.format(**type_error_context)
     if isinstance(value, str):
-        if value in members:
-            return members[value]
+        if value in spec.members:
+            return spec.members[value]
         try:
             value = int(value)
         except ValueError as error:
-            error_message = (
-                f"{description} must be specified by constant name or integer value"
-            )
-            raise ValueError(error_message) from error
+            raise ValueError(type_error_message) from error
 
-    try:
-        parsed_value = int(cast("Any", value))
-    except (TypeError, ValueError) as error:
-        error_message = (
-            f"{description} must be specified by constant name or integer value"
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise PydanticCustomError(
+            type_error_code,
+            type_error_template,
+            type_error_context,
         )
-        raise ValueError(error_message) from error
 
-    if parsed_value not in members.values():
-        error_message = f"Unsupported {description.lower()} value: {parsed_value}"
+    parsed_value = value
+
+    if parsed_value not in spec.members.values():
+        error_message = (
+            f"Unsupported {spec.validation_description.lower()} value: {parsed_value}"
+        )
         raise ValueError(error_message)
 
     return parsed_value
@@ -186,52 +186,44 @@ def _build_mt5_constant_json_schema(
     }
 
 
-@cache
 def get_mt5_timeframe_values() -> tuple[int, ...]:
     """Return all available MT5 timeframe values from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_values("TIMEFRAME_")
+    return _TIMEFRAME_SPEC.sorted_values
 
 
-@cache
 def get_mt5_timeframe_names() -> tuple[str, ...]:
     """Return all available MT5 timeframe names from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_names("TIMEFRAME_")
+    return _TIMEFRAME_SPEC.sorted_names
 
 
-@cache
 def get_mt5_timeframe_examples() -> list[int]:
     """Return common MT5 timeframe examples from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_value_examples(_TIMEFRAME_EXAMPLE_NAMES, "TIMEFRAME_")
+    return _TIMEFRAME_SPEC.example_values
 
 
-@cache
 def get_mt5_timeframe_example_names() -> list[str]:
     """Return common MT5 timeframe example names."""
-    return _get_mt5_constant_name_examples(_TIMEFRAME_EXAMPLE_NAMES)
+    return _TIMEFRAME_SPEC.example_name_list
 
 
-@cache
 def get_mt5_copy_ticks_values() -> tuple[int, ...]:
     """Return all MT5 COPY_TICKS values from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_values(names=_COPY_TICKS_NAMES)
+    return _COPY_TICKS_SPEC.sorted_values
 
 
-@cache
 def get_mt5_copy_ticks_names() -> tuple[str, ...]:
     """Return all MT5 COPY_TICKS names from the pdmt5 MT5 module copy."""
-    return _get_mt5_constant_names(names=_COPY_TICKS_NAMES)
+    return _COPY_TICKS_SPEC.sorted_names
 
 
-@cache
 def get_mt5_copy_ticks_examples() -> list[int]:
     """Return common MT5 COPY_TICKS integer examples."""
-    return _get_mt5_constant_value_examples(_COPY_TICKS_NAMES, names=_COPY_TICKS_NAMES)
+    return _COPY_TICKS_SPEC.example_values
 
 
-@cache
 def get_mt5_copy_ticks_example_names() -> list[str]:
     """Return common MT5 COPY_TICKS example names."""
-    return _get_mt5_constant_name_examples(_COPY_TICKS_NAMES)
+    return _COPY_TICKS_SPEC.example_name_list
 
 
 def _validate_mt5_timeframe(value: object) -> int:
@@ -240,11 +232,7 @@ def _validate_mt5_timeframe(value: object) -> int:
     Returns:
         The validated integer timeframe value.
     """
-    return _parse_mt5_constant(
-        value,
-        members=_get_mt5_timeframe_members(),
-        description="MetaTrader5 TIMEFRAME constant",
-    )
+    return _parse_mt5_constant(value, spec=_TIMEFRAME_SPEC)
 
 
 def _validate_mt5_copy_ticks(value: object) -> int:
@@ -253,11 +241,7 @@ def _validate_mt5_copy_ticks(value: object) -> int:
     Returns:
         The validated integer COPY_TICKS value.
     """
-    return _parse_mt5_constant(
-        value,
-        members=_get_mt5_copy_ticks_members(),
-        description="MetaTrader5 COPY_TICKS constant",
-    )
+    return _parse_mt5_constant(value, spec=_COPY_TICKS_SPEC)
 
 
 Mt5Timeframe: TypeAlias = Annotated[
@@ -265,7 +249,7 @@ Mt5Timeframe: TypeAlias = Annotated[
     BeforeValidator(_validate_mt5_timeframe),
     WithJsonSchema(
         _build_mt5_constant_json_schema(
-            description=_TIMEFRAME_DESCRIPTION,
+            description=_TIMEFRAME_SPEC.schema_description,
             names=get_mt5_timeframe_names(),
             values=get_mt5_timeframe_values(),
             examples=get_mt5_timeframe_example_names(),
@@ -280,7 +264,7 @@ Mt5CopyTicks: TypeAlias = Annotated[
     BeforeValidator(_validate_mt5_copy_ticks),
     WithJsonSchema(
         _build_mt5_constant_json_schema(
-            description=_COPY_TICKS_DESCRIPTION,
+            description=_COPY_TICKS_SPEC.schema_description,
             names=get_mt5_copy_ticks_names(),
             values=get_mt5_copy_ticks_values(),
             examples=get_mt5_copy_ticks_example_names(),
@@ -481,7 +465,7 @@ class TicksFromRequest(BaseModel):
         le=100000,
     )
     flags: Mt5CopyTicks = Field(
-        default=_get_mt5_copy_ticks_members()["COPY_TICKS_ALL"],
+        default=_COPY_TICKS_SPEC.members["COPY_TICKS_ALL"],
         description=_COPY_TICKS_DESCRIPTION,
     )
     format: ResponseFormat | None = Field(default=None)
@@ -494,7 +478,7 @@ class TicksRangeRequest(BaseModel):
     date_from: datetime = Field(..., description="Start date (ISO 8601)")
     date_to: datetime = Field(..., description="End date (ISO 8601)")
     flags: Mt5CopyTicks = Field(
-        default=_get_mt5_copy_ticks_members()["COPY_TICKS_ALL"],
+        default=_COPY_TICKS_SPEC.members["COPY_TICKS_ALL"],
         description=_COPY_TICKS_DESCRIPTION,
     )
     format: ResponseFormat | None = Field(default=None)
