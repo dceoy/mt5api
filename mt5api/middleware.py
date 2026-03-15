@@ -15,7 +15,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from .constants import DEFAULT_API_RATE_LIMIT, get_configured_api_rate_limit
+from .config import get_configured_api_rate_limit
+from .constants import DEFAULT_API_RATE_LIMIT
 from .models import ErrorResponse
 
 if TYPE_CHECKING:

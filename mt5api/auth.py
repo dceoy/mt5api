@@ -7,7 +7,8 @@ from typing import Annotated
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
-from .constants import API_KEY_HEADER_NAME, get_configured_mt5_api_key
+from .config import get_configured_mt5_api_key
+from .constants import API_KEY_HEADER_NAME
 
 # API key security scheme
 api_key_header = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)

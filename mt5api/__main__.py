@@ -6,13 +6,15 @@ import logging
 
 import uvicorn
 
+from .config import (
+    get_configured_api_host,
+    get_configured_api_log_level,
+    get_configured_api_port,
+)
 from .constants import (
     API_APP_IMPORT,
     DEFAULT_API_PORT,
     MAX_API_PORT,
-    get_configured_api_host,
-    get_configured_api_log_level,
-    get_configured_api_port,
 )
 
 

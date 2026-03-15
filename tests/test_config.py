@@ -57,9 +57,9 @@ def test_normalize_api_router_prefix(
     expected_prefix: str,
 ) -> None:
     """Router prefix should be normalized for FastAPI mounting."""
-    from mt5api import constants  # noqa: PLC0415
+    from mt5api import config  # noqa: PLC0415
 
-    assert constants.normalize_api_router_prefix(raw_prefix) == expected_prefix
+    assert config.normalize_api_router_prefix(raw_prefix) == expected_prefix
 
 
 def test_app_uses_api_router_prefix_from_environment(
@@ -68,9 +68,8 @@ def test_app_uses_api_router_prefix_from_environment(
     """App routes should be mounted under the configured API prefix."""
     monkeypatch.setenv(ENV_API_ROUTER_PREFIX, "api/v1")
 
-    from mt5api import constants, main  # noqa: PLC0415
+    from mt5api import main  # noqa: PLC0415
 
-    importlib.reload(constants)
     reloaded_main = importlib.reload(main)
 
     try:
@@ -82,5 +81,4 @@ def test_app_uses_api_router_prefix_from_environment(
         assert "/symbols" not in paths
     finally:
         monkeypatch.delenv(ENV_API_ROUTER_PREFIX, raising=False)
-        importlib.reload(constants)
         importlib.reload(main)
