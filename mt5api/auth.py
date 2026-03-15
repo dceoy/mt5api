@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 from typing import Annotated
 
 from fastapi import HTTPException, Security, status
@@ -61,7 +62,7 @@ def verify_api_key(
             },
         )
 
-    if api_key_header_value != expected_key:
+    if not hmac.compare_digest(api_key_header_value, expected_key):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={

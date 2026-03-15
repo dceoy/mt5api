@@ -555,7 +555,7 @@ http GET localhost:8000/symbols/EURUSD \
 
 - Check API key is correct in request header
 - Verify X-API-Key header name (case-sensitive)
-- Ensure API_KEY environment variable is set
+- Ensure MT5API_SECRET_KEY environment variable is set
 
 ### Performance Issues
 
@@ -588,7 +588,7 @@ nssm install MT5-API "C:\Python311\Scripts\uvicorn.exe" "mt5api.main:app --host 
 nssm set MT5-API AppDirectory "C:\path\to\pdmt5"
 
 # Set environment variables
-nssm set MT5-API AppEnvironmentExtra API_KEY=your-key-here
+nssm set MT5-API AppEnvironmentExtra MT5API_SECRET_KEY=your-key-here
 
 # Start service
 nssm start MT5-API

@@ -17,6 +17,7 @@ from .constants import (
     ENV_API_PORT,
     ENV_API_RATE_LIMIT,
     ENV_API_ROUTER_PREFIX,
+    ENV_MT5_API_KEY,
     ENV_MT5API_SECRET_KEY,
 )
 
@@ -110,5 +111,10 @@ def get_configured_mt5api_secret_key() -> str | None:
 
     Returns:
         MT5 API secret key string, or ``None`` when authentication is disabled.
+        ``MT5_API_KEY`` remains supported as a fallback for existing deployments.
     """
-    return os.getenv(ENV_MT5API_SECRET_KEY) or None
+    secret_key = os.getenv(ENV_MT5API_SECRET_KEY)
+    if secret_key is not None:
+        return secret_key or None
+
+    return os.getenv(ENV_MT5_API_KEY) or None
