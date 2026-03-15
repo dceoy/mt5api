@@ -66,7 +66,7 @@ MT5_PATH=C:\Program Files\MetaTrader 5\terminal64.exe
 # API Configuration
 API_HOST=0.0.0.0
 API_PORT=8000
-MT5_API_KEY=your-secret-api-key-here  # Change this!
+MT5API_SECRET_KEY=your-secret-api-key-here  # Change this!
 API_LOG_LEVEL=INFO
 
 # Optional: Rate limiting
@@ -82,10 +82,10 @@ API_CORS_ORIGINS=*
 # Generate a secure API key
 import secrets
 api_key = secrets.token_urlsafe(32)
-print(f"MT5_API_KEY={api_key}")
+print(f"MT5API_SECRET_KEY={api_key}")
 ```
 
-Output: `API_KEY=xK9vP2mN8hQ5wR7tY4uI0oL3jF6gH1sA2zX`
+Output: `MT5API_SECRET_KEY=xK9vP2mN8hQ5wR7tY4uI0oL3jF6gH1sA2zX`
 
 ## Running the API
 
@@ -555,7 +555,7 @@ http GET localhost:8000/symbols/EURUSD \
 
 - Check API key is correct in request header
 - Verify X-API-Key header name (case-sensitive)
-- Ensure API_KEY environment variable is set
+- Ensure MT5API_SECRET_KEY environment variable is set
 
 ### Performance Issues
 
@@ -588,7 +588,7 @@ nssm install MT5-API "C:\Python311\Scripts\uvicorn.exe" "mt5api.main:app --host 
 nssm set MT5-API AppDirectory "C:\path\to\pdmt5"
 
 # Set environment variables
-nssm set MT5-API AppEnvironmentExtra API_KEY=your-key-here
+nssm set MT5-API AppEnvironmentExtra MT5API_SECRET_KEY=your-key-here
 
 # Start service
 nssm start MT5-API

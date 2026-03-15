@@ -15,15 +15,35 @@ data, positions, orders, and trade history.
 
 ## Configuration
 
-The API base URL defaults to `http://localhost:8000`. Set `MT5_API_URL` to
-override. When the server is configured with `MT5_API_KEY`, send the same value
-in the `X-API-Key` header. If server-side auth is disabled, the header is
-optional.
+The API base URL defaults to `http://localhost:8000`. Set `MT5API_URL` to
+override. When the server is configured with `MT5API_SECRET_KEY`, send the same value
+in the `X-API-Key` header. When server-side auth is disabled, omit the header
+instead of sending an empty `X-API-Key`.
+
+Use these shell helpers in examples:
+
+```bash
+MT5API_URL="${MT5API_URL:-http://localhost:8000}"
+AUTH_HEADER=()
+if [ -n "${MT5API_SECRET_KEY:-}" ]; then
+  AUTH_HEADER=(-H "X-API-Key: ${MT5API_SECRET_KEY}")
+fi
+```
 
 ## Response Formats
 
 All endpoints (except `/health`) return JSON by default. Request Parquet with
 `format=parquet` or `Accept: application/parquet`.
+
+## Operational Notes
+
+- Start `ticks/range` with a narrow window. Large ranges can be slow; use
+  `ticks/from` when the user only needs the latest `N` ticks.
+- `/market-book/{symbol}` may return `503` when MT5 depth-of-market data is not
+  available for the symbol. Report the exact MT5 error and suggest another
+  symbol or skipping DOM data.
+- Empty arrays from `/positions`, `/orders`, `/history/orders`, or
+  `/history/deals` are valid results.
 
 ---
 
@@ -32,7 +52,7 @@ All endpoints (except `/health`) return JSON by default. Request Parquet with
 ### Health Check (public, no auth required)
 
 ```bash
-curl -s "${MT5_API_URL:-http://localhost:8000}/health" | python -m json.tool
+curl -s "${MT5API_URL}/health" | python -m json.tool
 ```
 
 Returns:
@@ -47,8 +67,8 @@ Returns:
 ### MT5 Version
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/version" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/version" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description              |
@@ -64,8 +84,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 Get current trading account details (balance, equity, margin, leverage, etc.).
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/account" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/account" | python -m json.tool
 ```
 
 Key fields: `login`, `balance`, `equity`, `margin`, `margin_free`,
@@ -78,8 +98,8 @@ Key fields: `login`, `balance`, `equity`, `margin`, `margin_free`,
 ### Terminal Info
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/terminal" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/terminal" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description              |
@@ -93,8 +113,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### List Symbols
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/symbols" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/symbols" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description                                   |
@@ -105,15 +125,15 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Get Symbol Info
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/symbols/EURUSD" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/symbols/EURUSD" | python -m json.tool
 ```
 
 ### Get Latest Tick
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/symbols/EURUSD/tick" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/symbols/EURUSD/tick" | python -m json.tool
 ```
 
 ---
@@ -126,8 +146,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Rates from Date
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_H1&date_from=2024-01-01T00:00:00Z&count=100" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_H1&date_from=2024-01-01T00:00:00Z&count=100" \
   | python -m json.tool
 ```
 
@@ -142,8 +162,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Rates from Position
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/rates/from-pos?symbol=EURUSD&timeframe=TIMEFRAME_H1&start_pos=0&count=100" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/rates/from-pos?symbol=EURUSD&timeframe=TIMEFRAME_H1&start_pos=0&count=100" \
   | python -m json.tool
 ```
 
@@ -158,8 +178,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Rates in Range
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/rates/range?symbol=EURUSD&timeframe=TIMEFRAME_H1&date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/rates/range?symbol=EURUSD&timeframe=TIMEFRAME_H1&date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
   | python -m json.tool
 ```
 
@@ -174,8 +194,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Ticks from Date
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/ticks/from?symbol=EURUSD&date_from=2024-01-02T10:00:00Z&count=500" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/ticks/from?symbol=EURUSD&date_from=2024-01-02T10:00:00Z&count=500" \
   | python -m json.tool
 ```
 
@@ -190,8 +210,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Ticks in Range
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/ticks/range?symbol=EURUSD&date_from=2024-01-02T10:00:00Z&date_to=2024-01-02T11:00:00Z" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/ticks/range?symbol=EURUSD&date_from=2024-01-02T10:00:00Z&date_to=2024-01-02T11:00:00Z" \
   | python -m json.tool
 ```
 
@@ -206,9 +226,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Market Book (DOM)
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/market-book/EURUSD" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/market-book/EURUSD" | python -m json.tool
 ```
+
+If this returns `503`, explain that MT5 did not provide DOM data for the
+requested symbol and include the server's error text.
 
 ---
 
@@ -217,8 +240,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Open Positions
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/positions" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/positions" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description               |
@@ -231,8 +254,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Pending Orders
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/orders" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/orders" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description              |
@@ -245,8 +268,8 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 ### Historical Orders
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
   | python -m json.tool
 ```
 
@@ -265,8 +288,8 @@ Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
 ### Historical Deals
 
 ```bash
-curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/history/deals?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/history/deals?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
   | python -m json.tool
 ```
 
@@ -289,10 +312,14 @@ Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
 1. Identify which endpoint(s) the user needs from the sections above.
 2. Gather required parameters (symbol, timeframe, dates, count, filters).
 3. Decide whether the caller needs JSON or Parquet output.
-4. Construct and run the appropriate `curl` command(s).
-5. Parse the JSON response and summarize the results, or note when the API
+4. Build `AUTH_HEADER` only when `MT5API_SECRET_KEY` is set, then construct and run
+   the appropriate `curl` command(s).
+5. For `ticks/range`, start with a narrow interval and widen only if needed.
+6. Parse the JSON response and summarize the results, or note when the API
    returned Parquet data.
-6. If the health status is `unhealthy`, note that the MT5 terminal may not be
+7. If `/market-book/{symbol}` returns `503`, explain that MT5 did not provide
+   DOM data for that symbol and include the error text.
+8. If the health status is `unhealthy`, note that the MT5 terminal may not be
    running or reachable.
-7. For historical queries, remind the user that either a date range or a
+9. For historical queries, remind the user that either a date range or a
    ticket/position filter is required.

@@ -17,7 +17,7 @@ from .constants import (
     ENV_API_PORT,
     ENV_API_RATE_LIMIT,
     ENV_API_ROUTER_PREFIX,
-    ENV_MT5_API_KEY,
+    ENV_MT5API_SECRET_KEY,
 )
 
 _VALID_API_ROUTER_PREFIX_PATTERN = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$")
@@ -105,10 +105,10 @@ def get_configured_api_router_prefix() -> str:
     )
 
 
-def get_configured_mt5_api_key() -> str | None:
-    """Get the configured MT5 API key, if any.
+def get_configured_mt5api_secret_key() -> str | None:
+    """Get the configured MT5 API secret key, if any.
 
     Returns:
-        MT5 API key string, or ``None`` when authentication is disabled.
+        MT5 API secret key string, or ``None`` when authentication is disabled.
     """
-    return os.getenv(ENV_MT5_API_KEY) or None
+    return os.getenv(ENV_MT5API_SECRET_KEY) or None

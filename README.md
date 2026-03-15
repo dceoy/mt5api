@@ -41,7 +41,7 @@ uv sync
 ## Running the API on Windows
 
 ```powershell
-$env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
@@ -68,7 +68,7 @@ curl "http://windows-host:8000/health"
 ```
 
 ```console
-# Include X-API-Key only when MT5_API_KEY is configured on the server.
+# Include X-API-Key only when MT5API_SECRET_KEY is configured on the server.
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
 ```
 

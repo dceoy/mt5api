@@ -10,7 +10,7 @@ from mt5api.constants import (
     ENV_API_CORS_ORIGINS,
     ENV_API_RATE_LIMIT,
     ENV_API_ROUTER_PREFIX,
-    ENV_MT5_API_KEY,
+    ENV_MT5API_SECRET_KEY,
 )
 
 
@@ -75,27 +75,27 @@ def test_normalize_api_router_prefix_rejects_invalid_values(raw_prefix: str) -> 
 
 
 @pytest.mark.parametrize(
-    ("raw_api_key", "expected_api_key"),
+    ("raw_secret_key", "expected_secret_key"),
     [
         (None, None),
         ("", None),
         ("secret-key", "secret-key"),
     ],
 )
-def test_get_configured_mt5_api_key(
+def test_get_configured_mt5api_secret_key(
     monkeypatch: pytest.MonkeyPatch,
-    raw_api_key: str | None,
-    expected_api_key: str | None,
+    raw_secret_key: str | None,
+    expected_secret_key: str | None,
 ) -> None:
-    """MT5 API key config should treat empty strings as disabled auth."""
+    """MT5 API secret key config should treat empty strings as disabled auth."""
     from mt5api import config  # noqa: PLC0415
 
-    if raw_api_key is None:
-        monkeypatch.delenv(ENV_MT5_API_KEY, raising=False)
+    if raw_secret_key is None:
+        monkeypatch.delenv(ENV_MT5API_SECRET_KEY, raising=False)
     else:
-        monkeypatch.setenv(ENV_MT5_API_KEY, raw_api_key)
+        monkeypatch.setenv(ENV_MT5API_SECRET_KEY, raw_secret_key)
 
-    assert config.get_configured_mt5_api_key() == expected_api_key
+    assert config.get_configured_mt5api_secret_key() == expected_secret_key
 
 
 def test_app_uses_api_router_prefix_from_environment(
