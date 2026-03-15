@@ -16,7 +16,7 @@ data, positions, orders, and trade history.
 ## Configuration
 
 The API base URL defaults to `http://localhost:8000`. Set `MT5API_URL` to
-override. When the server is configured with `MT5_API_KEY`, send the same value
+override. When the server is configured with `MT5API_SECRET_KEY`, send the same value
 in the `X-API-Key` header. When server-side auth is disabled, omit the header
 instead of sending an empty `X-API-Key`.
 
@@ -25,8 +25,8 @@ Use these shell helpers in examples:
 ```bash
 MT5API_URL="${MT5API_URL:-http://localhost:8000}"
 AUTH_HEADER=()
-if [ -n "${MT5_API_KEY:-}" ]; then
-  AUTH_HEADER=(-H "X-API-Key: ${MT5_API_KEY}")
+if [ -n "${MT5API_SECRET_KEY:-}" ]; then
+  AUTH_HEADER=(-H "X-API-Key: ${MT5API_SECRET_KEY}")
 fi
 ```
 
@@ -312,7 +312,7 @@ Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
 1. Identify which endpoint(s) the user needs from the sections above.
 2. Gather required parameters (symbol, timeframe, dates, count, filters).
 3. Decide whether the caller needs JSON or Parquet output.
-4. Build `AUTH_HEADER` only when `MT5_API_KEY` is set, then construct and run
+4. Build `AUTH_HEADER` only when `MT5API_SECRET_KEY` is set, then construct and run
    the appropriate `curl` command(s).
 5. For `ticks/range`, start with a narrow interval and widen only if needed.
 6. Parse the JSON response and summarize the results, or note when the API

@@ -7,20 +7,20 @@ from typing import Annotated
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
-from .config import get_configured_mt5_api_key
+from .config import get_configured_mt5api_secret_key
 from .constants import API_KEY_HEADER_NAME
 
 # API key security scheme
 api_key_header = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 # Auth mode is fixed for the lifetime of the process.
-_API_KEY: str | None = get_configured_mt5_api_key()
+_API_KEY: str | None = get_configured_mt5api_secret_key()
 
 
 def get_api_key() -> str | None:
     """Get the API key configured at startup, if any.
 
     Returns:
-        API key string from ``MT5_API_KEY``, or ``None`` if authentication is
+        API key string from ``MT5API_SECRET_KEY``, or ``None`` if authentication is
         disabled.
     """
     return _API_KEY

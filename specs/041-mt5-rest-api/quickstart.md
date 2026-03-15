@@ -66,7 +66,7 @@ MT5_PATH=C:\Program Files\MetaTrader 5\terminal64.exe
 # API Configuration
 API_HOST=0.0.0.0
 API_PORT=8000
-MT5_API_KEY=your-secret-api-key-here  # Change this!
+MT5API_SECRET_KEY=your-secret-api-key-here  # Change this!
 API_LOG_LEVEL=INFO
 
 # Optional: Rate limiting
@@ -82,10 +82,10 @@ API_CORS_ORIGINS=*
 # Generate a secure API key
 import secrets
 api_key = secrets.token_urlsafe(32)
-print(f"MT5_API_KEY={api_key}")
+print(f"MT5API_SECRET_KEY={api_key}")
 ```
 
-Output: `API_KEY=xK9vP2mN8hQ5wR7tY4uI0oL3jF6gH1sA2zX`
+Output: `MT5API_SECRET_KEY=xK9vP2mN8hQ5wR7tY4uI0oL3jF6gH1sA2zX`
 
 ## Running the API
 

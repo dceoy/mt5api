@@ -41,7 +41,7 @@ Use `uv` for local work:
 ## Security & Configuration Tips
 
 - Do not commit real MT5 credentials or API keys.
-- Configure `MT5_API_KEY`, `API_RATE_LIMIT`, `API_CORS_ORIGINS`, and `API_LOG_LEVEL` through environment variables.
+- Configure `MT5API_SECRET_KEY`, `API_RATE_LIMIT`, `API_CORS_ORIGINS`, and `API_LOG_LEVEL` through environment variables.
 - The API server must run on Windows with a logged-in MetaTrader 5 terminal.
 - Linux and macOS are for HTTP clients and local non-runtime work only.
 

@@ -33,8 +33,8 @@ nssm install mt5api
 5. Set environment variables in the NSSM GUI:
 
 ```
-# Optional: set MT5_API_KEY only when you want to require X-API-Key headers.
-MT5_API_KEY=your-secret-api-key
+# Optional: set MT5API_SECRET_KEY only when you want to require X-API-Key headers.
+MT5API_SECRET_KEY=your-secret-api-key
 API_LOG_LEVEL=INFO
 API_RATE_LIMIT=100
 API_CORS_ORIGINS=*
