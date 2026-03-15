@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from fastapi.responses import Response
 
 router = APIRouter(
-    prefix="",
     tags=["symbols"],
     dependencies=[Depends(verify_api_key)],
 )

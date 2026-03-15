@@ -14,6 +14,7 @@ from fastapi.openapi.utils import get_openapi
 from starlette.middleware.cors import CORSMiddleware
 
 from .auth import is_auth_enabled
+from .constants import API_ROUTER_PREFIX
 from .dependencies import shutdown_mt5_client
 from .middleware import add_middleware
 from .routers import account, health, history, market, symbols
@@ -174,10 +175,10 @@ app.add_middleware(
 add_middleware(app)
 
 # Include routers
-app.include_router(health.router)
-app.include_router(symbols.router)
-app.include_router(market.router)
-app.include_router(account.router)
-app.include_router(history.router)
+app.include_router(health.router, prefix=API_ROUTER_PREFIX)
+app.include_router(symbols.router, prefix=API_ROUTER_PREFIX)
+app.include_router(market.router, prefix=API_ROUTER_PREFIX)
+app.include_router(account.router, prefix=API_ROUTER_PREFIX)
+app.include_router(history.router, prefix=API_ROUTER_PREFIX)
 
 logger.info("MT5 REST API initialized")
