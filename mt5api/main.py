@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
@@ -14,7 +13,19 @@ from fastapi.openapi.utils import get_openapi
 from starlette.middleware.cors import CORSMiddleware
 
 from .auth import is_auth_enabled
-from .constants import API_ROUTER_PREFIX
+from .constants import (
+    API_DESCRIPTION,
+    API_DOCS_URL,
+    API_KEY_SECURITY_SCHEME_NAME,
+    API_OPENAPI_URL,
+    API_REDOC_URL,
+    API_TITLE,
+    API_VERSION,
+    DEFAULT_API_CORS_ORIGINS,
+    get_configured_api_cors_origins,
+    get_configured_api_log_level,
+    get_configured_api_router_prefix,
+)
 from .dependencies import shutdown_mt5_client
 from .middleware import add_middleware
 from .routers import account, health, history, market, symbols
@@ -42,7 +53,7 @@ class _JsonFormatter(logging.Formatter):
 
 def _configure_logging() -> None:
     """Configure structured logging for the API."""
-    log_level = os.getenv("API_LOG_LEVEL", "INFO").upper()
+    log_level = get_configured_api_log_level().upper()
 
     handler = logging.StreamHandler()
     handler.setFormatter(_JsonFormatter())
@@ -59,9 +70,9 @@ def _get_cors_origins() -> list[str]:
     Returns:
         List of allowed origins.
     """
-    raw_origins = os.getenv("API_CORS_ORIGINS", "*")
-    if raw_origins.strip() == "*":
-        return ["*"]
+    raw_origins = get_configured_api_cors_origins()
+    if raw_origins.strip() == DEFAULT_API_CORS_ORIGINS:
+        return [DEFAULT_API_CORS_ORIGINS]
 
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
@@ -74,7 +85,7 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
     if isinstance(components, dict):
         security_schemes = components.get("securitySchemes")
         if isinstance(security_schemes, dict):
-            security_schemes.pop("APIKeyHeader", None)
+            security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
             if not security_schemes:
                 components.pop("securitySchemes", None)
 
@@ -148,17 +159,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
 
 # Create FastAPI application
 app = FastAPI(
-    title="MT5 REST API",
-    description=(
-        "REST API for MetaTrader 5 data access. "
-        "Provides read-only access to market data, "
-        "account information, and trading history via HTTP endpoints."
-    ),
-    version="1.0.0",
+    title=API_TITLE,
+    description=API_DESCRIPTION,
+    version=API_VERSION,
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=API_DOCS_URL,
+    redoc_url=API_REDOC_URL,
+    openapi_url=API_OPENAPI_URL,
 )
 app.openapi = _custom_openapi
 
@@ -175,10 +182,11 @@ app.add_middleware(
 add_middleware(app)
 
 # Include routers
-app.include_router(health.router, prefix=API_ROUTER_PREFIX)
-app.include_router(symbols.router, prefix=API_ROUTER_PREFIX)
-app.include_router(market.router, prefix=API_ROUTER_PREFIX)
-app.include_router(account.router, prefix=API_ROUTER_PREFIX)
-app.include_router(history.router, prefix=API_ROUTER_PREFIX)
+router_prefix = get_configured_api_router_prefix()
+app.include_router(health.router, prefix=router_prefix)
+app.include_router(symbols.router, prefix=router_prefix)
+app.include_router(market.router, prefix=router_prefix)
+app.include_router(account.router, prefix=router_prefix)
+app.include_router(history.router, prefix=router_prefix)
 
 logger.info("MT5 REST API initialized")

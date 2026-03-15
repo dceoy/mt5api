@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from mt5api.constants import API_KEY_HEADER_NAME
+
 if TYPE_CHECKING:
     from unittest.mock import Mock
 
@@ -26,7 +28,7 @@ def test_version_endpoint_requires_authentication(client: TestClient) -> None:
 
 def test_version_endpoint_rejects_invalid_api_key(client: TestClient) -> None:
     """Test version endpoint rejects invalid API key."""
-    headers = {"X-API-Key": "wrong-key"}
+    headers = {API_KEY_HEADER_NAME: "wrong-key"}
     response = client.get("/version", headers=headers)
 
     assert response.status_code == 401
@@ -68,7 +70,7 @@ def test_symbols_endpoint_rejects_invalid_api_key(
     mock_mt5_client: Mock,
 ) -> None:
     """Test symbols endpoint rejects invalid API key."""
-    headers = {"X-API-Key": "wrong-key"}
+    headers = {API_KEY_HEADER_NAME: "wrong-key"}
     response = client.get("/symbols?group=*USD*", headers=headers)
 
     assert response.status_code == 401

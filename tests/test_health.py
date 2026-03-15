@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from mt5api.constants import API_VERSION
+
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
 
@@ -20,7 +22,7 @@ def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
     assert data["status"] == "healthy"
     assert data["mt5_connected"] is True
     assert data["mt5_version"] == "5.0.4321"
-    assert data["api_version"] == "1.0.0"
+    assert data["api_version"] == API_VERSION
 
 
 def test_health_endpoint_no_authentication_required(client: TestClient) -> None:

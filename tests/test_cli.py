@@ -8,15 +8,23 @@ from typing import TYPE_CHECKING
 
 import uvicorn
 
+from mt5api.constants import (
+    API_APP_IMPORT,
+    DEFAULT_API_HOST,
+    ENV_API_HOST,
+    ENV_API_LOG_LEVEL,
+    ENV_API_PORT,
+)
+
 if TYPE_CHECKING:
     import pytest
 
 
 def test_main_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     """main() should use default host/port/log level."""
-    monkeypatch.delenv("API_HOST", raising=False)
-    monkeypatch.delenv("API_PORT", raising=False)
-    monkeypatch.delenv("API_LOG_LEVEL", raising=False)
+    monkeypatch.delenv(ENV_API_HOST, raising=False)
+    monkeypatch.delenv(ENV_API_PORT, raising=False)
+    monkeypatch.delenv(ENV_API_LOG_LEVEL, raising=False)
 
     captured_args: tuple[object, ...] | None = None
     captured_kwargs: dict[str, object] | None = None
@@ -32,20 +40,18 @@ def test_main_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
 
     api_main.main()
 
-    assert captured_args == ("mt5api.main:app",)
+    assert captured_args == (API_APP_IMPORT,)
     assert captured_kwargs is not None
-    assert (
-        captured_kwargs["host"] == api_main._DEFAULT_HOST  # pyright: ignore[reportPrivateUsage]
-    )
+    assert captured_kwargs["host"] == DEFAULT_API_HOST
     assert captured_kwargs["port"] == 8000
     assert captured_kwargs["log_level"] == "info"
 
 
 def test_main_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
     """main() should respect configured environment variables."""
-    monkeypatch.setenv("API_HOST", "127.0.0.1")
-    monkeypatch.setenv("API_PORT", "9001")
-    monkeypatch.setenv("API_LOG_LEVEL", "WARNING")
+    monkeypatch.setenv(ENV_API_HOST, "127.0.0.1")
+    monkeypatch.setenv(ENV_API_PORT, "9001")
+    monkeypatch.setenv(ENV_API_LOG_LEVEL, "WARNING")
 
     captured_kwargs: dict[str, object] | None = None
 
@@ -67,7 +73,7 @@ def test_main_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_main_handles_invalid_port(monkeypatch: pytest.MonkeyPatch) -> None:
     """main() should fall back to default port on invalid value."""
-    monkeypatch.setenv("API_PORT", "not-a-number")
+    monkeypatch.setenv(ENV_API_PORT, "not-a-number")
 
     captured_kwargs: dict[str, object] | None = None
 
@@ -87,7 +93,7 @@ def test_main_handles_invalid_port(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_main_handles_out_of_range_port(monkeypatch: pytest.MonkeyPatch) -> None:
     """main() should fall back to default port on out-of-range value."""
-    monkeypatch.setenv("API_PORT", "70000")
+    monkeypatch.setenv(ENV_API_PORT, "70000")
 
     captured_kwargs: dict[str, object] | None = None
 
@@ -107,7 +113,7 @@ def test_main_handles_out_of_range_port(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_module_entrypoint_invokes_main(monkeypatch: pytest.MonkeyPatch) -> None:
     """Running the module should invoke main()."""
-    monkeypatch.setenv("API_PORT", "8001")
+    monkeypatch.setenv(ENV_API_PORT, "8001")
 
     captured_kwargs: dict[str, object] | None = None
 

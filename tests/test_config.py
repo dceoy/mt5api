@@ -6,10 +6,16 @@ import importlib
 
 import pytest
 
+from mt5api.constants import (
+    ENV_API_CORS_ORIGINS,
+    ENV_API_RATE_LIMIT,
+    ENV_API_ROUTER_PREFIX,
+)
+
 
 def test_get_cors_origins_parses_list(monkeypatch: pytest.MonkeyPatch) -> None:
     """CORS origins should split on commas and trim whitespace."""
-    monkeypatch.setenv("API_CORS_ORIGINS", "https://a.example, https://b.example")
+    monkeypatch.setenv(ENV_API_CORS_ORIGINS, "https://a.example, https://b.example")
 
     from mt5api import main  # noqa: PLC0415
 
@@ -23,7 +29,7 @@ def test_build_default_rate_limit_handles_invalid_value(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Invalid rate limit values should default to 100/minute."""
-    monkeypatch.setenv("API_RATE_LIMIT", "not-a-number")
+    monkeypatch.setenv(ENV_API_RATE_LIMIT, "not-a-number")
 
     from mt5api import middleware  # noqa: PLC0415
 
@@ -53,17 +59,14 @@ def test_normalize_api_router_prefix(
     """Router prefix should be normalized for FastAPI mounting."""
     from mt5api import constants  # noqa: PLC0415
 
-    assert (
-        constants._normalize_api_router_prefix(raw_prefix)  # pyright: ignore[reportPrivateUsage]
-        == expected_prefix
-    )
+    assert constants.normalize_api_router_prefix(raw_prefix) == expected_prefix
 
 
 def test_app_uses_api_router_prefix_from_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """App routes should be mounted under the configured API prefix."""
-    monkeypatch.setenv("API_ROUTER_PREFIX", "api/v1")
+    monkeypatch.setenv(ENV_API_ROUTER_PREFIX, "api/v1")
 
     from mt5api import constants, main  # noqa: PLC0415
 
@@ -78,6 +81,6 @@ def test_app_uses_api_router_prefix_from_environment(
         assert "/health" not in paths
         assert "/symbols" not in paths
     finally:
-        monkeypatch.delenv("API_ROUTER_PREFIX", raising=False)
+        monkeypatch.delenv(ENV_API_ROUTER_PREFIX, raising=False)
         importlib.reload(constants)
         importlib.reload(main)

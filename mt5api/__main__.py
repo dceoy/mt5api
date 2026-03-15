@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import logging
-import os
 
 import uvicorn
 
-_DEFAULT_HOST = "0.0.0.0"  # noqa: S104
-_DEFAULT_PORT = 8000
-_DEFAULT_LOG_LEVEL = "INFO"
-_MAX_PORT = 65535
+from .constants import (
+    API_APP_IMPORT,
+    DEFAULT_API_PORT,
+    MAX_API_PORT,
+    get_configured_api_host,
+    get_configured_api_log_level,
+    get_configured_api_port,
+)
 
 
 def _get_host() -> str:
@@ -19,7 +22,7 @@ def _get_host() -> str:
     Returns:
         Host address to bind the API server to.
     """
-    return os.getenv("API_HOST", _DEFAULT_HOST)
+    return get_configured_api_host()
 
 
 def _get_port() -> int:
@@ -28,17 +31,17 @@ def _get_port() -> int:
     Returns:
         Port number for the API server.
     """
-    raw_port = os.getenv("API_PORT")
+    raw_port = get_configured_api_port()
     if raw_port is None:
-        return _DEFAULT_PORT
+        return DEFAULT_API_PORT
 
     try:
         port_value = int(raw_port)
     except ValueError:
-        return _DEFAULT_PORT
+        return DEFAULT_API_PORT
 
-    if not 1 <= port_value <= _MAX_PORT:
-        return _DEFAULT_PORT
+    if not 1 <= port_value <= MAX_API_PORT:
+        return DEFAULT_API_PORT
 
     return port_value
 
@@ -49,7 +52,7 @@ def _get_log_level() -> str:
     Returns:
         Log level string for uvicorn.
     """
-    return os.getenv("API_LOG_LEVEL", _DEFAULT_LOG_LEVEL).lower()
+    return get_configured_api_log_level().lower()
 
 
 def main() -> None:
@@ -60,7 +63,7 @@ def main() -> None:
 
     logging.getLogger(__name__).info("Starting MT5 REST API on %s:%s", host, port)
     uvicorn.run(
-        "mt5api.main:app",
+        API_APP_IMPORT,
         host=host,
         port=port,
         log_level=log_level,

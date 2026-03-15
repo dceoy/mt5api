@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from typing import TYPE_CHECKING
 
@@ -16,6 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
+from .constants import DEFAULT_API_RATE_LIMIT, get_configured_api_rate_limit
 from .models import ErrorResponse
 
 if TYPE_CHECKING:
@@ -173,12 +173,12 @@ def _build_default_rate_limit() -> str:
     Returns:
         Default rate limit string in slowapi format.
     """
-    raw_limit = os.getenv("API_RATE_LIMIT", "100")
+    raw_limit = get_configured_api_rate_limit()
 
     try:
         limit_value = max(1, int(raw_limit))
     except ValueError:
-        limit_value = 100
+        limit_value = DEFAULT_API_RATE_LIMIT
 
     return f"{limit_value}/minute"
 

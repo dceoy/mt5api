@@ -4,19 +4,21 @@ from __future__ import annotations
 
 from typing import Any
 
+from mt5api.constants import API_KEY_SECURITY_SCHEME_NAME
+
 
 def test_strip_auth_from_openapi_handles_non_dict_components() -> None:
     """OpenAPI auth stripping should tolerate missing component mappings."""
     from mt5api import main  # noqa: PLC0415
 
     openapi_schema: dict[str, Any] = {
-        "security": [{"APIKeyHeader": []}],
+        "security": [{API_KEY_SECURITY_SCHEME_NAME: []}],
         "components": None,
         "paths": {
             "/bad": [],
             "/version": {
                 "summary": "Version endpoint",
-                "get": {"security": [{"APIKeyHeader": []}]},
+                "get": {"security": [{API_KEY_SECURITY_SCHEME_NAME: []}]},
             },
         },
     }
@@ -46,7 +48,9 @@ def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
     from mt5api import main  # noqa: PLC0415
 
     openapi_schema: dict[str, Any] = {
-        "components": {"securitySchemes": {"APIKeyHeader": {}, "Other": {}}},
+        "components": {
+            "securitySchemes": {API_KEY_SECURITY_SCHEME_NAME: {}, "Other": {}}
+        },
         "paths": {},
     }
 
