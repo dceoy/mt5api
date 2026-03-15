@@ -32,10 +32,16 @@ $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:API_LOG_LEVEL = "INFO"
 $env:API_RATE_LIMIT = "100"
 $env:API_CORS_ORIGINS = "*"
+$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
 ```
 
 MT5 connection details are managed by the underlying MT5 client configuration
 (for example login/server/path settings).
+
+`API_ROUTER_PREFIX` mounts the API routers under a shared prefix such as
+`/api/v1`. The default is `""`, so endpoints stay at root-level paths like
+`/health` and `/symbols`. `"api/v1"`, `"/api/v1"`, and `"/api/v1/"` are
+normalized to the same prefix.
 
 ## Running the API
 
@@ -83,6 +89,8 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?forma
 ## Endpoints
 
 All endpoints are read-only.
+
+If `API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 
 ### Health
 

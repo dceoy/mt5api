@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import importlib
 
-if TYPE_CHECKING:
-    import pytest
+import pytest
 
 
 def test_get_cors_origins_parses_list(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -32,3 +31,53 @@ def test_build_default_rate_limit_handles_invalid_value(
         middleware._build_default_rate_limit()  # pyright: ignore[reportPrivateUsage]
         == "100/minute"
     )
+
+
+@pytest.mark.parametrize(
+    ("raw_prefix", "expected_prefix"),
+    [
+        (None, ""),
+        ("", ""),
+        ("   ", ""),
+        ("/", ""),
+        ("api/v1", "/api/v1"),
+        ("/api/v1", "/api/v1"),
+        ("/api/v1/", "/api/v1"),
+        (" /api/v1/ ", "/api/v1"),
+    ],
+)
+def test_normalize_api_router_prefix(
+    raw_prefix: str | None,
+    expected_prefix: str,
+) -> None:
+    """Router prefix should be normalized for FastAPI mounting."""
+    from mt5api import constants  # noqa: PLC0415
+
+    assert (
+        constants._normalize_api_router_prefix(raw_prefix)  # pyright: ignore[reportPrivateUsage]
+        == expected_prefix
+    )
+
+
+def test_app_uses_api_router_prefix_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """App routes should be mounted under the configured API prefix."""
+    monkeypatch.setenv("API_ROUTER_PREFIX", "api/v1")
+
+    from mt5api import constants, main  # noqa: PLC0415
+
+    importlib.reload(constants)
+    reloaded_main = importlib.reload(main)
+
+    try:
+        paths = reloaded_main.app.openapi()["paths"]
+
+        assert "/api/v1/health" in paths
+        assert "/api/v1/symbols" in paths
+        assert "/health" not in paths
+        assert "/symbols" not in paths
+    finally:
+        monkeypatch.delenv("API_ROUTER_PREFIX", raising=False)
+        importlib.reload(constants)
+        importlib.reload(main)

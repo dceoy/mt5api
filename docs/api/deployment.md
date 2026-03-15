@@ -38,6 +38,7 @@ MT5_API_KEY=your-secret-api-key
 API_LOG_LEVEL=INFO
 API_RATE_LIMIT=100
 API_CORS_ORIGINS=*
+API_ROUTER_PREFIX=/api/v1
 ```
 
 6. Start the service:

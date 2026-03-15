@@ -42,6 +42,7 @@ uv sync
 
 ```powershell
 $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -49,6 +50,11 @@ Docs:
 
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
+
+Set `API_ROUTER_PREFIX` to mount the read-only API endpoints under a shared path
+such as `/api/v1`. The default is `""`, which keeps routes like `/health` and
+`/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are treated
+the same.
 
 ## Example Requests with curl
 
@@ -82,6 +88,8 @@ Market-data endpoints accept MetaTrader 5 constants either by official name
 - Account: `/account`, `/terminal`
 - Trading state: `/positions`, `/orders`
 - History: `/history/orders`, `/history/deals`
+
+If `API_ROUTER_PREFIX` is set, prepend that value to every API route above.
 
 ## License
 

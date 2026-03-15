@@ -38,6 +38,7 @@ mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:
 
 ```powershell
 $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
