@@ -10,6 +10,7 @@ from mt5api.constants import (
     ENV_API_CORS_ORIGINS,
     ENV_API_RATE_LIMIT,
     ENV_API_ROUTER_PREFIX,
+    ENV_MT5_API_KEY,
 )
 
 
@@ -60,6 +61,41 @@ def test_normalize_api_router_prefix(
     from mt5api import config  # noqa: PLC0415
 
     assert config.normalize_api_router_prefix(raw_prefix) == expected_prefix
+
+
+@pytest.mark.parametrize(
+    "raw_prefix", ["api//v1", "api?v=1", "../admin", "../../admin"]
+)
+def test_normalize_api_router_prefix_rejects_invalid_values(raw_prefix: str) -> None:
+    """Router prefix should reject malformed or unsafe path values."""
+    from mt5api import config  # noqa: PLC0415
+
+    with pytest.raises(ValueError, match="Invalid API_ROUTER_PREFIX"):
+        config.normalize_api_router_prefix(raw_prefix)
+
+
+@pytest.mark.parametrize(
+    ("raw_api_key", "expected_api_key"),
+    [
+        (None, None),
+        ("", None),
+        ("secret-key", "secret-key"),
+    ],
+)
+def test_get_configured_mt5_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_api_key: str | None,
+    expected_api_key: str | None,
+) -> None:
+    """MT5 API key config should treat empty strings as disabled auth."""
+    from mt5api import config  # noqa: PLC0415
+
+    if raw_api_key is None:
+        monkeypatch.delenv(ENV_MT5_API_KEY, raising=False)
+    else:
+        monkeypatch.setenv(ENV_MT5_API_KEY, raw_api_key)
+
+    assert config.get_configured_mt5_api_key() == expected_api_key
 
 
 def test_app_uses_api_router_prefix_from_environment(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 from .constants import (
     DEFAULT_API_CORS_ORIGINS,
@@ -19,6 +20,9 @@ from .constants import (
     ENV_MT5_API_KEY,
 )
 
+_VALID_API_ROUTER_PREFIX_PATTERN = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$")
+_INVALID_API_ROUTER_PREFIX_ERROR = "Invalid API_ROUTER_PREFIX"
+
 
 def normalize_api_router_prefix(raw_prefix: str | None) -> str:
     """Normalize the API router prefix from environment configuration.
@@ -28,6 +32,9 @@ def normalize_api_router_prefix(raw_prefix: str | None) -> str:
 
     Returns:
         Prefix suitable for FastAPI router mounting.
+
+    Raises:
+        ValueError: If the configured prefix contains invalid path characters.
     """
     if raw_prefix is None:
         return ""
@@ -35,6 +42,9 @@ def normalize_api_router_prefix(raw_prefix: str | None) -> str:
     prefix = raw_prefix.strip().strip("/")
     if not prefix:
         return ""
+
+    if not _VALID_API_ROUTER_PREFIX_PATTERN.fullmatch(prefix):
+        raise ValueError(_INVALID_API_ROUTER_PREFIX_ERROR)
 
     return f"/{prefix}"
 
