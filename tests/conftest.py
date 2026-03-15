@@ -12,10 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.mt5_constants import (
-    MT5_BOOK_TYPE_VALUES,
-    MT5_COPY_TICKS_VALUES,
-    MT5_ORDER_TYPE_VALUES,
-    MT5_TIMEFRAME_VALUES,
+    Mt5BookType,
+    Mt5OrderType,
+    install_mt5_constants,
 )
 
 if TYPE_CHECKING:
@@ -26,14 +25,7 @@ if TYPE_CHECKING:
 if "MetaTrader5" not in sys.modules:
     mock_mt5_module = Mock()
     mock_mt5_module.__name__ = "MetaTrader5"
-    for constants in (
-        MT5_TIMEFRAME_VALUES,
-        MT5_COPY_TICKS_VALUES,
-        MT5_BOOK_TYPE_VALUES,
-        MT5_ORDER_TYPE_VALUES,
-    ):
-        for name, value in constants.items():
-            setattr(mock_mt5_module, name, value)
+    install_mt5_constants(mock_mt5_module)
     sys.modules["MetaTrader5"] = mock_mt5_module
 
 # Set test API key before importing app
@@ -151,12 +143,12 @@ def mock_mt5_client() -> Mock:
     # Mock market book returning DataFrame
     client.market_book_get_as_df.return_value = pd.DataFrame([
         {
-            "type": MT5_BOOK_TYPE_VALUES["BOOK_TYPE_SELL"],
+            "type": int(Mt5BookType.BOOK_TYPE_SELL),
             "price": 1.08500,
             "volume": 1.0,
         },
         {
-            "type": MT5_BOOK_TYPE_VALUES["BOOK_TYPE_BUY"],
+            "type": int(Mt5BookType.BOOK_TYPE_BUY),
             "price": 1.08520,
             "volume": 1.5,
         },
@@ -180,7 +172,7 @@ def mock_mt5_client() -> Mock:
         {
             "ticket": 789012,
             "symbol": "GBPUSD",
-            "type": MT5_ORDER_TYPE_VALUES["ORDER_TYPE_BUY_LIMIT"],
+            "type": int(Mt5OrderType.ORDER_TYPE_BUY_LIMIT),
             "volume": 0.10,
             "price_open": 1.25000,
         },
