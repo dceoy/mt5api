@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from mt5api.constants import API_KEY_HEADER_NAME
+
 if TYPE_CHECKING:
     from unittest.mock import Mock
 
@@ -14,7 +16,7 @@ if TYPE_CHECKING:
 def test_version_endpoint_requires_authentication(client: TestClient) -> None:
     """Test version endpoint requires API key."""
     # No API key header
-    response = client.get("/api/v1/version")
+    response = client.get("/version")
 
     assert response.status_code == 401
 
@@ -26,8 +28,8 @@ def test_version_endpoint_requires_authentication(client: TestClient) -> None:
 
 def test_version_endpoint_rejects_invalid_api_key(client: TestClient) -> None:
     """Test version endpoint rejects invalid API key."""
-    headers = {"X-API-Key": "wrong-key"}
-    response = client.get("/api/v1/version", headers=headers)
+    headers = {API_KEY_HEADER_NAME: "wrong-key"}
+    response = client.get("/version", headers=headers)
 
     assert response.status_code == 401
 
@@ -42,7 +44,7 @@ def test_version_endpoint_accepts_valid_api_key(
     api_headers: dict[str, str],
 ) -> None:
     """Test version endpoint accepts valid API key."""
-    response = client.get("/api/v1/version", headers=api_headers)
+    response = client.get("/version", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -52,7 +54,7 @@ def test_symbols_endpoint_requires_authentication(
     mock_mt5_client: Mock,
 ) -> None:
     """Test router-level protected endpoints require API key."""
-    response = client.get("/api/v1/symbols?group=*USD*")
+    response = client.get("/symbols?group=*USD*")
 
     assert response.status_code == 401
     mock_mt5_client.symbols_get_as_df.assert_not_called()
@@ -68,8 +70,8 @@ def test_symbols_endpoint_rejects_invalid_api_key(
     mock_mt5_client: Mock,
 ) -> None:
     """Test symbols endpoint rejects invalid API key."""
-    headers = {"X-API-Key": "wrong-key"}
-    response = client.get("/api/v1/symbols?group=*USD*", headers=headers)
+    headers = {API_KEY_HEADER_NAME: "wrong-key"}
+    response = client.get("/symbols?group=*USD*", headers=headers)
 
     assert response.status_code == 401
     mock_mt5_client.symbols_get_as_df.assert_not_called()
@@ -89,7 +91,7 @@ def test_version_endpoint_allows_requests_when_auth_disabled(
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 
-    response = client.get("/api/v1/version")
+    response = client.get("/version")
 
     assert response.status_code == 200
 
@@ -104,7 +106,7 @@ def test_symbols_endpoint_allows_requests_when_auth_disabled(
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 
-    response = client.get("/api/v1/symbols?group=*USD*")
+    response = client.get("/symbols?group=*USD*")
 
     assert response.status_code == 200
     mock_mt5_client.symbols_get_as_df.assert_called_with(group="*USD*")
@@ -137,5 +139,5 @@ def test_openapi_does_not_require_api_key_when_auth_disabled(
 
     schema = response.json()
     assert "securitySchemes" not in schema.get("components", {})
-    assert "security" not in schema["paths"]["/api/v1/version"]["get"]
-    assert "security" not in schema["paths"]["/api/v1/symbols"]["get"]
+    assert "security" not in schema["paths"]["/version"]["get"]
+    assert "security" not in schema["paths"]["/symbols"]["get"]

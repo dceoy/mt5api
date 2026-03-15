@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
+from mt5api.constants import API_KEY_HEADER_NAME, ENV_MT5_API_KEY
 from tests.mt5_constants import (
     Mt5BookType,
     Mt5OrderType,
@@ -29,7 +30,7 @@ if "MetaTrader5" not in sys.modules:
     sys.modules["MetaTrader5"] = mock_mt5_module
 
 # Set test API key before importing app
-os.environ["MT5_API_KEY"] = "test-api-key-12345"
+os.environ[ENV_MT5_API_KEY] = "test-api-key-12345"
 
 
 @pytest.fixture
@@ -227,7 +228,7 @@ def api_headers() -> dict[str, str]:
     Returns:
         Dictionary with X-API-Key header.
     """
-    return {"X-API-Key": "test-api-key-12345"}
+    return {API_KEY_HEADER_NAME: "test-api-key-12345"}
 
 
 @pytest.fixture(autouse=True)

@@ -38,6 +38,7 @@ MT5_API_KEY=your-secret-api-key
 API_LOG_LEVEL=INFO
 API_RATE_LIMIT=100
 API_CORS_ORIGINS=*
+API_ROUTER_PREFIX=/api/v1
 ```
 
 6. Start the service:
@@ -51,7 +52,7 @@ nssm start mt5api
 In PowerShell, use `curl.exe` if `curl` resolves to `Invoke-WebRequest`.
 
 ```console
-curl "http://localhost:8000/api/v1/health"
+curl "http://localhost:8000/health"
 ```
 
 Expected status: `healthy` (or `unhealthy` if MT5 is not connected).

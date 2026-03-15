@@ -24,7 +24,7 @@ def test_lifespan_calls_shutdown_on_exit(
     monkeypatch.setattr(main, "shutdown_mt5_client", fake_shutdown)
 
     with TestClient(main.app) as client:
-        response = client.get("/api/v1/health")
+        response = client.get("/health")
         status_code = response.status_code
 
     assert (status_code, shutdown_called["value"]) == (200, True)

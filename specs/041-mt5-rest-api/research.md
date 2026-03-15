@@ -68,7 +68,7 @@ app = FastAPI(
     description="REST API for MetaTrader 5 market data"
 )
 
-@app.get("/api/v1/symbols/{symbol}")
+@app.get("/symbols/{symbol}")
 async def get_symbol_info(symbol: str, client: Mt5DataClient = Depends(get_mt5_client)):
     data = client.symbol_info_as_df(symbol)
     return data.to_dict(orient="records")
@@ -140,7 +140,7 @@ def dataframe_to_parquet(df: pd.DataFrame) -> bytes:
     return buffer.getvalue()
 
 # FastAPI endpoint
-@app.get("/api/v1/rates/from")
+@app.get("/rates/from")
 async def get_rates(...):
     df = client.copy_rates_from_as_df(...)
     if format == "parquet":
@@ -205,7 +205,7 @@ async def verify_api_key(api_key: str = Security(API_KEY_HEADER)) -> str:
     return api_key
 
 # Usage in endpoints
-@app.get("/api/v1/symbols", dependencies=[Depends(verify_api_key)])
+@app.get("/symbols", dependencies=[Depends(verify_api_key)])
 async def get_symbols(...):
     ...
 ```
@@ -282,7 +282,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get("/api/v1/rates/{symbol}")
+@app.get("/rates/{symbol}")
 async def get_rates(symbol: str, timeframe: int, count: int):
     """Get historical rates using asyncio.to_thread."""
     rates = await asyncio.to_thread(
@@ -310,7 +310,7 @@ async def get_rates(symbol: str, timeframe: int, count: int):
 ```python
 from starlette.concurrency import run_in_threadpool
 
-@app.get("/api/v1/rates/{symbol}")
+@app.get("/rates/{symbol}")
 async def get_rates(symbol: str):
     """Get rates using Starlette's thread pool."""
     rates = await run_in_threadpool(
@@ -325,7 +325,7 @@ async def get_rates(symbol: str):
 For simplicity, you can use `def` instead of `async def`:
 
 ```python
-@app.get("/api/v1/rates/{symbol}")
+@app.get("/rates/{symbol}")
 def get_rates(symbol: str):  # Note: def, not async def
     """FastAPI runs this in a thread pool automatically."""
     rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 100)
@@ -401,7 +401,7 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 from io import BytesIO
 
-@app.get("/api/v1/symbols")
+@app.get("/symbols")
 async def get_symbols(request: Request, group: str | None = None):
     # Get data
     df = await get_symbols_data(group)
@@ -441,7 +441,7 @@ class ResponseFormat(str, Enum):
     JSON = "json"
     PARQUET = "parquet"
 
-@app.get("/api/v1/symbols")
+@app.get("/symbols")
 async def get_symbols(
     request: Request,
     group: str | None = None,
@@ -465,14 +465,14 @@ async def get_symbols(
 
 ```bash
 # Using Accept header (recommended for API clients)
-curl -H "Accept: application/parquet" http://localhost:8000/api/v1/symbols
+curl -H "Accept: application/parquet" http://localhost:8000/symbols
 
 # Using query parameter (convenient for browsers)
-curl http://localhost:8000/api/v1/symbols?format=parquet
+curl http://localhost:8000/symbols?format=parquet
 
 # Query parameter takes precedence
 curl -H "Accept: application/json" \
-     http://localhost:8000/api/v1/symbols?format=parquet  # Returns Parquet
+     http://localhost:8000/symbols?format=parquet  # Returns Parquet
 ```
 
 ### Why Both?
@@ -514,7 +514,7 @@ app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-@app.get("/api/v1/rates/{symbol}")
+@app.get("/rates/{symbol}")
 @limiter.limit("100/minute")  # 100 requests per minute
 async def get_rates(request: Request, symbol: str):
     # Your logic here
@@ -545,7 +545,7 @@ async def startup():
     await FastAPILimiter.init(redis_client)
 
 @app.get(
-    "/api/v1/rates/{symbol}",
+    "/rates/{symbol}",
     dependencies=[Depends(RateLimiter(times=100, seconds=60))]  # 100/min
 )
 async def get_rates(symbol: str):

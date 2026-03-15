@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import BaseModel
 
+from mt5api.constants import ENV_API_RATE_LIMIT
 from mt5api.middleware import _create_error_response, add_middleware
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ def test_create_error_response_builds_problem_details() -> None:
         "Test Error",
         400,
         "Test detail",
-        "/api/v1/test",
+        "/test",
     )
 
     assert response.status_code == 400
@@ -43,7 +44,7 @@ def test_create_error_response_builds_problem_details() -> None:
         "title": "Test Error",
         "status": 400,
         "detail": "Test detail",
-        "instance": "/api/v1/test",
+        "instance": "/test",
     }
 
 
@@ -151,7 +152,7 @@ def test_logging_middleware_adds_process_time_header() -> None:
 
 def test_rate_limiting_enforced(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test rate limiting returns 429 when limit exceeded."""
-    monkeypatch.setenv("API_RATE_LIMIT", "1")
+    monkeypatch.setenv(ENV_API_RATE_LIMIT, "1")
 
     app = FastAPI()
     add_middleware(app)

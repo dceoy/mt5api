@@ -32,10 +32,16 @@ $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:API_LOG_LEVEL = "INFO"
 $env:API_RATE_LIMIT = "100"
 $env:API_CORS_ORIGINS = "*"
+$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
 ```
 
 MT5 connection details are managed by the underlying MT5 client configuration
 (for example login/server/path settings).
+
+`API_ROUTER_PREFIX` mounts the API routers under a shared prefix such as
+`/api/v1`. The default is `""`, so endpoints stay at root-level paths like
+`/health` and `/symbols`. `"api/v1"`, `"/api/v1"`, and `"/api/v1/"` are
+normalized to the same prefix.
 
 ## Running the API
 
@@ -55,12 +61,12 @@ works. In PowerShell, use `curl.exe` if `curl` resolves to
 
 ## Authentication
 
-When `MT5_API_KEY` is set, all endpoints except `/api/v1/health` require an
+When `MT5_API_KEY` is set, all endpoints except `/health` require an
 `X-API-Key` header. When `MT5_API_KEY` is unset or empty, authentication is
 disabled and those endpoints are accessible without authorization.
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
 ```
 
 ## Rate Limiting
@@ -73,51 +79,53 @@ Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
 Use `Accept` header or `format` query parameter:
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?format=json"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?format=json"
 ```
 
 ## Endpoints
 
 All endpoints are read-only.
 
+If `API_ROUTER_PREFIX` is configured, prepend it to each API route below.
+
 ### Health
 
-- `GET /api/v1/health` (no auth)
-- `GET /api/v1/version`
+- `GET /health` (no auth)
+- `GET /version`
 
 ### Symbols
 
-- `GET /api/v1/symbols` (`group`, `format`)
-- `GET /api/v1/symbols/{symbol}` (`format`)
-- `GET /api/v1/symbols/{symbol}/tick` (`format`)
+- `GET /symbols` (`group`, `format`)
+- `GET /symbols/{symbol}` (`format`)
+- `GET /symbols/{symbol}/tick` (`format`)
 
 ### Market Data
 
 - `timeframe` and `flags` accept either the official MetaTrader 5 constant
   name (for example `TIMEFRAME_M1`, `COPY_TICKS_ALL`) or the equivalent integer
   value.
-- `GET /api/v1/rates/from` (`symbol`, `timeframe`, `date_from`, `count`, `format`)
-- `GET /api/v1/rates/from-pos` (`symbol`, `timeframe`, `start_pos`, `count`, `format`)
-- `GET /api/v1/rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
-- `GET /api/v1/ticks/from` (`symbol`, `date_from`, `count`, `flags`, `format`)
-- `GET /api/v1/ticks/range` (`symbol`, `date_from`, `date_to`, `flags`, `format`)
-- `GET /api/v1/market-book/{symbol}` (`format`)
+- `GET /rates/from` (`symbol`, `timeframe`, `date_from`, `count`, `format`)
+- `GET /rates/from-pos` (`symbol`, `timeframe`, `start_pos`, `count`, `format`)
+- `GET /rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
+- `GET /ticks/from` (`symbol`, `date_from`, `count`, `flags`, `format`)
+- `GET /ticks/range` (`symbol`, `date_from`, `date_to`, `flags`, `format`)
+- `GET /market-book/{symbol}` (`format`)
 
 ### Account & Trading State
 
-- `GET /api/v1/account` (`format`)
-- `GET /api/v1/terminal` (`format`)
-- `GET /api/v1/positions` (`symbol`, `group`, `ticket`, `format`)
-- `GET /api/v1/orders` (`symbol`, `group`, `ticket`, `format`)
+- `GET /account` (`format`)
+- `GET /terminal` (`format`)
+- `GET /positions` (`symbol`, `group`, `ticket`, `format`)
+- `GET /orders` (`symbol`, `group`, `ticket`, `format`)
 
 ### History
 
-- `GET /api/v1/history/orders` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
-- `GET /api/v1/history/deals` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
+- `GET /history/orders` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
+- `GET /history/deals` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
 
 ## Response Formatter Utilities
 
@@ -137,47 +145,47 @@ in `mt5api.formatters` to keep JSON and Parquet responses consistent:
 ### Health Check (No Auth)
 
 ```console
-curl "http://windows-host:8000/api/v1/health"
+curl "http://windows-host:8000/health"
 ```
 
 ### MT5 Version
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/version"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/version"
 ```
 
 ### Symbols
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
 ```
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?group=*USD*"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
 ```
 
 ### Symbol Details
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols/EURUSD"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols/EURUSD"
 ```
 
 ### Rates (OHLCV)
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ### Account Info
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/account"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/account"
 ```
 
 ### History Orders
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
 ```
 
 ## Error Responses
@@ -190,7 +198,7 @@ Errors follow RFC 7807 Problem Details:
   "title": "Request Validation Failed",
   "status": 400,
   "detail": "count must be positive (got: -10)",
-  "instance": "/api/v1/rates/from"
+  "instance": "/rates/from"
 }
 ```
 

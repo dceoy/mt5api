@@ -250,25 +250,25 @@ Will run `.specify/scripts/bash/update-agent-context.sh claude` to add:
 
 **Phase 3: Market Data Endpoints (P1)**
 
-1. Symbols list endpoint (GET /api/v1/symbols)
-2. Symbol info endpoint (GET /api/v1/symbols/{symbol})
-3. Symbol tick endpoint (GET /api/v1/symbols/{symbol}/tick)
-4. Rates endpoints (GET /api/v1/rates/from, /from-pos, /range)
-5. Ticks endpoints (GET /api/v1/ticks/from, /range)
+1. Symbols list endpoint (GET /symbols)
+2. Symbol info endpoint (GET /symbols/{symbol})
+3. Symbol tick endpoint (GET /symbols/{symbol}/tick)
+4. Rates endpoints (GET /rates/from, /from-pos, /range)
+5. Ticks endpoints (GET /ticks/from, /range)
 
 **Phase 4: Account & Terminal (P2)**
 
-1. Account info endpoint (GET /api/v1/account)
-2. Terminal info endpoint (GET /api/v1/terminal)
-3. Version endpoint (GET /api/v1/version)
-4. Market book endpoint (GET /api/v1/market-book/{symbol})
+1. Account info endpoint (GET /account)
+2. Terminal info endpoint (GET /terminal)
+3. Version endpoint (GET /version)
+4. Market book endpoint (GET /market-book/{symbol})
 
 **Phase 5: History & Positions (P2)**
 
-1. Current positions endpoint (GET /api/v1/positions)
-2. Current orders endpoint (GET /api/v1/orders)
-3. Historical orders endpoint (GET /api/v1/history/orders)
-4. Historical deals endpoint (GET /api/v1/history/deals)
+1. Current positions endpoint (GET /positions)
+2. Current orders endpoint (GET /orders)
+3. Historical orders endpoint (GET /history/orders)
+4. Historical deals endpoint (GET /history/deals)
 
 **Phase 6: Security & Production (P3)**
 

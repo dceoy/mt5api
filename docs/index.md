@@ -39,6 +39,7 @@ pip install mt5api
 
 ```powershell
 $env:MT5_API_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -50,12 +51,12 @@ works. In PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
 
 ```console
-curl "http://windows-host:8000/api/v1/health"
+curl "http://windows-host:8000/health"
 ```
 
 ```console
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?group=*USD*"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
 ```
 
 ## API Reference

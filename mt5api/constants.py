@@ -1,0 +1,31 @@
+"""Application-wide constants."""
+
+API_TITLE = "MT5 REST API"
+API_DESCRIPTION = (
+    "REST API for MetaTrader 5 data access. "
+    "Provides read-only access to market data, "
+    "account information, and trading history via HTTP endpoints."
+)
+API_VERSION = "1.0.0"
+API_DOCS_URL = "/docs"
+API_REDOC_URL = "/redoc"
+API_OPENAPI_URL = "/openapi.json"
+API_APP_IMPORT = "mt5api.main:app"
+API_KEY_HEADER_NAME = "X-API-Key"
+API_KEY_SECURITY_SCHEME_NAME = "APIKeyHeader"
+
+ENV_API_HOST = "API_HOST"
+ENV_API_PORT = "API_PORT"
+ENV_API_LOG_LEVEL = "API_LOG_LEVEL"
+ENV_API_RATE_LIMIT = "API_RATE_LIMIT"
+ENV_API_CORS_ORIGINS = "API_CORS_ORIGINS"
+ENV_API_ROUTER_PREFIX = "API_ROUTER_PREFIX"
+ENV_MT5_API_KEY = "MT5_API_KEY"
+
+DEFAULT_API_HOST = "0.0.0.0"  # noqa: S104
+DEFAULT_API_PORT = 8000
+DEFAULT_API_LOG_LEVEL = "INFO"
+DEFAULT_API_RATE_LIMIT = 100
+DEFAULT_API_CORS_ORIGINS = "*"
+DEFAULT_API_ROUTER_PREFIX = ""
+MAX_API_PORT = 65535

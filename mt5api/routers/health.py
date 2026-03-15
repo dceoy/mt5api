@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends
 from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
 
 from mt5api.auth import verify_api_key
+from mt5api.constants import API_VERSION
 from mt5api.dependencies import (
     get_mt5_client,
     get_response_format,
@@ -20,11 +21,9 @@ from mt5api.models import DataResponse, HealthResponse, ResponseFormat
 if TYPE_CHECKING:
     from fastapi.responses import Response
 
-API_VERSION = "1.0.0"
-
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1", tags=["health"])
+router = APIRouter(tags=["health"])
 
 
 @router.get(

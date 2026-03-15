@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-import os
 from typing import Annotated
 
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
+from .config import get_configured_mt5_api_key
+from .constants import API_KEY_HEADER_NAME
+
 # API key security scheme
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+api_key_header = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 # Auth mode is fixed for the lifetime of the process.
-_API_KEY: str | None = os.getenv("MT5_API_KEY") or None  # treat empty string as unset
+_API_KEY: str | None = get_configured_mt5_api_key()
 
 
 def get_api_key() -> str | None:
@@ -35,7 +37,7 @@ def verify_api_key(
     """Verify API key from request header.
 
     Args:
-        api_key_header_value: API key from X-API-Key header.
+        api_key_header_value: API key from the configured request header.
 
     Returns:
         Verified API key when authentication is enabled, otherwise ``None``.
@@ -54,7 +56,7 @@ def verify_api_key(
                 "type": "/errors/unauthorized",
                 "title": "Authentication Required",
                 "status": 401,
-                "detail": "Missing API key. Provide X-API-Key header.",
+                "detail": f"Missing API key. Provide {API_KEY_HEADER_NAME} header.",
                 "instance": None,
             },
         )

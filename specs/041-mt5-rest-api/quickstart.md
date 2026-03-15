@@ -111,7 +111,7 @@ uvicorn mt5api.main:app --reload --host 127.0.0.1 --port 8000
 ### Verify API is running
 
 ```bash
-curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/health
 ```
 
 Expected response:
@@ -141,7 +141,7 @@ All API endpoints (except `/health` and `/docs`) require authentication via API 
 
 ```bash
 curl -H "X-API-Key: your-secret-api-key-here" \
-     http://localhost:8000/api/v1/symbols
+     http://localhost:8000/symbols
 ```
 
 ## Basic Usage Examples
@@ -150,7 +150,7 @@ curl -H "X-API-Key: your-secret-api-key-here" \
 
 ```bash
 # No authentication required
-curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/health
 ```
 
 Response:
@@ -168,14 +168,14 @@ Response:
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/version
+     http://localhost:8000/version
 ```
 
 ### List All Symbols
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/symbols
+     http://localhost:8000/symbols
 ```
 
 ### Filter Symbols by Group
@@ -183,18 +183,18 @@ curl -H "X-API-Key: YOUR_KEY" \
 ```bash
 # Get all USD pairs
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/symbols?group=*USD*"
+     "http://localhost:8000/symbols?group=*USD*"
 
 # Get all Forex symbols
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/symbols?group=Forex*"
+     "http://localhost:8000/symbols?group=Forex*"
 ```
 
 ### Get Symbol Information
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/symbols/EURUSD
+     http://localhost:8000/symbols/EURUSD
 ```
 
 Response:
@@ -220,7 +220,7 @@ Response:
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/symbols/EURUSD/tick
+     http://localhost:8000/symbols/EURUSD/tick
 ```
 
 ### Get Historical Rates (Candles)
@@ -228,7 +228,7 @@ curl -H "X-API-Key: YOUR_KEY" \
 ```bash
 # Get 100 H1 candles from a specific date
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=60&date_from=2024-01-01T00:00:00Z&count=100"
+     "http://localhost:8000/rates/from?symbol=EURUSD&timeframe=60&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 Response:
@@ -257,7 +257,7 @@ Response:
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/rates/range?symbol=EURUSD&timeframe=60&date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
+     "http://localhost:8000/rates/range?symbol=EURUSD&timeframe=60&date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
 ```
 
 ### Get Tick Data
@@ -265,7 +265,7 @@ curl -H "X-API-Key: YOUR_KEY" \
 ```bash
 # Get last 1000 ticks
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/ticks/from?symbol=EURUSD&date_from=2024-01-01T00:00:00Z&count=1000&flags=6"
+     "http://localhost:8000/ticks/from?symbol=EURUSD&date_from=2024-01-01T00:00:00Z&count=1000&flags=6"
 ```
 
 Flags:
@@ -278,7 +278,7 @@ Flags:
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/account
+     http://localhost:8000/account
 ```
 
 Response:
@@ -305,32 +305,32 @@ Response:
 ```bash
 # Get all positions
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/positions
+     http://localhost:8000/positions
 
 # Filter by symbol
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/positions?symbol=EURUSD"
+     "http://localhost:8000/positions?symbol=EURUSD"
 ```
 
 ### Get Pending Orders
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     http://localhost:8000/api/v1/orders
+     http://localhost:8000/orders
 ```
 
 ### Get Historical Orders
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z"
+     "http://localhost:8000/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z"
 ```
 
 ### Get Historical Deals
 
 ```bash
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/history/deals?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z&symbol=EURUSD"
+     "http://localhost:8000/history/deals?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z&symbol=EURUSD"
 ```
 
 ## Format Selection
@@ -341,11 +341,11 @@ curl -H "X-API-Key: YOUR_KEY" \
 # Using Accept header
 curl -H "X-API-Key: YOUR_KEY" \
      -H "Accept: application/json" \
-     http://localhost:8000/api/v1/symbols
+     http://localhost:8000/symbols
 
 # Using query parameter
 curl -H "X-API-Key: YOUR_KEY" \
-     "http://localhost:8000/api/v1/symbols?format=json"
+     "http://localhost:8000/symbols?format=json"
 ```
 
 ### Parquet Format
@@ -355,12 +355,12 @@ curl -H "X-API-Key: YOUR_KEY" \
 curl -H "X-API-Key: YOUR_KEY" \
      -H "Accept: application/parquet" \
      -o symbols.parquet \
-     http://localhost:8000/api/v1/symbols
+     http://localhost:8000/symbols
 
 # Using query parameter
 curl -H "X-API-Key: YOUR_KEY" \
      -o rates.parquet \
-     "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=60&date_from=2024-01-01T00:00:00Z&count=1000&format=parquet"
+     "http://localhost:8000/rates/from?symbol=EURUSD&timeframe=60&date_from=2024-01-01T00:00:00Z&count=1000&format=parquet"
 ```
 
 ### Reading Parquet files
@@ -401,7 +401,7 @@ class MT5Client:
     def get_symbols(self, group: str | None = None) -> pd.DataFrame:
         """Get available symbols."""
         params = {"group": group} if group else {}
-        response = self.client.get(f"{self.base_url}/api/v1/symbols", params=params)
+        response = self.client.get(f"{self.base_url}/symbols", params=params)
         response.raise_for_status()
         data = response.json()
         return pd.DataFrame(data["data"])
@@ -420,7 +420,7 @@ class MT5Client:
             "date_from": date_from.isoformat(),
             "count": count
         }
-        response = self.client.get(f"{self.base_url}/api/v1/rates/from", params=params)
+        response = self.client.get(f"{self.base_url}/rates/from", params=params)
         response.raise_for_status()
         data = response.json()
         df = pd.DataFrame(data["data"])
@@ -429,7 +429,7 @@ class MT5Client:
 
     def get_account(self) -> dict:
         """Get account information."""
-        response = self.client.get(f"{self.base_url}/api/v1/account")
+        response = self.client.get(f"{self.base_url}/account")
         response.raise_for_status()
         return response.json()["data"]
 
@@ -476,7 +476,7 @@ The API returns standard HTTP status codes and RFC 7807 Problem Details format f
   "title": "MT5 Terminal Not Connected",
   "status": 503,
   "detail": "MetaTrader5 terminal is not running or not logged in. Please start MT5 and login.",
-  "instance": "/api/v1/symbols/EURUSD"
+  "instance": "/symbols/EURUSD"
 }
 ```
 
@@ -484,7 +484,7 @@ The API returns standard HTTP status codes and RFC 7807 Problem Details format f
 
 ```python
 try:
-    response = client.get(f"{base_url}/api/v1/symbols/INVALID")
+    response = client.get(f"{base_url}/symbols/INVALID")
     response.raise_for_status()
 except httpx.HTTPStatusError as e:
     error = e.response.json()
@@ -514,13 +514,13 @@ uv run pytest tests/test_api/ --cov=mt5api --cov-report=html
 pip install httpie
 
 # Make requests with httpie (cleaner syntax)
-http GET localhost:8000/api/v1/health
+http GET localhost:8000/health
 
-http GET localhost:8000/api/v1/symbols \
+http GET localhost:8000/symbols \
     X-API-Key:YOUR_KEY \
     group=="*USD*"
 
-http GET localhost:8000/api/v1/symbols/EURUSD \
+http GET localhost:8000/symbols/EURUSD \
     X-API-Key:YOUR_KEY \
     Accept:application/json
 ```
@@ -632,10 +632,10 @@ server {
 
 ```bash
 # Health check endpoint for monitoring
-curl -f http://localhost:8000/api/v1/health || exit 1
+curl -f http://localhost:8000/health || exit 1
 
 # Add to cron for periodic checks
-*/5 * * * * curl -f http://localhost:8000/api/v1/health || systemctl restart mt5-api
+*/5 * * * * curl -f http://localhost:8000/health || systemctl restart mt5-api
 ```
 
 ## Next Steps

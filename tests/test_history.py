@@ -16,9 +16,9 @@ def test_get_history_orders_with_date_range(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/history/orders accepts date range."""
+    """GET /history/orders accepts date range."""
     response = client.get(
-        "/api/v1/history/orders",
+        "/history/orders",
         params={
             "date_from": "2024-01-01T00:00:00Z",
             "date_to": "2024-01-02T00:00:00Z",
@@ -45,9 +45,9 @@ def test_get_history_orders_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/history/orders supports Parquet output."""
+    """GET /history/orders supports Parquet output."""
     response = client.get(
-        "/api/v1/history/orders",
+        "/history/orders",
         params={
             "date_from": "2024-01-01T00:00:00Z",
             "date_to": "2024-01-02T00:00:00Z",
@@ -74,9 +74,9 @@ def test_get_history_deals_with_ticket(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/history/deals accepts ticket filter."""
+    """GET /history/deals accepts ticket filter."""
     response = client.get(
-        "/api/v1/history/deals",
+        "/history/deals",
         params={"ticket": 123456},
         headers=api_headers,
     )
@@ -100,9 +100,9 @@ def test_get_history_deals_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/history/deals supports Parquet output."""
+    """GET /history/deals supports Parquet output."""
     response = client.get(
-        "/api/v1/history/deals?ticket=123456&format=parquet",
+        "/history/deals?ticket=123456&format=parquet",
         headers=api_headers,
     )
 
@@ -124,8 +124,8 @@ def test_get_positions_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/positions returns open positions."""
-    response = client.get("/api/v1/positions", headers=api_headers)
+    """GET /positions returns open positions."""
+    response = client.get("/positions", headers=api_headers)
 
     assert response.status_code == 200
     payload = response.json()
@@ -144,8 +144,8 @@ def test_get_positions_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/positions supports Parquet output."""
-    response = client.get("/api/v1/positions?format=parquet", headers=api_headers)
+    """GET /positions supports Parquet output."""
+    response = client.get("/positions?format=parquet", headers=api_headers)
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
@@ -162,8 +162,8 @@ def test_get_orders_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/orders returns pending orders."""
-    response = client.get("/api/v1/orders", headers=api_headers)
+    """GET /orders returns pending orders."""
+    response = client.get("/orders", headers=api_headers)
 
     assert response.status_code == 200
     payload = response.json()
@@ -182,8 +182,8 @@ def test_get_orders_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/orders supports Parquet output."""
-    response = client.get("/api/v1/orders?format=parquet", headers=api_headers)
+    """GET /orders supports Parquet output."""
+    response = client.get("/orders?format=parquet", headers=api_headers)
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")

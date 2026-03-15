@@ -11,7 +11,13 @@ Query symbol-related endpoints on the mt5api.
 ## Configuration
 
 The API base URL defaults to `http://localhost:8000`. Set `MT5_API_URL` to override.
-All endpoints require the `X-API-Key` header. Set `MT5_API_KEY` in the environment.
+When the server is configured with `MT5_API_KEY`, send the same value in the
+`X-API-Key` header. If server-side auth is disabled, the header is optional.
+
+## Response Formats
+
+All symbol endpoints return JSON by default. Request Parquet with
+`format=parquet` or `Accept: application/parquet`.
 
 ## Endpoints
 
@@ -19,7 +25,7 @@ All endpoints require the `X-API-Key` header. Set `MT5_API_KEY` in the environme
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols" | python -m json.tool
 ```
 
 Optional query parameters:
@@ -27,19 +33,20 @@ Optional query parameters:
 | Parameter | Type   | Description                                   |
 | --------- | ------ | --------------------------------------------- |
 | group     | string | Symbol group filter (e.g., `*USD*`, `Forex*`) |
+| format    | string | Optional response format: `json` or `parquet` |
 
 Example with filter:
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols?group=*USD*" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols?group=*USD*" | python -m json.tool
 ```
 
 ### Get Symbol Info
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols/EURUSD" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols/EURUSD" | python -m json.tool
 ```
 
 Path parameters:
@@ -48,11 +55,17 @@ Path parameters:
 | --------- | ------ | ---------------------------- |
 | symbol    | string | Symbol name (e.g., `EURUSD`) |
 
+Optional query parameters:
+
+| Parameter | Type   | Description                       |
+| --------- | ------ | --------------------------------- |
+| format    | string | Optional response format override |
+
 ### Get Latest Tick
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols/EURUSD/tick" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols/EURUSD/tick" | python -m json.tool
 ```
 
 Path parameters:
@@ -61,9 +74,18 @@ Path parameters:
 | --------- | ------ | ----------- |
 | symbol    | string | Symbol name |
 
+Optional query parameters:
+
+| Parameter | Type   | Description                       |
+| --------- | ------ | --------------------------------- |
+| format    | string | Optional response format override |
+
 ## Procedure
 
 1. Identify which symbol operation the user needs (list, info, or tick).
 2. Substitute the correct symbol name and optional filters into the URL.
-3. Run the `curl` command and parse the JSON response.
-4. Summarize the results, highlighting key fields such as bid/ask prices, spread, symbol properties, or available symbols.
+3. Decide whether the caller needs JSON or Parquet output.
+4. Run the `curl` command and parse the JSON response, or note when the API
+   returned Parquet data.
+5. Summarize the results, highlighting key fields such as bid/ask prices,
+   spread, symbol properties, or available symbols.

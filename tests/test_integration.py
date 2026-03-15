@@ -13,7 +13,7 @@ def test_symbol_retrieval_journey(
     api_headers: dict[str, str],
 ) -> None:
     """Verify symbol listing and detail retrieval works end-to-end."""
-    symbols_response = client.get("/api/v1/symbols", headers=api_headers)
+    symbols_response = client.get("/symbols", headers=api_headers)
     assert symbols_response.status_code == 200
 
     symbols_payload = symbols_response.json()
@@ -21,13 +21,13 @@ def test_symbol_retrieval_journey(
     symbol_name = symbols_payload["data"][0]["name"]
 
     info_response = client.get(
-        f"/api/v1/symbols/{symbol_name}",
+        f"/symbols/{symbol_name}",
         headers=api_headers,
     )
     assert info_response.status_code == 200
 
     tick_response = client.get(
-        f"/api/v1/symbols/{symbol_name}/tick",
+        f"/symbols/{symbol_name}/tick",
         headers=api_headers,
     )
     assert tick_response.status_code == 200
@@ -38,10 +38,10 @@ def test_account_monitoring_journey(
     api_headers: dict[str, str],
 ) -> None:
     """Verify account and terminal info endpoints respond."""
-    account_response = client.get("/api/v1/account", headers=api_headers)
+    account_response = client.get("/account", headers=api_headers)
     assert account_response.status_code == 200
 
-    terminal_response = client.get("/api/v1/terminal", headers=api_headers)
+    terminal_response = client.get("/terminal", headers=api_headers)
     assert terminal_response.status_code == 200
 
 
@@ -51,7 +51,7 @@ def test_history_journey(
 ) -> None:
     """Verify history endpoints respond with required filters."""
     orders_response = client.get(
-        "/api/v1/history/orders",
+        "/history/orders",
         params={
             "date_from": "2024-01-01T00:00:00Z",
             "date_to": "2024-01-02T00:00:00Z",
@@ -61,7 +61,7 @@ def test_history_journey(
     assert orders_response.status_code == 200
 
     deals_response = client.get(
-        "/api/v1/history/deals",
+        "/history/deals",
         params={"ticket": 123456},
         headers=api_headers,
     )
@@ -73,8 +73,8 @@ def test_positions_and_orders_journey(
     api_headers: dict[str, str],
 ) -> None:
     """Verify positions and orders endpoints respond."""
-    positions_response = client.get("/api/v1/positions", headers=api_headers)
+    positions_response = client.get("/positions", headers=api_headers)
     assert positions_response.status_code == 200
 
-    orders_response = client.get("/api/v1/orders", headers=api_headers)
+    orders_response = client.get("/orders", headers=api_headers)
     assert orders_response.status_code == 200

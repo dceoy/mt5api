@@ -36,8 +36,8 @@ class ResponseFormat(str, Enum):
 
 #### No request model needed
 
-- `GET /api/v1/health` - No parameters
-- `GET /api/v1/version` - No parameters
+- `GET /health` - No parameters
+- `GET /version` - No parameters
 
 ---
 
@@ -437,7 +437,7 @@ class ErrorResponse(BaseModel):
   "title": "MT5 Terminal Not Connected",
   "status": 503,
   "detail": "MetaTrader5 terminal is not running or not logged in. Please start MT5 and login.",
-  "instance": "/api/v1/symbols/EURUSD"
+  "instance": "/symbols/EURUSD"
 }
 ```
 
@@ -447,7 +447,7 @@ class ErrorResponse(BaseModel):
   "title": "Symbol Not Found",
   "status": 404,
   "detail": "Symbol 'INVALID' does not exist or is not available on this broker.",
-  "instance": "/api/v1/symbols/INVALID"
+  "instance": "/symbols/INVALID"
 }
 ```
 
@@ -457,7 +457,7 @@ class ErrorResponse(BaseModel):
   "title": "Request Validation Failed",
   "status": 400,
   "detail": "count must be positive (got: -10)",
-  "instance": "/api/v1/rates/from"
+  "instance": "/rates/from"
 }
 ```
 

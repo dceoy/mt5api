@@ -298,7 +298,7 @@ class ErrorResponse(BaseModel):
     instance: str | None = Field(
         default=None,
         description="Request URI that caused error",
-        examples=["/api/v1/rates/from"],
+        examples=["/rates/from"],
     )
 
 

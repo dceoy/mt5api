@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from fastapi.responses import Response
 
 router = APIRouter(
-    prefix="/api/v1",
     tags=["account"],
     dependencies=[Depends(verify_api_key)],
 )
