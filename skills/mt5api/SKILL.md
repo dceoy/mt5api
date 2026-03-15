@@ -42,7 +42,7 @@ Returns:
 | status        | string  | `healthy` or `unhealthy`       |
 | mt5_connected | bool    | MT5 terminal connection status |
 | mt5_version   | string? | MT5 terminal version string    |
-| api_version   | string  | API version (e.g., `1.0.0`)   |
+| api_version   | string  | API version (e.g., `1.0.0`)    |
 
 ### MT5 Version
 
@@ -50,6 +50,10 @@ Returns:
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   "${MT5_API_URL:-http://localhost:8000}/version" | python -m json.tool
 ```
+
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| format    | string | no       | Response format override |
 
 ---
 
@@ -67,12 +71,20 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 Key fields: `login`, `balance`, `equity`, `margin`, `margin_free`,
 `margin_level`, `leverage`, `currency`, `server`, `name`.
 
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| format    | string | no       | Response format override |
+
 ### Terminal Info
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   "${MT5_API_URL:-http://localhost:8000}/terminal" | python -m json.tool
 ```
+
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| format    | string | no       | Response format override |
 
 ---
 
@@ -167,13 +179,13 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Default | Description                       |
-| --------- | -------- | -------- | ------- | --------------------------------- |
-| symbol    | string   | yes      |         | Symbol name                       |
-| date_from | datetime | yes      |         | Start date (ISO 8601)             |
-| count     | int      | yes      |         | Number of ticks (1–100000)        |
-| flags     | int/str  | no       | 6       | MT5 tick flag constant or integer |
-| format    | string   | no       |         | Response format override          |
+| Parameter | Type     | Required | Default        | Description                       |
+| --------- | -------- | -------- | -------------- | --------------------------------- |
+| symbol    | string   | yes      |                | Symbol name                       |
+| date_from | datetime | yes      |                | Start date (ISO 8601)             |
+| count     | int      | yes      |                | Number of ticks (1–100000)        |
+| flags     | int/str  | no       | COPY_TICKS_ALL | MT5 tick flag constant or integer |
+| format    | string   | no       |                | Response format override          |
 
 ### Ticks in Range
 
@@ -183,13 +195,13 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Default | Description                       |
-| --------- | -------- | -------- | ------- | --------------------------------- |
-| symbol    | string   | yes      |         | Symbol name                       |
-| date_from | datetime | yes      |         | Start date (ISO 8601)             |
-| date_to   | datetime | yes      |         | End date (ISO 8601)               |
-| flags     | int/str  | no       | 6       | MT5 tick flag constant or integer |
-| format    | string   | no       |         | Response format override          |
+| Parameter | Type     | Required | Default        | Description                       |
+| --------- | -------- | -------- | -------------- | --------------------------------- |
+| symbol    | string   | yes      |                | Symbol name                       |
+| date_from | datetime | yes      |                | Start date (ISO 8601)             |
+| date_to   | datetime | yes      |                | End date (ISO 8601)               |
+| flags     | int/str  | no       | COPY_TICKS_ALL | MT5 tick flag constant or integer |
+| format    | string   | no       |                | Response format override          |
 
 ### Market Book (DOM)
 
