@@ -202,7 +202,7 @@ disabled and those endpoints are accessible without authorization.</p>
 <code>API_RATE_LIMIT</code> to an integer for a different per-minute cap.</p>
 <h2 id="format-negotiation">Format Negotiation<a class="headerlink" href="#format-negotiation" title="Permanent link">&para;</a></h2>
 <p>Use <code>Accept</code> header or <code>format</code> query parameter:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; -H &quot;Accept: application/parquet&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; -H &quot;Accept: application/parquet&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=TIMEFRAME_M1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols?format=json&quot;</span>
 </code></pre></div>
@@ -221,6 +221,9 @@ disabled and those endpoints are accessible without authorization.</p>
 </ul>
 <h3 id="market-data">Market Data<a class="headerlink" href="#market-data" title="Permanent link">&para;</a></h3>
 <ul>
+<li><code>timeframe</code> and <code>flags</code> accept either the official MetaTrader 5 constant
+  name (for example <code>TIMEFRAME_M1</code>, <code>COPY_TICKS_ALL</code>) or the equivalent integer
+  value.</li>
 <li><code>GET /api/v1/rates/from</code> (<code>symbol</code>, <code>timeframe</code>, <code>date_from</code>, <code>count</code>, <code>format</code>)</li>
 <li><code>GET /api/v1/rates/from-pos</code> (<code>symbol</code>, <code>timeframe</code>, <code>start_pos</code>, <code>count</code>, <code>format</code>)</li>
 <li><code>GET /api/v1/rates/range</code> (<code>symbol</code>, <code>timeframe</code>, <code>date_from</code>, <code>date_to</code>, <code>format</code>)</li>
@@ -268,7 +271,7 @@ in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/symbols/EURUSD&quot;</span>
 </code></pre></div>
 <h3 id="rates-ohlcv">Rates (OHLCV)<a class="headerlink" href="#rates-ohlcv" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=TIMEFRAME_M1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
 </code></pre></div>
 <h3 id="account-info">Account Info<a class="headerlink" href="#account-info" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/account&quot;</span>

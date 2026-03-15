@@ -140,7 +140,7 @@ Parquet support.</p>
 <ol>
 <li><strong>API Layer</strong> (<code>mt5api.main</code>, <code>mt5api.routers</code>): FastAPI app, routers, and response formatting</li>
 <li><strong>Dependency Layer</strong> (<code>mt5api.dependencies</code>): MT5 client lifecycle and format negotiation</li>
-<li><strong>Model Layer</strong> (<code>mt5api.models</code>): Response schemas and timeframe metadata helpers</li>
+<li><strong>Model Layer</strong> (<code>mt5api.models</code>): Response schemas and MT5 constant metadata helpers</li>
 <li><strong>Formatter Layer</strong> (<code>mt5api.formatters</code>): JSON and Parquet serialization helpers</li>
 </ol>
 <h2 id="usage-guidelines">Usage Guidelines<a class="headerlink" href="#usage-guidelines" title="Permanent link">&para;</a></h2>
@@ -160,7 +160,7 @@ running <code>mt5api</code>. If you run the request on that Windows host, <code>
 works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 <code>Invoke-WebRequest</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp"># </span>Include<span class="w"> </span>X-API-Key<span class="w"> </span>only<span class="w"> </span>when<span class="w"> </span>MT5_API_KEY<span class="w"> </span>is<span class="w"> </span>configured<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>server.
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">curl -H &quot;X-API-Key: your-secret-api-key&quot; &quot;http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&amp;timeframe=TIMEFRAME_M1&amp;date_from=2024-01-01T00:00:00Z&amp;count=100&quot;</span>
 </code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>See the <a href="rest-api/">REST API</a> guide for endpoint examples and request syntax.</p></div>
