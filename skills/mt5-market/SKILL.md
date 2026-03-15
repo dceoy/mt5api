@@ -11,9 +11,15 @@ Query market data endpoints on the mt5api for historical rates, ticks, and marke
 ## Configuration
 
 The API base URL defaults to `http://localhost:8000`. Set `MT5_API_URL` to override.
-All endpoints require the `X-API-Key` header. Set `MT5_API_KEY` in the environment.
+When the server is configured with `MT5_API_KEY`, send the same value in the
+`X-API-Key` header. If server-side auth is disabled, the header is optional.
 `timeframe` and `flags` accept either the official MetaTrader 5 constant name
 (for example `TIMEFRAME_H1`, `COPY_TICKS_ALL`) or the equivalent integer value.
+
+## Response Formats
+
+All market-data endpoints return JSON by default. Request Parquet with
+`format=parquet` or `Accept: application/parquet`.
 
 ## Endpoints
 
@@ -33,6 +39,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 | timeframe | int/str  | yes      | MT5 timeframe constant or equivalent integer |
 | date_from | datetime | yes      | Start date (ISO 8601)                        |
 | count     | int      | yes      | Number of candles (1–100000)                 |
+| format    | string   | no       | Response format override                     |
 
 ### Rates from Position
 
@@ -50,6 +57,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 | timeframe | str/int | yes      | MT5 timeframe constant or integer |
 | start_pos | int     | yes      | Start position (0 = current bar)  |
 | count     | int     | yes      | Number of candles (1–100000)      |
+| format    | string  | no       | Response format override          |
 
 ### Rates in Range
 
@@ -67,6 +75,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 | timeframe | int/str  | yes      | MT5 timeframe constant or integer |
 | date_from | datetime | yes      | Start date (ISO 8601)             |
 | date_to   | datetime | yes      | End date (ISO 8601)               |
+| format    | string   | no       | Response format override          |
 
 ### Ticks from Date
 
@@ -84,6 +93,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 | date_from | datetime | yes      |         | Start date (ISO 8601)             |
 | count     | int      | yes      |         | Number of ticks (1–100000)        |
 | flags     | int/str  | no       | 6       | MT5 tick flag constant or integer |
+| format    | string   | no       |         | Response format override          |
 
 ### Ticks in Range
 
@@ -101,6 +111,7 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
 | date_from | datetime | yes      |         | Start date (ISO 8601)             |
 | date_to   | datetime | yes      |         | End date (ISO 8601)               |
 | flags     | int/str  | no       | 6       | MT5 tick flag constant or integer |
+| format    | string   | no       |         | Response format override          |
 
 ### Market Book (DOM)
 
@@ -111,14 +122,19 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   "${MT5_API_URL:-http://localhost:8000}/market-book/EURUSD" | python -m json.tool
 ```
 
-| Parameter | Type   | Required | Description |
-| --------- | ------ | -------- | ----------- |
-| symbol    | string | yes      | Symbol name |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| symbol    | string | yes      | Symbol name              |
+| format    | string | no       | Response format override |
 
 ## Procedure
 
 1. Identify which market data endpoint the user needs.
 2. Gather the required parameters (symbol, timeframe, dates, count).
-3. Construct and run the appropriate `curl` command.
-4. Parse the JSON response and summarize the data (number of records, date range covered, OHLCV summary, etc.).
-5. If the user requests Parquet format, append `format=parquet` as a query parameter (use `?` if the URL has no existing parameters, or `&` if it does) and note the binary response.
+3. Decide whether the caller needs JSON or Parquet output.
+4. Construct and run the appropriate `curl` command.
+5. Parse the JSON response and summarize the data (number of records, date
+   range covered, OHLCV summary, etc.), or note when the API returned Parquet
+   data.
+6. If the user requests Parquet format, add `format=parquet` or set
+   `Accept: application/parquet`.
