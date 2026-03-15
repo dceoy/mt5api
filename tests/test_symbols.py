@@ -15,8 +15,8 @@ def test_get_symbols_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols returns JSON payload with symbols."""
-    response = client.get("/api/v1/symbols", headers=api_headers)
+    """GET /symbols returns JSON payload with symbols."""
+    response = client.get("/symbols", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -34,9 +34,9 @@ def test_get_symbols_supports_group_filter(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols supports group query filter."""
+    """GET /symbols supports group query filter."""
     response = client.get(
-        "/api/v1/symbols?group=*USD*",
+        "/symbols?group=*USD*",
         headers=api_headers,
     )
 
@@ -50,9 +50,9 @@ def test_get_symbols_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols returns Parquet when requested."""
+    """GET /symbols returns Parquet when requested."""
     response = client.get(
-        "/api/v1/symbols?format=parquet",
+        "/symbols?format=parquet",
         headers=api_headers,
     )
 
@@ -68,8 +68,8 @@ def test_get_symbol_info_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols/{symbol} returns symbol info."""
-    response = client.get("/api/v1/symbols/EURUSD", headers=api_headers)
+    """GET /symbols/{symbol} returns symbol info."""
+    response = client.get("/symbols/EURUSD", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -85,9 +85,9 @@ def test_get_symbol_info_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols/{symbol} returns Parquet when requested."""
+    """GET /symbols/{symbol} returns Parquet when requested."""
     response = client.get(
-        "/api/v1/symbols/EURUSD?format=parquet",
+        "/symbols/EURUSD?format=parquet",
         headers=api_headers,
     )
 
@@ -102,8 +102,8 @@ def test_get_symbol_tick_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols/{symbol}/tick returns tick info."""
-    response = client.get("/api/v1/symbols/EURUSD/tick", headers=api_headers)
+    """GET /symbols/{symbol}/tick returns tick info."""
+    response = client.get("/symbols/EURUSD/tick", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -119,9 +119,9 @@ def test_get_symbol_tick_accepts_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/symbols/{symbol}/tick supports Parquet via Accept."""
+    """GET /symbols/{symbol}/tick supports Parquet via Accept."""
     headers = {**api_headers, "Accept": "application/parquet"}
-    response = client.get("/api/v1/symbols/EURUSD/tick", headers=headers)
+    response = client.get("/symbols/EURUSD/tick", headers=headers)
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")

@@ -18,7 +18,7 @@ Authenticated endpoints require the `X-API-Key` header. Set `MT5_API_KEY` in the
 ### Health Check (public, no auth required)
 
 ```bash
-curl -s "${MT5_API_URL:-http://localhost:8000}/api/v1/health" | python -m json.tool
+curl -s "${MT5_API_URL:-http://localhost:8000}/health" | python -m json.tool
 ```
 
 Returns:
@@ -34,7 +34,7 @@ Returns:
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/version" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/version" | python -m json.tool
 ```
 
 Returns a `DataResponse` with version data.

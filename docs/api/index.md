@@ -48,7 +48,7 @@ works. In PowerShell, use `curl.exe` if `curl` resolves to
 
 ```console
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Examples

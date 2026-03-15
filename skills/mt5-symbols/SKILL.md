@@ -19,7 +19,7 @@ All endpoints require the `X-API-Key` header. Set `MT5_API_KEY` in the environme
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols" | python -m json.tool
 ```
 
 Optional query parameters:
@@ -32,14 +32,14 @@ Example with filter:
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols?group=*USD*" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols?group=*USD*" | python -m json.tool
 ```
 
 ### Get Symbol Info
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols/EURUSD" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols/EURUSD" | python -m json.tool
 ```
 
 Path parameters:
@@ -52,7 +52,7 @@ Path parameters:
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/symbols/EURUSD/tick" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/symbols/EURUSD/tick" | python -m json.tool
 ```
 
 Path parameters:

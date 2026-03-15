@@ -21,7 +21,7 @@ Get current open positions with optional filters.
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/positions" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/positions" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description               |
@@ -34,7 +34,7 @@ Example with symbol filter:
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/positions?symbol=EURUSD" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/positions?symbol=EURUSD" | python -m json.tool
 ```
 
 ### Pending Orders
@@ -43,7 +43,7 @@ Get current pending orders with optional filters.
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/orders" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/orders" | python -m json.tool
 ```
 
 | Parameter | Type   | Required | Description             |
@@ -58,7 +58,7 @@ Get historical orders filtered by date range or ticket/position.
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+  "${MT5_API_URL:-http://localhost:8000}/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
   | python -m json.tool
 ```
 
@@ -77,7 +77,7 @@ Example by ticket:
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/history/orders?ticket=123456" \
+  "${MT5_API_URL:-http://localhost:8000}/history/orders?ticket=123456" \
   | python -m json.tool
 ```
 
@@ -87,7 +87,7 @@ Get historical deals filtered by date range or ticket/position.
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/history/deals?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+  "${MT5_API_URL:-http://localhost:8000}/history/deals?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
   | python -m json.tool
 ```
 

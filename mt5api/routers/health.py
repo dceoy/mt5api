@@ -24,7 +24,7 @@ API_VERSION = "1.0.0"
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1", tags=["health"])
+router = APIRouter(prefix="", tags=["health"])
 
 
 @router.get(

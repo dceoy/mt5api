@@ -55,7 +55,7 @@ tags:
     description: Historical orders and deals
 
 paths:
-  /api/v1/health:
+  /health:
     get:
       tags: [health]
       summary: Health check
@@ -71,7 +71,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
 
-  /api/v1/version:
+  /version:
     get:
       tags: [health]
       summary: Get MT5 version
@@ -93,7 +93,7 @@ paths:
         '503':
           $ref: '#/components/responses/MT5Disconnected'
 
-  /api/v1/symbols:
+  /symbols:
     get:
       tags: [symbols]
       summary: List symbols
@@ -121,7 +121,7 @@ paths:
         '503':
           $ref: '#/components/responses/MT5Disconnected'
 
-  /api/v1/symbols/{symbol}:
+  /symbols/{symbol}:
     get:
       tags: [symbols]
       summary: Get symbol info
@@ -142,7 +142,7 @@ paths:
         '503':
           $ref: '#/components/responses/MT5Disconnected'
 
-  /api/v1/symbols/{symbol}/tick:
+  /symbols/{symbol}/tick:
     get:
       tags: [symbols]
       summary: Get latest tick
@@ -161,7 +161,7 @@ paths:
         '404':
           $ref: '#/components/responses/SymbolNotFound'
 
-  /api/v1/rates/from:
+  /rates/from:
     get:
       tags: [market]
       summary: Get rates from date
@@ -212,7 +212,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationError'
 
-  /api/v1/rates/range:
+  /rates/range:
     get:
       tags: [market]
       summary: Get rates for date range
@@ -251,7 +251,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/ticks/from:
+  /ticks/from:
     get:
       tags: [market]
       summary: Get ticks from date
@@ -292,7 +292,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/account:
+  /account:
     get:
       tags: [account]
       summary: Get account info
@@ -308,7 +308,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/terminal:
+  /terminal:
     get:
       tags: [account]
       summary: Get terminal info
@@ -324,7 +324,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/positions:
+  /positions:
     get:
       tags: [trading]
       summary: Get open positions
@@ -353,7 +353,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/orders:
+  /orders:
     get:
       tags: [trading]
       summary: Get pending orders
@@ -382,7 +382,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/history/orders:
+  /history/orders:
     get:
       tags: [history]
       summary: Get historical orders
@@ -420,7 +420,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataResponse'
 
-  /api/v1/history/deals:
+  /history/deals:
     get:
       tags: [history]
       summary: Get historical deals
@@ -553,7 +553,7 @@ components:
           type: string
           nullable: true
           description: Request URI that caused error
-          example: "/api/v1/rates/from"
+          example: "/rates/from"
 
   responses:
     ValidationError:
@@ -567,7 +567,7 @@ components:
             title: "Request Validation Failed"
             status: 400
             detail: "count must be positive (got: -10)"
-            instance: "/api/v1/rates/from"
+            instance: "/rates/from"
 
     SymbolNotFound:
       description: Symbol not found
@@ -580,7 +580,7 @@ components:
             title: "Symbol Not Found"
             status: 404
             detail: "Symbol 'INVALID' does not exist or is not available on this broker."
-            instance: "/api/v1/symbols/INVALID"
+            instance: "/symbols/INVALID"
 
     MT5Disconnected:
       description: MT5 terminal not connected
@@ -593,7 +593,7 @@ components:
             title: "MT5 Terminal Not Connected"
             status: 503
             detail: "MetaTrader5 terminal is not running or not logged in. Please start MT5 and login."
-            instance: "/api/v1/symbols"
+            instance: "/symbols"
 
     Unauthorized:
       description: Authentication required
@@ -606,7 +606,7 @@ components:
             title: "Authentication Required"
             status: 401
             detail: "Missing or invalid API key. Provide X-API-Key header."
-            instance: "/api/v1/symbols"
+            instance: "/symbols"
 
     RateLimitExceeded:
       description: Rate limit exceeded
@@ -619,4 +619,4 @@ components:
             title: "Rate Limit Exceeded"
             status: 429
             detail: "Too many requests. Limit: 100 requests per minute."
-            instance: "/api/v1/symbols"
+            instance: "/symbols"

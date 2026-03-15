@@ -15,7 +15,7 @@ def test_get_request_info_extracts_request_data() -> None:
     scope: dict[str, Any] = {
         "type": "http",
         "method": "GET",
-        "path": "/api/v1/health",
+        "path": "/health",
         "headers": [(b"user-agent", b"pytest")],
         "client": ("127.0.0.1", 1234),
         "scheme": "http",
@@ -28,7 +28,7 @@ def test_get_request_info_extracts_request_data() -> None:
 
     assert info == {
         "method": "GET",
-        "url": "http://testserver/api/v1/health",
+        "url": "http://testserver/health",
         "client": "127.0.0.1",
         "user_agent": "pytest",
     }

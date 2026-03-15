@@ -15,8 +15,8 @@ def test_get_account_info_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/account returns account info."""
-    response = client.get("/api/v1/account", headers=api_headers)
+    """GET /account returns account info."""
+    response = client.get("/account", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -32,8 +32,8 @@ def test_get_terminal_info_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/terminal returns terminal info."""
-    response = client.get("/api/v1/terminal", headers=api_headers)
+    """GET /terminal returns terminal info."""
+    response = client.get("/terminal", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -49,9 +49,9 @@ def test_get_account_info_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/account supports Parquet output."""
+    """GET /account supports Parquet output."""
     response = client.get(
-        "/api/v1/account?format=parquet",
+        "/account?format=parquet",
         headers=api_headers,
     )
 
@@ -66,9 +66,9 @@ def test_get_terminal_info_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/terminal supports Parquet output."""
+    """GET /terminal supports Parquet output."""
     response = client.get(
-        "/api/v1/terminal?format=parquet",
+        "/terminal?format=parquet",
         headers=api_headers,
     )
 

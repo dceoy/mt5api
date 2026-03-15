@@ -33,7 +33,7 @@ def test_create_error_response_builds_problem_details() -> None:
         "Test Error",
         400,
         "Test detail",
-        "/api/v1/test",
+        "/test",
     )
 
     assert response.status_code == 400
@@ -43,7 +43,7 @@ def test_create_error_response_builds_problem_details() -> None:
         "title": "Test Error",
         "status": 400,
         "detail": "Test detail",
-        "instance": "/api/v1/test",
+        "instance": "/test",
     }
 
 

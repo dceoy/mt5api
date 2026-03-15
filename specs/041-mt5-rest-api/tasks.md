@@ -75,15 +75,15 @@ Single project structure: `pdmt5/` (library), `tests/` at repository root, `docs
 - [x] T023 [P] [US1] Create request models (SymbolsRequest, SymbolInfoRequest, SymbolTickRequest) in pdmt5/api/models.py
 - [x] T024 [P] [US1] Create request models (RatesFromRequest, RatesFromPosRequest, RatesRangeRequest) in pdmt5/api/models.py
 - [x] T025 [P] [US1] Create request models (TicksFromRequest, TicksRangeRequest, MarketBookRequest) in pdmt5/api/models.py
-- [x] T026 [US1] Implement symbols router with GET /api/v1/symbols endpoint in pdmt5/api/routers/symbols.py
-- [x] T027 [US1] Implement GET /api/v1/symbols/{symbol} endpoint in pdmt5/api/routers/symbols.py
-- [x] T028 [US1] Implement GET /api/v1/symbols/{symbol}/tick endpoint in pdmt5/api/routers/symbols.py
-- [x] T029 [US1] Implement market router with GET /api/v1/rates/from endpoint in pdmt5/api/routers/market.py
-- [x] T030 [US1] Implement GET /api/v1/rates/from-pos endpoint in pdmt5/api/routers/market.py
-- [x] T031 [US1] Implement GET /api/v1/rates/range endpoint in pdmt5/api/routers/market.py
-- [x] T032 [US1] Implement GET /api/v1/ticks/from endpoint in pdmt5/api/routers/market.py
-- [x] T033 [US1] Implement GET /api/v1/ticks/range endpoint in pdmt5/api/routers/market.py
-- [x] T034 [US1] Implement GET /api/v1/market-book/{symbol} endpoint in pdmt5/api/routers/market.py
+- [x] T026 [US1] Implement symbols router with GET /symbols endpoint in pdmt5/api/routers/symbols.py
+- [x] T027 [US1] Implement GET /symbols/{symbol} endpoint in pdmt5/api/routers/symbols.py
+- [x] T028 [US1] Implement GET /symbols/{symbol}/tick endpoint in pdmt5/api/routers/symbols.py
+- [x] T029 [US1] Implement market router with GET /rates/from endpoint in pdmt5/api/routers/market.py
+- [x] T030 [US1] Implement GET /rates/from-pos endpoint in pdmt5/api/routers/market.py
+- [x] T031 [US1] Implement GET /rates/range endpoint in pdmt5/api/routers/market.py
+- [x] T032 [US1] Implement GET /ticks/from endpoint in pdmt5/api/routers/market.py
+- [x] T033 [US1] Implement GET /ticks/range endpoint in pdmt5/api/routers/market.py
+- [x] T034 [US1] Implement GET /market-book/{symbol} endpoint in pdmt5/api/routers/market.py
 - [x] T035 [US1] Register symbols and market routers in pdmt5/api/main.py
 - [x] T036 [US1] Run tests and verify all US1 endpoints work with both JSON and Parquet formats
 - [x] T037 [US1] Run quality checks (ruff format, ruff check, pyright, pytest)
@@ -106,9 +106,9 @@ Single project structure: `pdmt5/` (library), `tests/` at repository root, `docs
 ### Implementation for User Story 2
 
 - [x] T040 [P] [US2] Create request models (AccountInfoRequest, TerminalInfoRequest) in pdmt5/api/models.py
-- [x] T041 [US2] Implement account router with GET /api/v1/account endpoint in pdmt5/api/routers/account.py
-- [x] T042 [US2] Implement GET /api/v1/terminal endpoint in pdmt5/api/routers/account.py
-- [x] T043 [US2] Implement GET /api/v1/version endpoint in pdmt5/api/routers/account.py
+- [x] T041 [US2] Implement account router with GET /account endpoint in pdmt5/api/routers/account.py
+- [x] T042 [US2] Implement GET /terminal endpoint in pdmt5/api/routers/account.py
+- [x] T043 [US2] Implement GET /version endpoint in pdmt5/api/routers/account.py
 - [x] T044 [US2] Register account router in pdmt5/api/main.py
 - [x] T045 [US2] Run tests and verify all US2 endpoints work with both formats
 - [x] T046 [US2] Run quality checks (ruff format, ruff check, pyright, pytest)
@@ -131,8 +131,8 @@ Single project structure: `pdmt5/` (library), `tests/` at repository root, `docs
 ### Implementation for User Story 4
 
 - [x] T049 [P] [US4] Create request models (HistoryOrdersRequest, HistoryDealsRequest) in pdmt5/api/models.py
-- [x] T050 [US4] Implement history router with GET /api/v1/history/orders endpoint in pdmt5/api/routers/history.py
-- [x] T051 [US4] Implement GET /api/v1/history/deals endpoint in pdmt5/api/routers/history.py
+- [x] T050 [US4] Implement history router with GET /history/orders endpoint in pdmt5/api/routers/history.py
+- [x] T051 [US4] Implement GET /history/deals endpoint in pdmt5/api/routers/history.py
 - [x] T052 [US4] Add request validation for date range or ticket/position requirement in pdmt5/api/models.py
 - [x] T053 [US4] Register history router in pdmt5/api/main.py
 - [x] T054 [US4] Run tests and verify all US4 endpoints work with both formats
@@ -156,8 +156,8 @@ Single project structure: `pdmt5/` (library), `tests/` at repository root, `docs
 ### Implementation for User Story 5
 
 - [x] T058 [P] [US5] Create request models (PositionsRequest, OrdersRequest) in pdmt5/api/models.py
-- [x] T059 [US5] Implement GET /api/v1/positions endpoint in pdmt5/api/routers/history.py
-- [x] T060 [US5] Implement GET /api/v1/orders endpoint in pdmt5/api/routers/history.py
+- [x] T059 [US5] Implement GET /positions endpoint in pdmt5/api/routers/history.py
+- [x] T060 [US5] Implement GET /orders endpoint in pdmt5/api/routers/history.py
 - [x] T061 [US5] Run tests and verify all US5 endpoints work with both formats
 - [x] T062 [US5] Run quality checks (ruff format, ruff check, pyright, pytest)
 

@@ -58,16 +58,16 @@ works. In PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
 
 ```console
-curl "http://windows-host:8000/api/v1/health"
+curl "http://windows-host:8000/health"
 ```
 
 ```console
 # Include X-API-Key only when MT5_API_KEY is configured on the server.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/api/v1/symbols?group=*USD*"
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
 ```
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 Market-data endpoints accept MetaTrader 5 constants either by official name
@@ -75,13 +75,13 @@ Market-data endpoints accept MetaTrader 5 constants either by official name
 
 ## Endpoints (Read-Only)
 
-- Health: `/api/v1/health`, `/api/v1/version`
-- Symbols: `/api/v1/symbols`, `/api/v1/symbols/{symbol}`, `/api/v1/symbols/{symbol}/tick`
-- Market data: `/api/v1/rates/from`, `/api/v1/rates/from-pos`, `/api/v1/rates/range`,
-  `/api/v1/ticks/from`, `/api/v1/ticks/range`, `/api/v1/market-book/{symbol}`
-- Account: `/api/v1/account`, `/api/v1/terminal`
-- Trading state: `/api/v1/positions`, `/api/v1/orders`
-- History: `/api/v1/history/orders`, `/api/v1/history/deals`
+- Health: `/health`, `/version`
+- Symbols: `/symbols`, `/symbols/{symbol}`, `/symbols/{symbol}/tick`
+- Market data: `/rates/from`, `/rates/from-pos`, `/rates/range`,
+  `/ticks/from`, `/ticks/range`, `/market-book/{symbol}`
+- Account: `/account`, `/terminal`
+- Trading state: `/positions`, `/orders`
+- History: `/history/orders`, `/history/deals`
 
 ## License
 

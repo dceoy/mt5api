@@ -36,9 +36,9 @@ def test_get_rates_from_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/rates/from returns OHLCV data."""
+    """GET /rates/from returns OHLCV data."""
     response = client.get(
-        "/api/v1/rates/from",
+        "/rates/from",
         params={
             "symbol": "EURUSD",
             "timeframe": "TIMEFRAME_M1",
@@ -66,9 +66,9 @@ def test_get_rates_from_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/rates/from supports Parquet output."""
+    """GET /rates/from supports Parquet output."""
     response = client.get(
-        "/api/v1/rates/from",
+        "/rates/from",
         params={
             "symbol": "EURUSD",
             "timeframe": TIMEFRAME_M1,
@@ -95,9 +95,9 @@ def test_get_rates_from_pos_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/rates/from-pos supports Parquet output."""
+    """GET /rates/from-pos supports Parquet output."""
     response = client.get(
-        "/api/v1/rates/from-pos",
+        "/rates/from-pos",
         params={
             "symbol": "EURUSD",
             "timeframe": TIMEFRAME_M1,
@@ -124,9 +124,9 @@ def test_get_rates_from_pos_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/rates/from-pos returns JSON by default."""
+    """GET /rates/from-pos returns JSON by default."""
     response = client.get(
-        "/api/v1/rates/from-pos",
+        "/rates/from-pos",
         params={
             "symbol": "EURUSD",
             "timeframe": TIMEFRAME_M1,
@@ -153,9 +153,9 @@ def test_get_rates_range_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/rates/range returns data for a range."""
+    """GET /rates/range returns data for a range."""
     response = client.get(
-        "/api/v1/rates/range",
+        "/rates/range",
         params={
             "symbol": "EURUSD",
             "timeframe": TIMEFRAME_M1,
@@ -182,9 +182,9 @@ def test_get_rates_range_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/rates/range supports Parquet output."""
+    """GET /rates/range supports Parquet output."""
     response = client.get(
-        "/api/v1/rates/range",
+        "/rates/range",
         params={
             "symbol": "EURUSD",
             "timeframe": TIMEFRAME_M1,
@@ -210,9 +210,9 @@ def test_get_rates_from_rejects_invalid_mt5_timeframe(
     client: TestClient,
     api_headers: dict[str, str],
 ) -> None:
-    """GET /api/v1/rates/from rejects unsupported MT5 timeframe values."""
+    """GET /rates/from rejects unsupported MT5 timeframe values."""
     response = client.get(
-        "/api/v1/rates/from",
+        "/rates/from",
         params={
             "symbol": "EURUSD",
             "timeframe": 60,
@@ -230,9 +230,9 @@ def test_get_rates_from_rejects_invalid_mt5_timeframe_name(
     client: TestClient,
     api_headers: dict[str, str],
 ) -> None:
-    """GET /api/v1/rates/from rejects unsupported MT5 timeframe names."""
+    """GET /rates/from rejects unsupported MT5 timeframe names."""
     response = client.get(
-        "/api/v1/rates/from",
+        "/rates/from",
         params={
             "symbol": "EURUSD",
             "timeframe": "TIMEFRAME_INVALID",
@@ -252,9 +252,9 @@ def test_openapi_documents_mt5_timeframes_consistently(
     """Rates endpoints should expose MT5 timeframe names and integer values."""
     openapi = client.get("/openapi.json").json()
     paths = (
-        "/api/v1/rates/from",
-        "/api/v1/rates/from-pos",
-        "/api/v1/rates/range",
+        "/rates/from",
+        "/rates/from-pos",
+        "/rates/range",
     )
 
     for path in paths:
@@ -292,9 +292,9 @@ def test_get_ticks_from_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/ticks/from returns tick data."""
+    """GET /ticks/from returns tick data."""
     response = client.get(
-        "/api/v1/ticks/from",
+        "/ticks/from",
         params={
             "symbol": "EURUSD",
             "date_from": "2024-01-01T00:00:00Z",
@@ -322,9 +322,9 @@ def test_get_ticks_from_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/ticks/from supports Parquet output."""
+    """GET /ticks/from supports Parquet output."""
     response = client.get(
-        "/api/v1/ticks/from",
+        "/ticks/from",
         params={
             "symbol": "EURUSD",
             "date_from": "2024-01-01T00:00:00Z",
@@ -351,9 +351,9 @@ def test_get_ticks_range_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/ticks/range supports Parquet output."""
+    """GET /ticks/range supports Parquet output."""
     response = client.get(
-        "/api/v1/ticks/range",
+        "/ticks/range",
         params={
             "symbol": "EURUSD",
             "date_from": "2024-01-01T00:00:00Z",
@@ -378,9 +378,9 @@ def test_get_ticks_range_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/ticks/range returns JSON by default."""
+    """GET /ticks/range returns JSON by default."""
     response = client.get(
-        "/api/v1/ticks/range",
+        "/ticks/range",
         params={
             "symbol": "EURUSD",
             "date_from": "2024-01-01T00:00:00Z",
@@ -405,9 +405,9 @@ def test_get_ticks_from_rejects_invalid_mt5_copy_ticks_name(
     client: TestClient,
     api_headers: dict[str, str],
 ) -> None:
-    """GET /api/v1/ticks/from rejects unsupported MT5 COPY_TICKS names."""
+    """GET /ticks/from rejects unsupported MT5 COPY_TICKS names."""
     response = client.get(
-        "/api/v1/ticks/from",
+        "/ticks/from",
         params={
             "symbol": "EURUSD",
             "date_from": "2024-01-01T00:00:00Z",
@@ -426,7 +426,7 @@ def test_openapi_documents_mt5_copy_ticks_consistently(
 ) -> None:
     """Tick endpoints should expose MT5 COPY_TICKS names and integer values."""
     openapi = client.get("/openapi.json").json()
-    paths = ("/api/v1/ticks/from", "/api/v1/ticks/range")
+    paths = ("/ticks/from", "/ticks/range")
 
     for path in paths:
         parameters = openapi["paths"][path]["get"]["parameters"]
@@ -457,8 +457,8 @@ def test_get_market_book_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/market-book/{symbol} returns market depth."""
-    response = client.get("/api/v1/market-book/EURUSD", headers=api_headers)
+    """GET /market-book/{symbol} returns market depth."""
+    response = client.get("/market-book/EURUSD", headers=api_headers)
 
     assert response.status_code == 200
     payload = response.json()
@@ -473,9 +473,9 @@ def test_get_market_book_returns_parquet(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """GET /api/v1/market-book/{symbol} supports Parquet output."""
+    """GET /market-book/{symbol} supports Parquet output."""
     response = client.get(
-        "/api/v1/market-book/EURUSD?format=parquet",
+        "/market-book/EURUSD?format=parquet",
         headers=api_headers,
     )
 

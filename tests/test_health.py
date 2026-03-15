@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
     """Test health endpoint returns healthy status when MT5 is connected."""
-    response = client.get("/api/v1/health")
+    response = client.get("/health")
 
     assert response.status_code == 200
 
@@ -26,7 +26,7 @@ def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
 def test_health_endpoint_no_authentication_required(client: TestClient) -> None:
     """Test health endpoint works without authentication."""
     # No X-API-Key header
-    response = client.get("/api/v1/health")
+    response = client.get("/health")
 
     assert response.status_code == 200
 
@@ -36,7 +36,7 @@ def test_version_endpoint_returns_mt5_version(
     api_headers: dict[str, str],
 ) -> None:
     """Test version endpoint returns MT5 version info."""
-    response = client.get("/api/v1/version", headers=api_headers)
+    response = client.get("/version", headers=api_headers)
 
     assert response.status_code == 200
 
@@ -56,7 +56,7 @@ def test_version_endpoint_returns_parquet(
 ) -> None:
     """Test version endpoint returns Parquet when requested."""
     headers = {**api_headers, "Accept": "application/parquet"}
-    response = client.get("/api/v1/version", headers=headers)
+    response = client.get("/version", headers=headers)
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")

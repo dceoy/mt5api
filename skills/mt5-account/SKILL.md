@@ -21,7 +21,7 @@ Get current trading account details (balance, equity, margin, leverage, etc.).
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/account" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/account" | python -m json.tool
 ```
 
 Returns a `DataResponse` containing account fields such as:
@@ -43,7 +43,7 @@ Get MetaTrader 5 terminal information.
 
 ```bash
 curl -s -H "X-API-Key: ${MT5_API_KEY}" \
-  "${MT5_API_URL:-http://localhost:8000}/api/v1/terminal" | python -m json.tool
+  "${MT5_API_URL:-http://localhost:8000}/terminal" | python -m json.tool
 ```
 
 Returns a `DataResponse` with terminal details such as build number, platform, data path, and connection status.

@@ -14,7 +14,7 @@ def test_strip_auth_from_openapi_handles_non_dict_components() -> None:
         "components": None,
         "paths": {
             "/bad": [],
-            "/api/v1/version": {
+            "/version": {
                 "summary": "Version endpoint",
                 "get": {"security": [{"APIKeyHeader": []}]},
             },
@@ -24,7 +24,7 @@ def test_strip_auth_from_openapi_handles_non_dict_components() -> None:
     main._strip_auth_from_openapi(openapi_schema)  # pyright: ignore[reportPrivateUsage]
 
     assert "security" not in openapi_schema
-    assert "security" not in openapi_schema["paths"]["/api/v1/version"]["get"]
+    assert "security" not in openapi_schema["paths"]["/version"]["get"]
 
 
 def test_strip_auth_from_openapi_handles_non_dict_security_schemes() -> None:
