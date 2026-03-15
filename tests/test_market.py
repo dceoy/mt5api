@@ -13,7 +13,7 @@ from mt5api.models import (
     get_mt5_timeframe_names,
     get_mt5_timeframe_values,
 )
-from tests.mt5_constants import MT5_COPY_TICKS_VALUES, MT5_TIMEFRAME_VALUES
+from tests.mt5_constants import Mt5CopyTicks, Mt5Timeframe
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -27,8 +27,8 @@ TIMEFRAME_EXAMPLES = get_mt5_timeframe_example_names()
 VALID_TICK_FLAG_VALUES = list(get_mt5_copy_ticks_values())
 VALID_TICK_FLAG_NAMES = list(get_mt5_copy_ticks_names())
 TICK_FLAG_EXAMPLES = get_mt5_copy_ticks_example_names()
-TIMEFRAME_M1 = MT5_TIMEFRAME_VALUES["TIMEFRAME_M1"]
-COPY_TICKS_ALL = MT5_COPY_TICKS_VALUES["COPY_TICKS_ALL"]
+TIMEFRAME_M1 = int(Mt5Timeframe.TIMEFRAME_M1)
+COPY_TICKS_ALL = int(Mt5CopyTicks.COPY_TICKS_ALL)
 
 
 def test_get_rates_from_returns_json(

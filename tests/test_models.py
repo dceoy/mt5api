@@ -14,7 +14,7 @@ from mt5api.models import (
     get_mt5_copy_ticks_examples,
     get_mt5_timeframe_examples,
 )
-from tests.mt5_constants import MT5_COPY_TICKS_VALUES, MT5_TIMEFRAME_VALUES
+from tests.mt5_constants import Mt5CopyTicks, Mt5Timeframe
 
 
 def test_history_request_requires_filters() -> None:
@@ -35,22 +35,20 @@ def test_history_request_rejects_invalid_date_range() -> None:
 def test_mt5_constant_example_helpers_return_integer_examples() -> None:
     """MT5 constant helpers expose integer example values for compatibility."""
     assert get_mt5_timeframe_examples() == [
-        MT5_TIMEFRAME_VALUES[name]
-        for name in (
-            "TIMEFRAME_M1",
-            "TIMEFRAME_M5",
-            "TIMEFRAME_M15",
-            "TIMEFRAME_M30",
-            "TIMEFRAME_H1",
-            "TIMEFRAME_H4",
-            "TIMEFRAME_D1",
-            "TIMEFRAME_W1",
-            "TIMEFRAME_MN1",
-        )
+        int(Mt5Timeframe.TIMEFRAME_M1),
+        int(Mt5Timeframe.TIMEFRAME_M5),
+        int(Mt5Timeframe.TIMEFRAME_M15),
+        int(Mt5Timeframe.TIMEFRAME_M30),
+        int(Mt5Timeframe.TIMEFRAME_H1),
+        int(Mt5Timeframe.TIMEFRAME_H4),
+        int(Mt5Timeframe.TIMEFRAME_D1),
+        int(Mt5Timeframe.TIMEFRAME_W1),
+        int(Mt5Timeframe.TIMEFRAME_MN1),
     ]
     assert get_mt5_copy_ticks_examples() == [
-        MT5_COPY_TICKS_VALUES[name]
-        for name in ("COPY_TICKS_INFO", "COPY_TICKS_TRADE", "COPY_TICKS_ALL")
+        int(Mt5CopyTicks.COPY_TICKS_INFO),
+        int(Mt5CopyTicks.COPY_TICKS_TRADE),
+        int(Mt5CopyTicks.COPY_TICKS_ALL),
     ]
 
 
@@ -63,19 +61,19 @@ def test_rates_from_request_accepts_mt5_timeframe_name() -> None:
         "count": 10,
     })
 
-    assert request.timeframe == MT5_TIMEFRAME_VALUES["TIMEFRAME_M1"]
+    assert request.timeframe == int(Mt5Timeframe.TIMEFRAME_M1)
 
 
 def test_rates_from_request_accepts_mt5_timeframe_integer_string() -> None:
     """Rates requests accept stringified MT5 timeframe integer values."""
     request = RatesFromRequest.model_validate({
         "symbol": "EURUSD",
-        "timeframe": str(MT5_TIMEFRAME_VALUES["TIMEFRAME_M1"]),
+        "timeframe": str(int(Mt5Timeframe.TIMEFRAME_M1)),
         "date_from": datetime(2024, 1, 1, tzinfo=UTC),
         "count": 10,
     })
 
-    assert request.timeframe == MT5_TIMEFRAME_VALUES["TIMEFRAME_M1"]
+    assert request.timeframe == int(Mt5Timeframe.TIMEFRAME_M1)
 
 
 def test_ticks_from_request_accepts_mt5_copy_ticks_name() -> None:
@@ -87,7 +85,7 @@ def test_ticks_from_request_accepts_mt5_copy_ticks_name() -> None:
         "flags": "COPY_TICKS_ALL",
     })
 
-    assert request.flags == MT5_COPY_TICKS_VALUES["COPY_TICKS_ALL"]
+    assert request.flags == int(Mt5CopyTicks.COPY_TICKS_ALL)
 
 
 def test_rates_from_request_rejects_invalid_mt5_timeframe_type() -> None:
