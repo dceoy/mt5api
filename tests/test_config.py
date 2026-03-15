@@ -10,7 +10,6 @@ from mt5api.constants import (
     ENV_API_CORS_ORIGINS,
     ENV_API_RATE_LIMIT,
     ENV_API_ROUTER_PREFIX,
-    ENV_MT5_API_KEY,
     ENV_MT5API_SECRET_KEY,
 )
 
@@ -96,45 +95,7 @@ def test_get_configured_mt5api_secret_key(
     else:
         monkeypatch.setenv(ENV_MT5API_SECRET_KEY, raw_secret_key)
 
-    monkeypatch.delenv(ENV_MT5_API_KEY, raising=False)
-
     assert config.get_configured_mt5api_secret_key() == expected_secret_key
-
-
-def test_get_configured_mt5api_secret_key_falls_back_to_legacy_env_var(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Legacy MT5_API_KEY should still work when the new variable is unset."""
-    from mt5api import config  # noqa: PLC0415
-
-    monkeypatch.delenv(ENV_MT5API_SECRET_KEY, raising=False)
-    monkeypatch.setenv(ENV_MT5_API_KEY, "legacy-key")
-
-    assert config.get_configured_mt5api_secret_key() == "legacy-key"
-
-
-def test_get_configured_mt5api_secret_key_prefers_new_env_var(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """MT5API_SECRET_KEY should override the legacy fallback when both exist."""
-    from mt5api import config  # noqa: PLC0415
-
-    monkeypatch.setenv(ENV_MT5API_SECRET_KEY, "preferred-key")
-    monkeypatch.setenv(ENV_MT5_API_KEY, "legacy-key")
-
-    assert config.get_configured_mt5api_secret_key() == "preferred-key"
-
-
-def test_get_configured_mt5api_secret_key_allows_explicit_disable(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An empty MT5API_SECRET_KEY should disable auth without using the fallback."""
-    from mt5api import config  # noqa: PLC0415
-
-    monkeypatch.setenv(ENV_MT5API_SECRET_KEY, "")
-    monkeypatch.setenv(ENV_MT5_API_KEY, "legacy-key")
-
-    assert config.get_configured_mt5api_secret_key() is None
 
 
 def test_app_uses_api_router_prefix_from_environment(
