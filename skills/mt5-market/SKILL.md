@@ -27,12 +27,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Description                                    |
-| --------- | -------- | -------- | ---------------------------------------------- |
-| symbol    | string   | yes      | Symbol name                                    |
-| timeframe | int/str  | yes      | MT5 timeframe constant or equivalent integer   |
-| date_from | datetime | yes      | Start date (ISO 8601)                          |
-| count     | int      | yes      | Number of candles (1–100000)                   |
+| Parameter | Type     | Required | Description                                  |
+| --------- | -------- | -------- | -------------------------------------------- |
+| symbol    | string   | yes      | Symbol name                                  |
+| timeframe | int/str  | yes      | MT5 timeframe constant or equivalent integer |
+| date_from | datetime | yes      | Start date (ISO 8601)                        |
+| count     | int      | yes      | Number of candles (1–100000)                 |
 
 ### Rates from Position
 
@@ -44,12 +44,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type | Required | Description                      |
-| --------- | ---- | -------- | -------------------------------- |
-| symbol    | str  | yes      | Symbol name                      |
-| timeframe | str/int | yes   | MT5 timeframe constant or integer |
-| start_pos | int  | yes      | Start position (0 = current bar) |
-| count     | int  | yes      | Number of candles (1–100000)     |
+| Parameter | Type    | Required | Description                       |
+| --------- | ------- | -------- | --------------------------------- |
+| symbol    | str     | yes      | Symbol name                       |
+| timeframe | str/int | yes      | MT5 timeframe constant or integer |
+| start_pos | int     | yes      | Start position (0 = current bar)  |
+| count     | int     | yes      | Number of candles (1–100000)      |
 
 ### Rates in Range
 
@@ -61,12 +61,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Description           |
-| --------- | -------- | -------- | --------------------- |
-| symbol    | string   | yes      | Symbol name           |
+| Parameter | Type     | Required | Description                       |
+| --------- | -------- | -------- | --------------------------------- |
+| symbol    | string   | yes      | Symbol name                       |
 | timeframe | int/str  | yes      | MT5 timeframe constant or integer |
-| date_from | datetime | yes      | Start date (ISO 8601) |
-| date_to   | datetime | yes      | End date (ISO 8601)   |
+| date_from | datetime | yes      | Start date (ISO 8601)             |
+| date_to   | datetime | yes      | End date (ISO 8601)               |
 
 ### Ticks from Date
 
@@ -78,12 +78,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Default | Description                         |
-| --------- | -------- | -------- | ------- | ----------------------------------- |
-| symbol    | string   | yes      |         | Symbol name                         |
-| date_from | datetime | yes      |         | Start date (ISO 8601)               |
-| count     | int      | yes      |         | Number of ticks (1–100000)          |
-| flags     | int/str  | no       | 6       | MT5 tick flag constant or integer   |
+| Parameter | Type     | Required | Default | Description                       |
+| --------- | -------- | -------- | ------- | --------------------------------- |
+| symbol    | string   | yes      |         | Symbol name                       |
+| date_from | datetime | yes      |         | Start date (ISO 8601)             |
+| count     | int      | yes      |         | Number of ticks (1–100000)        |
+| flags     | int/str  | no       | 6       | MT5 tick flag constant or integer |
 
 ### Ticks in Range
 
@@ -95,12 +95,12 @@ curl -s -H "X-API-Key: ${MT5_API_KEY}" \
   | python -m json.tool
 ```
 
-| Parameter | Type     | Required | Default | Description                         |
-| --------- | -------- | -------- | ------- | ----------------------------------- |
-| symbol    | string   | yes      |         | Symbol name                         |
-| date_from | datetime | yes      |         | Start date (ISO 8601)               |
-| date_to   | datetime | yes      |         | End date (ISO 8601)                 |
-| flags     | int/str  | no       | 6       | MT5 tick flag constant or integer   |
+| Parameter | Type     | Required | Default | Description                       |
+| --------- | -------- | -------- | ------- | --------------------------------- |
+| symbol    | string   | yes      |         | Symbol name                       |
+| date_from | datetime | yes      |         | Start date (ISO 8601)             |
+| date_to   | datetime | yes      |         | End date (ISO 8601)               |
+| flags     | int/str  | no       | 6       | MT5 tick flag constant or integer |
 
 ### Market Book (DOM)
 
