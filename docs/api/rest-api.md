@@ -29,16 +29,16 @@ Set the optional API key and other limits via environment variables:
 
 ```powershell
 $env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
-$env:API_LOG_LEVEL = "INFO"
-$env:API_RATE_LIMIT = "100"
-$env:API_CORS_ORIGINS = "*"
-$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
+$env:MT5API_LOG_LEVEL = "INFO"
+$env:MT5API_RATE_LIMIT = "100"
+$env:MT5API_CORS_ORIGINS = "*"
+$env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 ```
 
 MT5 connection details are managed by the underlying MT5 client configuration
 (for example login/server/path settings).
 
-`API_ROUTER_PREFIX` mounts the API routers under a shared prefix such as
+`MT5API_ROUTER_PREFIX` mounts the API routers under a shared prefix such as
 `/api/v1`. The default is `""`, so endpoints stay at root-level paths like
 `/health` and `/symbols`. `"api/v1"`, `"/api/v1"`, and `"/api/v1/"` are
 normalized to the same prefix.
@@ -72,7 +72,7 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
 ## Rate Limiting
 
 Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
-`API_RATE_LIMIT` to an integer for a different per-minute cap.
+`MT5API_RATE_LIMIT` to an integer for a different per-minute cap.
 
 ## Format Negotiation
 
@@ -90,7 +90,7 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?forma
 
 All endpoints are read-only.
 
-If `API_ROUTER_PREFIX` is configured, prepend it to each API route below.
+If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 
 ### Health
 
@@ -207,6 +207,6 @@ Errors follow RFC 7807 Problem Details:
 Minimum security posture for deployments:
 
 - Set `MT5API_SECRET_KEY` to enable API key authentication when needed
-- Rate limiting enabled (`API_RATE_LIMIT`)
+- Rate limiting enabled (`MT5API_RATE_LIMIT`)
 - Run behind HTTPS in production
-- Restrict CORS origins (`API_CORS_ORIGINS`) for public deployments
+- Restrict CORS origins (`MT5API_CORS_ORIGINS`) for public deployments

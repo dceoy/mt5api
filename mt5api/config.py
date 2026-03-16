@@ -11,24 +11,24 @@ from .constants import (
     DEFAULT_API_LOG_LEVEL,
     DEFAULT_API_RATE_LIMIT,
     DEFAULT_API_ROUTER_PREFIX,
-    ENV_API_CORS_ORIGINS,
-    ENV_API_HOST,
-    ENV_API_LOG_LEVEL,
-    ENV_API_PORT,
-    ENV_API_RATE_LIMIT,
-    ENV_API_ROUTER_PREFIX,
+    ENV_MT5API_CORS_ORIGINS,
+    ENV_MT5API_HOST,
+    ENV_MT5API_LOG_LEVEL,
+    ENV_MT5API_PORT,
+    ENV_MT5API_RATE_LIMIT,
+    ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
 )
 
 _VALID_API_ROUTER_PREFIX_PATTERN = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$")
-_INVALID_API_ROUTER_PREFIX_ERROR = "Invalid API_ROUTER_PREFIX"
+_INVALID_MT5API_ROUTER_PREFIX_ERROR = "Invalid MT5API_ROUTER_PREFIX"
 
 
 def normalize_api_router_prefix(raw_prefix: str | None) -> str:
     """Normalize the API router prefix from environment configuration.
 
     Args:
-        raw_prefix: Raw prefix string from ``API_ROUTER_PREFIX``.
+        raw_prefix: Raw prefix string from ``MT5API_ROUTER_PREFIX``.
 
     Returns:
         Prefix suitable for FastAPI router mounting.
@@ -44,7 +44,7 @@ def normalize_api_router_prefix(raw_prefix: str | None) -> str:
         return ""
 
     if not _VALID_API_ROUTER_PREFIX_PATTERN.fullmatch(prefix):
-        raise ValueError(_INVALID_API_ROUTER_PREFIX_ERROR)
+        raise ValueError(_INVALID_MT5API_ROUTER_PREFIX_ERROR)
 
     return f"/{prefix}"
 
@@ -55,7 +55,7 @@ def get_configured_api_host() -> str:
     Returns:
         Host address for binding the API server.
     """
-    return os.getenv(ENV_API_HOST, DEFAULT_API_HOST)
+    return os.getenv(ENV_MT5API_HOST, DEFAULT_API_HOST)
 
 
 def get_configured_api_port() -> str | None:
@@ -64,7 +64,7 @@ def get_configured_api_port() -> str | None:
     Returns:
         Raw port string from the environment, or ``None`` if unset.
     """
-    return os.getenv(ENV_API_PORT)
+    return os.getenv(ENV_MT5API_PORT)
 
 
 def get_configured_api_log_level() -> str:
@@ -73,7 +73,7 @@ def get_configured_api_log_level() -> str:
     Returns:
         Log level string from configuration.
     """
-    return os.getenv(ENV_API_LOG_LEVEL, DEFAULT_API_LOG_LEVEL)
+    return os.getenv(ENV_MT5API_LOG_LEVEL, DEFAULT_API_LOG_LEVEL)
 
 
 def get_configured_api_rate_limit() -> str:
@@ -82,7 +82,7 @@ def get_configured_api_rate_limit() -> str:
     Returns:
         Raw per-minute rate-limit string from configuration.
     """
-    return os.getenv(ENV_API_RATE_LIMIT, str(DEFAULT_API_RATE_LIMIT))
+    return os.getenv(ENV_MT5API_RATE_LIMIT, str(DEFAULT_API_RATE_LIMIT))
 
 
 def get_configured_api_cors_origins() -> str:
@@ -91,7 +91,7 @@ def get_configured_api_cors_origins() -> str:
     Returns:
         Raw CORS origins configuration string.
     """
-    return os.getenv(ENV_API_CORS_ORIGINS, DEFAULT_API_CORS_ORIGINS)
+    return os.getenv(ENV_MT5API_CORS_ORIGINS, DEFAULT_API_CORS_ORIGINS)
 
 
 def get_configured_api_router_prefix() -> str:
@@ -101,7 +101,7 @@ def get_configured_api_router_prefix() -> str:
         Normalized router prefix for mounting API routes.
     """
     return normalize_api_router_prefix(
-        os.getenv(ENV_API_ROUTER_PREFIX, DEFAULT_API_ROUTER_PREFIX)
+        os.getenv(ENV_MT5API_ROUTER_PREFIX, DEFAULT_API_ROUTER_PREFIX)
     )
 
 

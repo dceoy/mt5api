@@ -64,16 +64,16 @@ MT5_SERVER=YourBroker-Demo
 MT5_PATH=C:\Program Files\MetaTrader 5\terminal64.exe
 
 # API Configuration
-API_HOST=0.0.0.0
-API_PORT=8000
+MT5API_HOST=0.0.0.0
+MT5API_PORT=8000
 MT5API_SECRET_KEY=your-secret-api-key-here  # Change this!
-API_LOG_LEVEL=INFO
+MT5API_LOG_LEVEL=INFO
 
 # Optional: Rate limiting
-API_RATE_LIMIT=100  # requests per minute
+MT5API_RATE_LIMIT=100  # requests per minute
 
 # Optional: CORS
-API_CORS_ORIGINS=*
+MT5API_CORS_ORIGINS=*
 ```
 
 ### Generate API Key

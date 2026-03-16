@@ -35,10 +35,10 @@ nssm install mt5api
 ```
 # Optional: set MT5API_SECRET_KEY only when you want to require X-API-Key headers.
 MT5API_SECRET_KEY=your-secret-api-key
-API_LOG_LEVEL=INFO
-API_RATE_LIMIT=100
-API_CORS_ORIGINS=*
-API_ROUTER_PREFIX=/api/v1
+MT5API_LOG_LEVEL=INFO
+MT5API_RATE_LIMIT=100
+MT5API_CORS_ORIGINS=*
+MT5API_ROUTER_PREFIX=/api/v1
 ```
 
 6. Start the service:
