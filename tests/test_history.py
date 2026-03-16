@@ -212,6 +212,20 @@ def test_get_orders_total_returns_json(
     mock_mt5_client.orders_total.assert_called_with()
 
 
+def test_get_orders_total_returns_parquet(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /orders/total supports Parquet output."""
+    response = client.get("/orders/total?format=parquet", headers=api_headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/parquet")
+
+    mock_mt5_client.orders_total.assert_called_with()
+
+
 def test_get_positions_total_returns_json(
     client: TestClient,
     api_headers: dict[str, str],
@@ -225,6 +239,20 @@ def test_get_positions_total_returns_json(
     payload = response.json()
     assert payload["count"] == 1
     assert payload["data"]["total"] == 5
+
+    mock_mt5_client.positions_total.assert_called_with()
+
+
+def test_get_positions_total_returns_parquet(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /positions/total supports Parquet output."""
+    response = client.get("/positions/total?format=parquet", headers=api_headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/parquet")
 
     mock_mt5_client.positions_total.assert_called_with()
 
@@ -249,6 +277,31 @@ def test_get_history_orders_total_returns_json(
     payload = response.json()
     assert payload["count"] == 1
     assert payload["data"]["total"] == 42
+
+    mock_mt5_client.history_orders_total.assert_called_with(
+        date_from=ANY,
+        date_to=ANY,
+    )
+
+
+def test_get_history_orders_total_returns_parquet(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /history/orders/total supports Parquet output."""
+    response = client.get(
+        "/history/orders/total",
+        params={
+            "date_from": "2024-01-01T00:00:00Z",
+            "date_to": "2024-01-02T00:00:00Z",
+            "format": "parquet",
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/parquet")
 
     mock_mt5_client.history_orders_total.assert_called_with(
         date_from=ANY,
@@ -283,6 +336,31 @@ def test_get_history_deals_total_returns_json(
     )
 
 
+def test_get_history_deals_total_returns_parquet(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /history/deals/total supports Parquet output."""
+    response = client.get(
+        "/history/deals/total",
+        params={
+            "date_from": "2024-01-01T00:00:00Z",
+            "date_to": "2024-01-02T00:00:00Z",
+            "format": "parquet",
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/parquet")
+
+    mock_mt5_client.history_deals_total.assert_called_with(
+        date_from=ANY,
+        date_to=ANY,
+    )
+
+
 def test_get_history_orders_total_requires_date_range(
     client: TestClient,
     api_headers: dict[str, str],
@@ -295,3 +373,22 @@ def test_get_history_orders_total_requires_date_range(
     )
 
     assert response.status_code == 422
+
+
+def test_get_history_deals_total_rejects_invalid_date_range(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /history/deals/total rejects reversed date ranges."""
+    response = client.get(
+        "/history/deals/total",
+        params={
+            "date_from": "2024-01-02T00:00:00Z",
+            "date_to": "2024-01-01T00:00:00Z",
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 400
+    mock_mt5_client.history_deals_total.assert_not_called()

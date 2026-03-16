@@ -13,6 +13,7 @@ from mt5api.models import (
     HistoryTotalRequest,
     RatesFromRequest,
     TicksFromRequest,
+    TradeRequest,
     get_mt5_copy_ticks_examples,
     get_mt5_order_type_examples,
     get_mt5_timeframe_examples,
@@ -143,3 +144,100 @@ def test_history_total_request_rejects_invalid_date_range() -> None:
             date_from=datetime(2024, 1, 2, tzinfo=UTC),
             date_to=datetime(2024, 1, 1, tzinfo=UTC),
         )
+
+
+def test_history_total_request_rejects_equal_dates() -> None:
+    """History total request rejects equal start and end timestamps."""
+    timestamp = datetime(2024, 1, 1, tzinfo=UTC)
+
+    with pytest.raises(ValueError, match="date_from must be before date_to"):
+        HistoryTotalRequest(date_from=timestamp, date_to=timestamp)
+
+
+def test_trade_request_accepts_supported_optional_fields() -> None:
+    """Trade requests should accept explicitly whitelisted optional MT5 fields."""
+    request = TradeRequest.model_validate({
+        "action": 1,
+        "symbol": "EURUSD",
+        "volume": 0.1,
+        "type": "ORDER_TYPE_BUY",
+        "price": 1.085,
+        "deviation": 10,
+        "type_filling": 1,
+        "type_time": 0,
+        "position": 123456,
+        "comment": "validation-check",
+    })
+
+    assert request.deviation == 10
+    assert request.type_filling == 1
+    assert request.type_time == 0
+    assert request.position == 123456
+    assert request.comment == "validation-check"
+
+
+def test_trade_request_rejects_unknown_field() -> None:
+    """Trade requests should reject unknown extra fields."""
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        TradeRequest.model_validate({
+            "action": 1,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 0,
+            "price": 1.085,
+            "unsupported": True,
+        })
+
+
+@pytest.mark.parametrize(
+    ("payload", "match"),
+    [
+        (
+            {
+                "action": -1,
+                "symbol": "EURUSD",
+                "volume": 0.1,
+                "type": 0,
+                "price": 1.085,
+            },
+            "greater than or equal to 0",
+        ),
+        (
+            {
+                "action": 1,
+                "symbol": "",
+                "volume": 0.1,
+                "type": 0,
+                "price": 1.085,
+            },
+            "at least 1 character",
+        ),
+        (
+            {
+                "action": 1,
+                "symbol": "EURUSD",
+                "volume": 0,
+                "type": 0,
+                "price": 1.085,
+            },
+            "greater than 0",
+        ),
+        (
+            {
+                "action": 1,
+                "symbol": "EURUSD",
+                "volume": 0.1,
+                "type": 99,
+                "price": 1.085,
+            },
+            "Unsupported metatrader5 order_type constant value: 99",
+        ),
+    ],
+)
+def test_trade_request_rejects_invalid_core_fields(
+    payload: dict[str, object],
+    match: str,
+) -> None:
+    """Trade requests should validate core field constraints."""
+    with pytest.raises(ValidationError, match=match):
+        TradeRequest.model_validate(payload)

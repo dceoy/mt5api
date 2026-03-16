@@ -7,7 +7,9 @@ import importlib
 import pytest
 
 from mt5api.constants import (
+    DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_CORS_ORIGINS,
+    ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_RATE_LIMIT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
@@ -96,6 +98,47 @@ def test_get_configured_mt5api_secret_key(
         monkeypatch.setenv(ENV_MT5API_SECRET_KEY, raw_secret_key)
 
     assert config.get_configured_mt5api_secret_key() == expected_secret_key
+
+
+@pytest.mark.parametrize(
+    ("raw_limit", "expected_limit"),
+    [
+        (None, DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS),
+        ("1", 1),
+        ("250", 250),
+    ],
+)
+def test_get_configured_max_market_book_subscriptions(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_limit: str | None,
+    expected_limit: int,
+) -> None:
+    """Market-book subscription limit should read a positive configured integer."""
+    from mt5api import config  # noqa: PLC0415
+
+    if raw_limit is None:
+        monkeypatch.delenv(ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS, raising=False)
+    else:
+        monkeypatch.setenv(ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS, raw_limit)
+
+    assert config.get_configured_max_market_book_subscriptions() == expected_limit
+
+
+@pytest.mark.parametrize("raw_limit", ["0", "-1", "not-a-number"])
+def test_get_configured_max_market_book_subscriptions_rejects_invalid_values(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_limit: str,
+) -> None:
+    """Market-book subscription limit should reject invalid values."""
+    from mt5api import config  # noqa: PLC0415
+
+    monkeypatch.setenv(ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS, raw_limit)
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS",
+    ):
+        config.get_configured_max_market_book_subscriptions()
 
 
 def test_app_uses_api_router_prefix_from_environment(

@@ -553,8 +553,26 @@ class TicksRangeRequest(BaseModel):
 class MarketBookRequest(BaseModel):
     """Request parameters for market book endpoint."""
 
-    symbol: str = Field(..., description="Symbol name")
+    symbol: str = Field(
+        ...,
+        description="Symbol name",
+        min_length=1,
+        max_length=32,
+        examples=["EURUSD"],
+    )
     format: ResponseFormat | None = Field(default=None)
+
+
+class MarketBookSubscriptionRequest(BaseModel):
+    """Request parameters for market-book subscription endpoints."""
+
+    symbol: str = Field(
+        ...,
+        description="Symbol name",
+        min_length=1,
+        max_length=32,
+        examples=["EURUSD"],
+    )
 
 
 class PositionsRequest(BaseModel):
@@ -737,7 +755,7 @@ class CalcProfitRequest(BaseModel):
 class TradeRequest(BaseModel):
     """Typed MT5 trade request payload used for order validation."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
     action: int = Field(
         ...,
@@ -767,6 +785,77 @@ class TradeRequest(BaseModel):
         description="Requested price",
         ge=0,
         examples=[1.08500],
+    )
+    stoplimit: float | None = Field(
+        default=None,
+        description="Stop-limit price for stop-limit pending orders",
+        ge=0,
+        examples=[1.08450],
+    )
+    sl: float | None = Field(
+        default=None,
+        description="Stop-loss price",
+        ge=0,
+        examples=[1.08000],
+    )
+    tp: float | None = Field(
+        default=None,
+        description="Take-profit price",
+        ge=0,
+        examples=[1.09000],
+    )
+    deviation: int | None = Field(
+        default=None,
+        description="Maximum allowed price deviation in points",
+        ge=0,
+        examples=[10],
+    )
+    magic: int | None = Field(
+        default=None,
+        description="Expert Advisor identifier",
+        ge=0,
+        examples=[123456],
+    )
+    comment: str | None = Field(
+        default=None,
+        description="Trade request comment",
+        min_length=1,
+        examples=["validation-check"],
+    )
+    type_filling: int | None = Field(
+        default=None,
+        description="MetaTrader5 ORDER_FILLING constant value",
+        ge=0,
+        examples=[1],
+    )
+    type_time: int | None = Field(
+        default=None,
+        description="MetaTrader5 ORDER_TIME constant value",
+        ge=0,
+        examples=[0],
+    )
+    expiration: datetime | None = Field(
+        default=None,
+        description="Expiration time for timed pending orders",
+        examples=["2024-01-02T00:00:00Z"],
+    )
+    order: int | None = Field(
+        default=None,
+        description="Pending order ticket",
+        ge=0,
+        examples=[123456],
+    )
+    position: int | None = Field(
+        default=None,
+        description="Open position ticket",
+        ge=0,
+        examples=[123456],
+    )
+    position_by: int | None = Field(
+        default=None,
+        description="Opposite position ticket",
+        ge=0,
+        examples=[654321],
     )
 
 

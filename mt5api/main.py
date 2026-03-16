@@ -17,8 +17,10 @@ from .config import (
     get_configured_api_cors_origins,
     get_configured_api_log_level,
     get_configured_api_router_prefix,
+    get_configured_max_market_book_subscriptions,
 )
 from .constants import (
+    ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
     API_DESCRIPTION,
     API_DOCS_URL,
     API_KEY_SECURITY_SCHEME_NAME,
@@ -27,6 +29,8 @@ from .constants import (
     API_TITLE,
     API_VERSION,
     DEFAULT_API_CORS_ORIGINS,
+    MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY,
+    MAX_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
 )
 from .dependencies import run_in_threadpool, shutdown_mt5_client
 from .middleware import add_middleware
@@ -132,32 +136,33 @@ def _custom_openapi() -> dict[str, Any]:
 
 _configure_logging()
 logger = logging.getLogger(__name__)
-_ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY = "active_market_book_subscriptions"
-_MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY = "market_book_cleanup_client"
 
 
 async def _release_market_book_subscriptions(app: FastAPI) -> None:
     """Release active market-book subscriptions before shutting down MT5."""
     subscriptions = getattr(
         app.state,
-        _ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
+        ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
         None,
     )
     if not isinstance(subscriptions, set) or not subscriptions:
         return
 
-    mt5_client = getattr(app.state, _MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
+    mt5_client = getattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
     if mt5_client is None:
         logger.warning("Active market-book subscriptions found without cleanup client")
         subscriptions.clear()
-        setattr(app.state, _MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
+        setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
         return
 
     for symbol in tuple(sorted(subscriptions)):
-        await run_in_threadpool(mt5_client.market_book_release, symbol=symbol)
+        try:
+            await run_in_threadpool(mt5_client.market_book_release, symbol=symbol)
+        except Exception:
+            logger.exception("Failed to release market book for %s", symbol)
 
     subscriptions.clear()
-    setattr(app.state, _MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
+    setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
 
 
 @asynccontextmanager
@@ -172,8 +177,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     # Startup
     logger.info("Starting MT5 REST API...")
-    app.state.active_market_book_subscriptions = set()
-    app.state.market_book_cleanup_client = None
+    setattr(app.state, ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY, set())
+    setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
+    setattr(
+        app.state,
+        MAX_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
+        get_configured_max_market_book_subscriptions(),
+    )
 
     # Note: MT5 client is initialized lazily on first request via dependency
     # This avoids blocking startup if MT5 is not available

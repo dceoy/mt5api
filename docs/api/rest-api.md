@@ -31,6 +31,7 @@ Set the optional API key and other limits via environment variables:
 $env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:MT5API_LOG_LEVEL = "INFO"
 $env:MT5API_RATE_LIMIT = "100"
+$env:MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS = "100"
 $env:MT5API_CORS_ORIGINS = "*"
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 ```
@@ -73,6 +74,11 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
 
 Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
 `MT5API_RATE_LIMIT` to an integer for a different per-minute cap.
+
+Active market-book subscriptions are capped at `100` symbols by default. Set
+`MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS` to a positive integer to adjust that
+limit. When the cap is reached, new `POST /market-book/{symbol}/subscribe`
+requests return HTTP `429` until an existing subscription is released.
 
 ## Format Negotiation
 
