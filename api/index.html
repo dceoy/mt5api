@@ -153,7 +153,7 @@ Parquet support.</p>
 </ul>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">$env:MT5API_SECRET_KEY</span> <span class="p">=</span> <span class="s2">&quot;your-secret-api-key&quot;</span>  <span class="c"># Optional: omit to disable auth</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">$env:API_ROUTER_PREFIX</span> <span class="p">=</span> <span class="s2">&quot;/api/v1&quot;</span>        <span class="c"># Optional: omit for root-level routes</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">$env:MT5API_ROUTER_PREFIX</span> <span class="p">=</span> <span class="s2">&quot;/api/v1&quot;</span>     <span class="c"># Optional: omit for root-level routes</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
 <p>Replace <code>windows-host</code> with the DNS name or IP address of the Windows machine
