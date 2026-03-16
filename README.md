@@ -100,13 +100,12 @@ If `MT5API_ROUTER_PREFIX` is set, prepend that value to every API route below.
 - History: `GET /history/orders`, `GET /history/orders/total`,
   `GET /history/deals`, `GET /history/deals/total`
 
-### Write Endpoints
+### Operational Endpoints
 
 - `POST /symbols/{symbol}/select` — Show or hide symbol in MarketWatch
 - `POST /market-book/{symbol}/subscribe` — Subscribe to DOM events
 - `POST /market-book/{symbol}/unsubscribe` — Unsubscribe from DOM events
-- `POST /order/check` — Validate funds for a trade (no execution)
-- `POST /order/send` — Execute a trade request
+- `POST /order/check` — Validate a trade request without execution
 
 ## License
 

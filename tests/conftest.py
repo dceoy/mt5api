@@ -218,18 +218,6 @@ def mock_mt5_client() -> Mock:
         "request_volume": 0.1,
         "request_type": 0,
     }
-    client.order_send_as_dict.return_value = {
-        "retcode": 10009,
-        "deal": 123456789,
-        "order": 987654321,
-        "volume": 0.1,
-        "price": 1.08500,
-        "comment": "Request executed",
-        "request_action": 1,
-        "request_symbol": "EURUSD",
-        "request_volume": 0.1,
-        "request_type": 0,
-    }
     client.symbol_select.return_value = True
     client.market_book_add.return_value = True
     client.market_book_release.return_value = True
@@ -238,14 +226,17 @@ def mock_mt5_client() -> Mock:
 
 
 @pytest.fixture
-def client(mock_mt5_client: Mock, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def client(
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[TestClient, None, None]:
     """Create FastAPI test client with mocked MT5 client.
 
     Args:
         mock_mt5_client: Mocked Mt5DataClient fixture.
         monkeypatch: Pytest monkeypatch fixture for patching.
 
-    Returns:
+    Yields:
         FastAPI test client.
     """
     # Import after setting environment variable and mocking MetaTrader5
@@ -263,10 +254,14 @@ def client(mock_mt5_client: Mock, monkeypatch: pytest.MonkeyPatch) -> TestClient
     app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client
     # Don't override verify_api_key - let it work normally for auth tests
 
-    # Create test client
-    test_client = TestClient(app)
+    app.state.active_market_book_subscriptions = set()
+    app.state.market_book_cleanup_client = None
 
-    return test_client
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.state.active_market_book_subscriptions = set()
+    app.state.market_book_cleanup_client = None
 
 
 @pytest.fixture

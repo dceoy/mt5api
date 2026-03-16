@@ -9,7 +9,14 @@ from functools import cache, cached_property
 from typing import TYPE_CHECKING, Annotated, Any, LiteralString, Self, TypeAlias, cast
 
 from pdmt5.mt5 import Mt5Client
-from pydantic import BaseModel, BeforeValidator, Field, WithJsonSchema, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    WithJsonSchema,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 if TYPE_CHECKING:
@@ -727,21 +734,48 @@ class CalcProfitRequest(BaseModel):
     )
 
 
-class OrderCheckRequest(BaseModel):
-    """Request parameters for order check endpoint."""
+class TradeRequest(BaseModel):
+    """Typed MT5 trade request payload used for order validation."""
 
-    request: dict[str, Any] = Field(
+    model_config = ConfigDict(extra="allow")
+
+    action: int = Field(
         ...,
-        description="Trade request dictionary for order validation",
+        description="MetaTrader5 TRADE_ACTION constant value",
+        ge=0,
+        examples=[1],
+    )
+    symbol: str = Field(
+        ...,
+        description="Symbol name",
+        min_length=1,
+        max_length=32,
+        examples=["EURUSD"],
+    )
+    volume: float = Field(
+        ...,
+        description="Trade volume in lots",
+        gt=0,
+        examples=[0.1, 1.0],
+    )
+    type: Mt5OrderType = Field(
+        ...,
+        description=_ORDER_TYPE_DESCRIPTION,
+    )
+    price: float = Field(
+        ...,
+        description="Requested price",
+        ge=0,
+        examples=[1.08500],
     )
 
 
-class OrderSendRequest(BaseModel):
-    """Request parameters for order send endpoint."""
+class OrderCheckRequest(BaseModel):
+    """Request parameters for order check endpoint."""
 
-    request: dict[str, Any] = Field(
+    request: TradeRequest = Field(
         ...,
-        description="Trade request dictionary for order execution",
+        description="Trade request dictionary for order validation",
     )
 
 
@@ -751,6 +785,8 @@ class SymbolSelectRequest(BaseModel):
     symbol: str = Field(
         ...,
         description="Symbol name",
+        min_length=1,
+        max_length=32,
         examples=["EURUSD"],
     )
     enable: bool = Field(
