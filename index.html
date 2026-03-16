@@ -133,17 +133,20 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="mt5api-documentation">mt5api Documentation<a class="headerlink" href="#mt5api-documentation" title="Permanent link">&para;</a></h1>
-<p>FastAPI-based REST API for MetaTrader 5 market data and account information.</p>
+<p>FastAPI-based REST API for MetaTrader 5 market data, account information, and
+trading operations.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>mt5api exposes read-only MT5 data over HTTP using FastAPI. It relies on the
-underlying MT5 client library for connectivity and adds optional authentication, rate
-limiting, and response formatting suitable for analytics workflows.</p>
+<p>mt5api exposes MT5 data and trading operations over HTTP using FastAPI. It
+relies on the underlying MT5 client library for connectivity and adds optional
+authentication, rate limiting, and response formatting suitable for analytics
+workflows.</p>
 <p>The API server must run on Windows because the <code>MetaTrader5</code> Python package is
 Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 installed and
 logged in. API clients can connect from any operating system.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Read-only REST endpoints for symbols, market data, account info, orders, and history</li>
+<li>REST endpoints for symbols, market data, account info, orders, history,
+  calculations, and trading operations</li>
 <li>JSON and Apache Parquet responses</li>
 <li>Optional API key authentication and rate limiting</li>
 <li>Structured JSON logging and configurable CORS</li>
@@ -166,6 +169,8 @@ logged in. API clients can connect from any operating system.</p>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
 <p>Once the API is running, use these <code>curl</code> examples from any client machine.</p>
+<p>Set <code>MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS</code> to cap active market-book
+subscriptions. The default limit is <code>100</code>.</p>
 <p>Replace <code>windows-host</code> with the DNS name or IP address of the Windows machine
 running <code>mt5api</code>. If you run the request on that Windows host, <code>localhost</code> also
 works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
@@ -177,7 +182,7 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 </code></pre></div>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="api/rest-api/">REST API</a> - Endpoint overview, auth, and formats</li>
+<li><a href="api/rest-api/">REST API</a> - Endpoint overview, auth, formats, and examples</li>
 <li><a href="api/deployment/">Deployment</a> - Windows service setup</li>
 </ul>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
@@ -263,5 +268,5 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-03-16 14:07:24.067000+00:00
+Build Date UTC : 2026-03-16 17:08:28.348756+00:00
 -->

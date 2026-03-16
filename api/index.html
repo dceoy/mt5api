@@ -131,17 +131,29 @@ Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 instal
 logged in. Clients can call the HTTP API from any operating system.</p>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="rest-api"><a href="rest-api/">REST API</a><a class="headerlink" href="#rest-api" title="Permanent link">&para;</a></h3>
-<p>FastAPI-based REST API that exposes read-only MT5 data over HTTP with JSON and
-Parquet support.</p>
+<p>FastAPI-based REST API that exposes MT5 market data, account info, trading
+history, calculations, and non-executing operational endpoints over HTTP with
+JSON and Parquet support.</p>
 <h3 id="deployment"><a href="deployment/">Deployment</a><a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h3>
 <p>Windows service deployment guide for hosting the REST API alongside MetaTrader 5.</p>
 <h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
 <p>mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:</p>
 <ol>
-<li><strong>API Layer</strong> (<code>mt5api.main</code>, <code>mt5api.routers</code>): FastAPI app, routers, and response formatting</li>
-<li><strong>Dependency Layer</strong> (<code>mt5api.dependencies</code>): MT5 client lifecycle and format negotiation</li>
-<li><strong>Model Layer</strong> (<code>mt5api.models</code>): Response schemas and MT5 constant metadata helpers</li>
-<li><strong>Formatter Layer</strong> (<code>mt5api.formatters</code>): JSON and Parquet serialization helpers</li>
+<li><strong>API Layer</strong> (<code>mt5api.main</code>, <code>mt5api.routers</code>): FastAPI app, routers, and
+   response formatting. Routers are grouped by domain:</li>
+<li><code>health.py</code>: health check, version, last error</li>
+<li><code>symbols.py</code>: symbol listing, details, tick, and total</li>
+<li><code>market.py</code>: OHLCV rates, tick data, and market depth</li>
+<li><code>calc.py</code>: margin and profit calculations</li>
+<li><code>account.py</code>: account and terminal info</li>
+<li><code>history.py</code>: positions, orders, history with totals</li>
+<li><code>trading.py</code>: order check, symbol selection, market book subscriptions</li>
+<li><strong>Dependency Layer</strong> (<code>mt5api.dependencies</code>): MT5 client lifecycle and
+   format negotiation</li>
+<li><strong>Model Layer</strong> (<code>mt5api.models</code>): Response schemas and MT5 constant
+   metadata helpers (TIMEFRAME, COPY_TICKS, ORDER_TYPE)</li>
+<li><strong>Formatter Layer</strong> (<code>mt5api.formatters</code>): JSON and Parquet serialization
+   helpers</li>
 </ol>
 <h2 id="usage-guidelines">Usage Guidelines<a class="headerlink" href="#usage-guidelines" title="Permanent link">&para;</a></h2>
 <ul>
