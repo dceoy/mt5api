@@ -22,15 +22,11 @@
 
 - The API server must run on Windows with a logged-in MetaTrader 5 terminal.
 - Linux and macOS are for HTTP clients, documentation work, and local non-runtime development only.
-- The service is intentionally read-only: expose account, terminal, symbol, market, order, and history data without adding trading actions.
 
 ### Key Dependencies
 
 - `pdmt5`: Underlying MetaTrader 5 client integration used by the API layer.
 - `fastapi`: HTTP application framework and OpenAPI generation.
-- `pyarrow`: Apache Parquet response support.
-- `slowapi`: Request rate limiting.
-- `httpx`: HTTP client support used in testing and API interaction.
 
 ### Package Structure
 
@@ -44,19 +40,16 @@
   - `models.py`: Pydantic API models.
   - `middleware.py`: Request logging and error handling.
   - `constants.py`: Shared constants and environment variable names.
-  - `routers/`: Read-only endpoint groups: `health.py`, `symbols.py`, `market.py`, `account.py`, and `history.py`.
+  - `routers/`: Endpoint groups for operations: `health.py`, `symbols.py`, `market.py`, `account.py`, `history.py`, `calc.py`, and `trading.py`.
 - `tests/`: Pytest suite covering API behavior, configuration, middleware, and CLI entry points.
 - `docs/`: MkDocs documentation, including REST API and deployment guidance.
 
 ## Quality Standards
 
-- Target Python 3.11+ with 4-space indentation and an 88-character line limit.
-- Keep modules and functions in `snake_case`, classes in `PascalCase`, and constants in `UPPER_SNAKE_CASE`.
-- Type annotations are expected; Pyright runs in strict mode.
-- Ruff is configured with broad lint coverage; docstrings should follow the Google convention.
-- Test coverage is enforced at 100%; update or add tests with every behavior change.
-- Keep endpoint code grouped by domain under `mt5api/routers/`.
-- Use `pytest.mark.parametrize` for input/result matrices.
+- Type hints required (pyright strict mode)
+- Comprehensive linting with 35+ rule categories (ruff)
+- Test coverage tracking with 100% (pytest-cov)
+- Parametrized tests for input/result matrices using `pytest.mark.parametrize` (pytest)
 
 ## Documentation Workflow
 
@@ -67,8 +60,6 @@
 ## Commit & Pull Request Guidelines
 
 - Run QA using `local-qa` skill before committing or creating a PR.
-- Include request/response examples or screenshots when docs or OpenAPI-visible behavior changes.
-- Keep PRs focused and include: concise summary, affected workflow paths, linked issue/context, and regenerated `README.md` when workflow inventory changes.
 - Branch names use appropriate prefixes on creation (e.g., `feature/...`, `bugfix/...`, `refactor/...`, `docs/...`, `chore/...`).
 - When instructed to create a PR, create it as a draft with appropriate labels by default.
 
