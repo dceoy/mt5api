@@ -149,17 +149,17 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 - `GET /history/deals/total` (`date_from`, `date_to`, `format`) — Count of
   historical deals in date range
 
-### Trading Operations
+### Trade Validation
 
-These endpoints send requests to the MetaTrader 5 trade server and modify
-state. Use with care.
+This endpoint validates an MT5 trade request without executing it.
 
 - `POST /order/check` (body: `{"request": {...}}`) — Validate funds
   sufficiency for a trade without executing it
-- `POST /order/send` (body: `{"request": {...}}`) — Execute a trade request
 
 The `request` body follows the [MetaTrader 5 trade request
-structure](https://www.mql5.com/en/docs/trading/ordersend).
+structure](https://www.mql5.com/en/docs/constants/structures/mqltraderequest),
+with typed validation for core fields such as `action`, `symbol`, `volume`,
+`type`, and `price`.
 
 ## Response Formatter Utilities
 
@@ -290,14 +290,6 @@ curl -X POST -H "X-API-Key: your-secret-api-key" -H "Content-Type: application/j
   "http://windows-host:8000/order/check"
 ```
 
-### Send Order
-
-```console
-curl -X POST -H "X-API-Key: your-secret-api-key" -H "Content-Type: application/json" \
-  -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0, "price": 1.085}}' \
-  "http://windows-host:8000/order/send"
-```
-
 ## Error Responses
 
 Errors follow RFC 7807 Problem Details:
@@ -320,5 +312,6 @@ Minimum security posture for deployments:
 - Rate limiting enabled (`MT5API_RATE_LIMIT`)
 - Run behind HTTPS in production
 - Restrict CORS origins (`MT5API_CORS_ORIGINS`) for public deployments
-- Restrict access to trading endpoints (`/order/send`, `/order/check`) to
-  trusted clients only
+- Restrict access to operational endpoints (`/order/check`,
+  `/symbols/{symbol}/select`, `/market-book/{symbol}/subscribe`,
+  `/market-book/{symbol}/unsubscribe`) to trusted clients only

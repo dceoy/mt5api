@@ -1,10 +1,10 @@
-"""Trading operation endpoints (order check, order send, symbol select)."""
+"""Operational endpoints for order checks and terminal subscriptions."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path, Request
 from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
 
 from mt5api.auth import verify_api_key
@@ -17,7 +17,6 @@ from mt5api.formatters import format_response
 from mt5api.models import (
     DataResponse,
     OrderCheckRequest,
-    OrderSendRequest,
     ResponseFormat,
     SymbolSelectRequest,
 )
@@ -29,6 +28,17 @@ router = APIRouter(
     tags=["trading"],
     dependencies=[Depends(verify_api_key)],
 )
+
+_ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY = "active_market_book_subscriptions"
+_MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY = "market_book_cleanup_client"
+
+
+def _get_active_market_book_subscriptions(request: Request) -> set[str]:
+    """Return the active market-book subscription set for the application."""
+    return cast(
+        "set[str]",
+        getattr(request.app.state, _ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY),
+    )
 
 
 @router.post(
@@ -49,30 +59,7 @@ async def post_order_check(
     """
     result: dict[str, Any] = await run_in_threadpool(
         mt5_client.order_check_as_dict,
-        request=request.request,
-    )
-    return format_response(result, response_format)
-
-
-@router.post(
-    "/order/send",
-    response_model=DataResponse,
-    summary="Send order",
-    description="Send a trading operation request to the trade server",
-)
-async def post_order_send(
-    mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
-    response_format: Annotated[ResponseFormat, Depends(get_response_format)],
-    request: OrderSendRequest,
-) -> DataResponse | Response:
-    """Send a trade request to the trade server.
-
-    Returns:
-        JSON or Parquet response with order send result.
-    """
-    result: dict[str, Any] = await run_in_threadpool(
-        mt5_client.order_send_as_dict,
-        request=request.request,
+        request=request.request.model_dump(mode="python", exclude_none=True),
     )
     return format_response(result, response_format)
 
@@ -113,9 +100,10 @@ async def post_symbol_select(
     description="Subscribe to Market Depth change events for a symbol",
 )
 async def post_market_book_subscribe(
+    request: Request,
     mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
-    symbol: str,
+    symbol: Annotated[str, Path(min_length=1, max_length=32)],
 ) -> DataResponse | Response:
     """Subscribe to market depth for a symbol.
 
@@ -126,6 +114,10 @@ async def post_market_book_subscribe(
         mt5_client.market_book_add,
         symbol=symbol,
     )
+    if success:
+        subscriptions = _get_active_market_book_subscriptions(request)
+        subscriptions.add(symbol)
+        setattr(request.app.state, _MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, mt5_client)
     return format_response(
         {"symbol": symbol, "subscribed": success},
         response_format,
@@ -139,9 +131,10 @@ async def post_market_book_subscribe(
     description="Cancel Market Depth subscription for a symbol",
 )
 async def post_market_book_unsubscribe(
+    request: Request,
     mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
-    symbol: str,
+    symbol: Annotated[str, Path(min_length=1, max_length=32)],
 ) -> DataResponse | Response:
     """Unsubscribe from market depth for a symbol.
 
@@ -152,6 +145,11 @@ async def post_market_book_unsubscribe(
         mt5_client.market_book_release,
         symbol=symbol,
     )
+    if success:
+        subscriptions = _get_active_market_book_subscriptions(request)
+        subscriptions.discard(symbol)
+        if not subscriptions:
+            setattr(request.app.state, _MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
     return format_response(
         {"symbol": symbol, "unsubscribed": success},
         response_format,
