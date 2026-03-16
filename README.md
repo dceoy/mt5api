@@ -5,7 +5,7 @@ MetaTrader 5 REST API
 [![CI/CD](https://github.com/dceoy/mt5api/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/mt5api/actions/workflows/ci.yml)
 
 mt5api exposes read-only MT5 market data, account info, and trading history
-over HTTP. It uses the `pdmt5` client internally and adds optional API-key
+over HTTP. It uses the [`pdmt5`](https://github.com/dceoy/pdmt5) client internally and adds optional API-key
 auth, rate limiting, and JSON/Parquet response formatting.
 
 The API server must run on Windows. The `MetaTrader5` Python package used by
@@ -42,7 +42,7 @@ uv sync
 
 ```powershell
 $env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
-$env:API_ROUTER_PREFIX = "/api/v1"        # Optional: omit for root-level routes
+$env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -51,10 +51,10 @@ Docs:
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-Set `API_ROUTER_PREFIX` to mount the read-only API endpoints under a shared path
-such as `/api/v1`. The default is `""`, which keeps routes like `/health` and
-`/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are treated
-the same.
+Set `MT5API_ROUTER_PREFIX` to mount the read-only API endpoints under a shared
+path such as `/api/v1`. The default is `""`, which keeps routes like `/health`
+and `/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are
+treated the same.
 
 ## Example Requests with curl
 
@@ -89,7 +89,7 @@ Market-data endpoints accept MetaTrader 5 constants either by official name
 - Trading state: `/positions`, `/orders`
 - History: `/history/orders`, `/history/deals`
 
-If `API_ROUTER_PREFIX` is set, prepend that value to every API route above.
+If `MT5API_ROUTER_PREFIX` is set, prepend that value to every API route above.
 
 ## License
 
