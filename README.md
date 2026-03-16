@@ -58,6 +58,9 @@ as `/api/v1`. The default is `""`, which keeps routes like `/health` and
 `/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are treated
 the same.
 
+Set `MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS` to cap active market-book
+subscriptions. The default limit is `100`.
+
 ## Example Requests with curl
 
 Replace `windows-host` with the DNS name or IP address of the Windows machine

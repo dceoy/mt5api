@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 from fastapi import FastAPI
 
 from mt5api.constants import API_KEY_SECURITY_SCHEME_NAME
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def test_strip_auth_from_openapi_handles_non_dict_components() -> None:
@@ -95,5 +98,61 @@ def test_release_market_book_subscriptions_handles_missing_client() -> None:
         main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
     )
 
+    assert test_app.state.active_market_book_subscriptions == set()
+    assert test_app.state.market_book_cleanup_client is None
+
+
+def test_release_market_book_subscriptions_skips_when_state_is_missing() -> None:
+    """Shutdown cleanup should no-op when no subscriptions were ever tracked."""
+    from mt5api import main  # noqa: PLC0415
+
+    test_app = FastAPI()
+
+    asyncio.run(
+        main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
+    )
+
+    assert not hasattr(test_app.state, "active_market_book_subscriptions")
+    assert not hasattr(test_app.state, "market_book_cleanup_client")
+
+
+def test_release_market_book_subscriptions_skips_when_state_is_empty() -> None:
+    """Shutdown cleanup should no-op when the tracked subscription set is empty."""
+    from mt5api import main  # noqa: PLC0415
+
+    test_app = FastAPI()
+    test_app.state.active_market_book_subscriptions = set()
+    test_client = Mock()
+    test_app.state.market_book_cleanup_client = test_client
+
+    asyncio.run(
+        main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
+    )
+
+    test_client.market_book_release.assert_not_called()
+    assert test_app.state.market_book_cleanup_client is test_client
+
+
+def test_release_market_book_subscriptions_continues_after_failure(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Shutdown cleanup should continue releasing symbols after one failure."""
+    from mt5api import main  # noqa: PLC0415
+
+    test_app = FastAPI()
+    test_app.state.active_market_book_subscriptions = {"GBPUSD", "EURUSD"}
+    test_client = Mock()
+    test_client.market_book_release.side_effect = [RuntimeError("boom"), None]
+    test_app.state.market_book_cleanup_client = test_client
+
+    with caplog.at_level("ERROR"):
+        asyncio.run(
+            main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
+        )
+
+    assert test_client.market_book_release.call_count == 2
+    test_client.market_book_release.assert_any_call(symbol="EURUSD")
+    test_client.market_book_release.assert_any_call(symbol="GBPUSD")
+    assert "Failed to release market book for EURUSD" in caplog.text
     assert test_app.state.active_market_book_subscriptions == set()
     assert test_app.state.market_book_cleanup_client is None

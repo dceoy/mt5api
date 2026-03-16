@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+import pytest
 
 from mt5api.constants import API_KEY_HEADER_NAME
 
@@ -80,6 +82,48 @@ def test_symbols_endpoint_rejects_invalid_api_key(
     assert data["type"] == "/errors/unauthorized"
     assert data["title"] == "Authentication Failed"
     assert "Invalid API key" in data["detail"]
+
+
+@pytest.mark.parametrize(
+    ("path", "request_kwargs", "mock_attr"),
+    [
+        (
+            "/order/check",
+            {
+                "json": {
+                    "request": {
+                        "action": 1,
+                        "symbol": "EURUSD",
+                        "volume": 0.1,
+                        "type": 0,
+                        "price": 1.08500,
+                    }
+                }
+            },
+            "order_check_as_dict",
+        ),
+        ("/symbols/EURUSD/select", {}, "symbol_select"),
+        ("/market-book/EURUSD/subscribe", {}, "market_book_add"),
+        ("/market-book/EURUSD/unsubscribe", {}, "market_book_release"),
+    ],
+)
+def test_trading_endpoints_require_authentication(
+    client: TestClient,
+    mock_mt5_client: Mock,
+    path: str,
+    request_kwargs: dict[str, Any],
+    mock_attr: str,
+) -> None:
+    """Trading endpoints should reject unauthenticated requests."""
+    response = client.post(path, **request_kwargs)
+
+    assert response.status_code == 401
+    getattr(mock_mt5_client, mock_attr).assert_not_called()
+
+    data = response.json()["detail"]
+    assert data["type"] == "/errors/unauthorized"
+    assert data["title"] == "Authentication Required"
+    assert "Missing API key" in data["detail"]
 
 
 def test_version_endpoint_allows_requests_when_auth_disabled(

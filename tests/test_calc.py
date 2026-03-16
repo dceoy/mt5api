@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+from pdmt5.mt5 import Mt5RuntimeError
+
 from tests.mt5_constants import Mt5OrderType
 
 if TYPE_CHECKING:
@@ -153,3 +156,141 @@ def test_get_calc_profit_returns_parquet(
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "action": 99,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price": 1.08500,
+        },
+        {
+            "action": "ORDER_TYPE_BUY",
+            "symbol": "EURUSD",
+            "volume": 0,
+            "price": 1.08500,
+        },
+        {
+            "action": "ORDER_TYPE_BUY",
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price": 0,
+        },
+    ],
+)
+def test_get_calc_margin_validates_query_params(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    params: dict[str, str | float | int],
+) -> None:
+    """GET /calc/margin rejects invalid query parameter combinations."""
+    response = client.get(
+        "/calc/margin",
+        params=params,
+        headers=api_headers,
+    )
+
+    assert response.status_code == 422
+    mock_mt5_client.order_calc_margin.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "action": 99,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price_open": 1.08500,
+            "price_close": 1.09000,
+        },
+        {
+            "action": "ORDER_TYPE_BUY",
+            "symbol": "EURUSD",
+            "volume": 0,
+            "price_open": 1.08500,
+            "price_close": 1.09000,
+        },
+        {
+            "action": "ORDER_TYPE_BUY",
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price_open": 1.08500,
+            "price_close": 0,
+        },
+    ],
+)
+def test_get_calc_profit_validates_query_params(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    params: dict[str, str | float | int],
+) -> None:
+    """GET /calc/profit rejects invalid query parameter combinations."""
+    response = client.get(
+        "/calc/profit",
+        params=params,
+        headers=api_headers,
+    )
+
+    assert response.status_code == 422
+    mock_mt5_client.order_calc_profit.assert_not_called()
+
+
+def test_get_calc_margin_returns_service_unavailable_on_mt5_error(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /calc/margin surfaces MT5 runtime failures as 503 responses."""
+    mock_mt5_client.order_calc_margin.side_effect = Mt5RuntimeError(
+        "order_calc_margin returned None"
+    )
+
+    response = client.get(
+        "/calc/margin",
+        params={
+            "action": "ORDER_TYPE_BUY",
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price": 1.08500,
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["title"] == "MT5 Terminal Error"
+    assert "order_calc_margin returned None" in payload["detail"]
+
+
+def test_get_calc_profit_returns_service_unavailable_on_mt5_error(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /calc/profit surfaces MT5 runtime failures as 503 responses."""
+    mock_mt5_client.order_calc_profit.side_effect = Mt5RuntimeError(
+        "order_calc_profit returned None"
+    )
+
+    response = client.get(
+        "/calc/profit",
+        params={
+            "action": "ORDER_TYPE_BUY",
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price_open": 1.08500,
+            "price_close": 1.09000,
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["title"] == "MT5 Terminal Error"
+    assert "order_calc_profit returned None" in payload["detail"]

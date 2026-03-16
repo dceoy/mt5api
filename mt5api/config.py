@@ -11,9 +11,11 @@ from .constants import (
     DEFAULT_API_LOG_LEVEL,
     DEFAULT_API_RATE_LIMIT,
     DEFAULT_API_ROUTER_PREFIX,
+    DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_CORS_ORIGINS,
     ENV_MT5API_HOST,
     ENV_MT5API_LOG_LEVEL,
+    ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_PORT,
     ENV_MT5API_RATE_LIMIT,
     ENV_MT5API_ROUTER_PREFIX,
@@ -22,6 +24,9 @@ from .constants import (
 
 _VALID_API_ROUTER_PREFIX_PATTERN = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$")
 _INVALID_MT5API_ROUTER_PREFIX_ERROR = "Invalid MT5API_ROUTER_PREFIX"
+_INVALID_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS_ERROR = (
+    "Invalid MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS"
+)
 
 
 def normalize_api_router_prefix(raw_prefix: str | None) -> str:
@@ -103,6 +108,31 @@ def get_configured_api_router_prefix() -> str:
     return normalize_api_router_prefix(
         os.getenv(ENV_MT5API_ROUTER_PREFIX, DEFAULT_API_ROUTER_PREFIX)
     )
+
+
+def get_configured_max_market_book_subscriptions() -> int:
+    """Get the configured market-book subscription limit.
+
+    Returns:
+        Positive maximum number of tracked market-book subscriptions.
+
+    Raises:
+        ValueError: If the configured limit is not a positive integer.
+    """
+    raw_limit = os.getenv(
+        ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+        str(DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS),
+    )
+
+    try:
+        limit = int(raw_limit)
+    except ValueError as error:
+        raise ValueError(_INVALID_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS_ERROR) from error
+
+    if limit < 1:
+        raise ValueError(_INVALID_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS_ERROR)
+
+    return limit
 
 
 def get_configured_mt5api_secret_key() -> str | None:
