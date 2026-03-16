@@ -1,7 +1,7 @@
 # REST API
 
-The mt5api REST API exposes read-only MetaTrader 5 data via FastAPI. It supports
-JSON and Apache Parquet responses for analytics workflows.
+The mt5api REST API exposes MetaTrader 5 data and trading operations via
+FastAPI. It supports JSON and Apache Parquet responses for analytics workflows.
 
 The API server must run on Windows because the `MetaTrader5` Python package is
 supported only on Windows. Host `mt5api` on a Windows machine with MetaTrader 5
@@ -88,20 +88,22 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?forma
 
 ## Endpoints
 
-All endpoints are read-only.
-
 If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 
 ### Health
 
-- `GET /health` (no auth)
-- `GET /version`
+- `GET /health` (no auth) — API and MT5 connection status
+- `GET /version` — MT5 terminal version
+- `GET /last-error` — Last MT5 error code and description
 
 ### Symbols
 
-- `GET /symbols` (`group`, `format`)
-- `GET /symbols/{symbol}` (`format`)
-- `GET /symbols/{symbol}/tick` (`format`)
+- `GET /symbols` (`group`, `format`) — List available symbols
+- `GET /symbols/total` (`format`) — Total number of symbols
+- `GET /symbols/{symbol}` (`format`) — Symbol details
+- `GET /symbols/{symbol}/tick` (`format`) — Latest tick for a symbol
+- `POST /symbols/{symbol}/select` (`enable`) — Show or hide a symbol in
+  MarketWatch
 
 ### Market Data
 
@@ -113,19 +115,51 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 - `GET /rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
 - `GET /ticks/from` (`symbol`, `date_from`, `count`, `flags`, `format`)
 - `GET /ticks/range` (`symbol`, `date_from`, `date_to`, `flags`, `format`)
-- `GET /market-book/{symbol}` (`format`)
+- `GET /market-book/{symbol}` (`format`) — Market depth (DOM)
+- `POST /market-book/{symbol}/subscribe` — Subscribe to DOM events
+- `POST /market-book/{symbol}/unsubscribe` — Unsubscribe from DOM events
 
-### Account & Trading State
+### Calculations
 
-- `GET /account` (`format`)
-- `GET /terminal` (`format`)
-- `GET /positions` (`symbol`, `group`, `ticket`, `format`)
-- `GET /orders` (`symbol`, `group`, `ticket`, `format`)
+- `action` accepts either the official MetaTrader 5 constant name (for example
+  `ORDER_TYPE_BUY`) or the equivalent integer value.
+- `GET /calc/margin` (`action`, `symbol`, `volume`, `price`, `format`) —
+  Calculate required margin in account currency
+- `GET /calc/profit` (`action`, `symbol`, `volume`, `price_open`,
+  `price_close`, `format`) — Calculate expected profit in account currency
+
+### Account & Terminal
+
+- `GET /account` (`format`) — Account balance, equity, margin
+- `GET /terminal` (`format`) — Terminal status and settings
+
+### Positions & Orders
+
+- `GET /positions` (`symbol`, `group`, `ticket`, `format`) — Open positions
+- `GET /positions/total` (`format`) — Count of open positions
+- `GET /orders` (`symbol`, `group`, `ticket`, `format`) — Active pending orders
+- `GET /orders/total` (`format`) — Count of active orders
 
 ### History
 
 - `GET /history/orders` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
+- `GET /history/orders/total` (`date_from`, `date_to`, `format`) — Count of
+  historical orders in date range
 - `GET /history/deals` (`date_from`, `date_to`, `ticket`, `position`, `group`, `symbol`, `format`)
+- `GET /history/deals/total` (`date_from`, `date_to`, `format`) — Count of
+  historical deals in date range
+
+### Trading Operations
+
+These endpoints send requests to the MetaTrader 5 trade server and modify
+state. Use with care.
+
+- `POST /order/check` (body: `{"request": {...}}`) — Validate funds
+  sufficiency for a trade without executing it
+- `POST /order/send` (body: `{"request": {...}}`) — Execute a trade request
+
+The `request` body follows the [MetaTrader 5 trade request
+structure](https://www.mql5.com/en/docs/trading/ordersend).
 
 ## Response Formatter Utilities
 
@@ -154,6 +188,12 @@ curl "http://windows-host:8000/health"
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/version"
 ```
 
+### Last Error
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/last-error"
+```
+
 ### Symbols
 
 ```console
@@ -164,10 +204,20 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
 ```
 
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols/total"
+```
+
 ### Symbol Details
 
 ```console
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols/EURUSD"
+```
+
+### Select Symbol in MarketWatch
+
+```console
+curl -X POST -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols/EURUSD/select?enable=true"
 ```
 
 ### Rates (OHLCV)
@@ -176,16 +226,76 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols/EURUS
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
+### Market Depth
+
+```console
+curl -X POST -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/market-book/EURUSD/subscribe"
+```
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/market-book/EURUSD"
+```
+
+```console
+curl -X POST -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/market-book/EURUSD/unsubscribe"
+```
+
+### Calculate Margin
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/calc/margin?action=ORDER_TYPE_BUY&symbol=EURUSD&volume=0.1&price=1.08500"
+```
+
+### Calculate Profit
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/calc/profit?action=ORDER_TYPE_BUY&symbol=EURUSD&volume=0.1&price_open=1.08500&price_close=1.09000"
+```
+
 ### Account Info
 
 ```console
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/account"
 ```
 
+### Positions & Orders
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/positions"
+```
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/positions/total"
+```
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/orders/total"
+```
+
 ### History Orders
 
 ```console
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/history/orders?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
+```
+
+```console
+curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/history/orders/total?date_from=2024-01-01T00:00:00Z&date_to=2024-01-02T00:00:00Z"
+```
+
+### Check Order Funds
+
+```console
+curl -X POST -H "X-API-Key: your-secret-api-key" -H "Content-Type: application/json" \
+  -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0, "price": 1.085}}' \
+  "http://windows-host:8000/order/check"
+```
+
+### Send Order
+
+```console
+curl -X POST -H "X-API-Key: your-secret-api-key" -H "Content-Type: application/json" \
+  -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0, "price": 1.085}}' \
+  "http://windows-host:8000/order/send"
 ```
 
 ## Error Responses
@@ -210,3 +320,5 @@ Minimum security posture for deployments:
 - Rate limiting enabled (`MT5API_RATE_LIMIT`)
 - Run behind HTTPS in production
 - Restrict CORS origins (`MT5API_CORS_ORIGINS`) for public deployments
+- Restrict access to trading endpoints (`/order/send`, `/order/check`) to
+  trusted clients only

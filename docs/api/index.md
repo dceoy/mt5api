@@ -10,8 +10,9 @@ logged in. Clients can call the HTTP API from any operating system.
 
 ### [REST API](rest-api.md)
 
-FastAPI-based REST API that exposes read-only MT5 data over HTTP with JSON and
-Parquet support.
+FastAPI-based REST API that exposes MT5 market data, account info, trading
+history, calculations, and trading operations over HTTP with JSON and Parquet
+support.
 
 ### [Deployment](deployment.md)
 
@@ -21,10 +22,21 @@ Windows service deployment guide for hosting the REST API alongside MetaTrader 5
 
 mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:
 
-1. **API Layer** (`mt5api.main`, `mt5api.routers`): FastAPI app, routers, and response formatting
-2. **Dependency Layer** (`mt5api.dependencies`): MT5 client lifecycle and format negotiation
-3. **Model Layer** (`mt5api.models`): Response schemas and MT5 constant metadata helpers
-4. **Formatter Layer** (`mt5api.formatters`): JSON and Parquet serialization helpers
+1. **API Layer** (`mt5api.main`, `mt5api.routers`): FastAPI app, routers, and
+   response formatting. Routers are grouped by domain:
+   - `health.py`: health check, version, last error
+   - `symbols.py`: symbol listing, details, tick, total, and selection
+   - `market.py`: OHLCV rates, tick data, and market depth
+   - `calc.py`: margin and profit calculations
+   - `account.py`: account and terminal info
+   - `history.py`: positions, orders, history with totals
+   - `trading.py`: order check, order send, market book subscriptions
+2. **Dependency Layer** (`mt5api.dependencies`): MT5 client lifecycle and
+   format negotiation
+3. **Model Layer** (`mt5api.models`): Response schemas and MT5 constant
+   metadata helpers (TIMEFRAME, COPY_TICKS, ORDER_TYPE)
+4. **Formatter Layer** (`mt5api.formatters`): JSON and Parquet serialization
+   helpers
 
 ## Usage Guidelines
 

@@ -4,9 +4,10 @@ MetaTrader 5 REST API
 
 [![CI/CD](https://github.com/dceoy/mt5api/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/mt5api/actions/workflows/ci.yml)
 
-mt5api exposes read-only MT5 market data, account info, and trading history
-over HTTP. It uses the [`pdmt5`](https://github.com/dceoy/pdmt5) client internally and adds optional API-key
-auth, rate limiting, and JSON/Parquet response formatting.
+mt5api exposes MT5 market data, account info, trading history, and trading
+operations over HTTP. It uses the [`pdmt5`](https://github.com/dceoy/pdmt5)
+client internally and adds optional API-key auth, rate limiting, and
+JSON/Parquet response formatting.
 
 The API server must run on Windows. The `MetaTrader5` Python package used by
 `pdmt5` is supported only on Windows, so you must host `mt5api` on a Windows
@@ -15,7 +16,8 @@ any operating system.
 
 ## Features
 
-- Read-only REST endpoints for symbols, market data, account info, orders, and history
+- REST endpoints for symbols, market data, account info, orders, history,
+  calculations, and trading operations
 - JSON and Apache Parquet responses (content negotiation)
 - Optional API key authentication with per-minute rate limiting
 - Structured JSON logging and configurable CORS
@@ -51,10 +53,10 @@ Docs:
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-Set `MT5API_ROUTER_PREFIX` to mount the read-only API endpoints under a shared
-path such as `/api/v1`. The default is `""`, which keeps routes like `/health`
-and `/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are
-treated the same.
+Set `MT5API_ROUTER_PREFIX` to mount the API endpoints under a shared path such
+as `/api/v1`. The default is `""`, which keeps routes like `/health` and
+`/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are treated
+the same.
 
 ## Example Requests with curl
 
@@ -76,20 +78,35 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group
 curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
-Market-data endpoints accept MetaTrader 5 constants either by official name
-(`TIMEFRAME_M1`, `COPY_TICKS_ALL`) or by their integer value.
+Market-data and calculation endpoints accept MetaTrader 5 constants either by
+official name (`TIMEFRAME_M1`, `COPY_TICKS_ALL`, `ORDER_TYPE_BUY`) or by their
+integer value.
 
-## Endpoints (Read-Only)
+## Endpoints
 
-- Health: `/health`, `/version`
-- Symbols: `/symbols`, `/symbols/{symbol}`, `/symbols/{symbol}/tick`
-- Market data: `/rates/from`, `/rates/from-pos`, `/rates/range`,
-  `/ticks/from`, `/ticks/range`, `/market-book/{symbol}`
-- Account: `/account`, `/terminal`
-- Trading state: `/positions`, `/orders`
-- History: `/history/orders`, `/history/deals`
+If `MT5API_ROUTER_PREFIX` is set, prepend that value to every API route below.
 
-If `MT5API_ROUTER_PREFIX` is set, prepend that value to every API route above.
+### Read-Only Endpoints
+
+- Health: `GET /health`, `GET /version`, `GET /last-error`
+- Symbols: `GET /symbols`, `GET /symbols/total`, `GET /symbols/{symbol}`,
+  `GET /symbols/{symbol}/tick`
+- Market data: `GET /rates/from`, `GET /rates/from-pos`, `GET /rates/range`,
+  `GET /ticks/from`, `GET /ticks/range`, `GET /market-book/{symbol}`
+- Calculations: `GET /calc/margin`, `GET /calc/profit`
+- Account: `GET /account`, `GET /terminal`
+- Trading state: `GET /positions`, `GET /positions/total`,
+  `GET /orders`, `GET /orders/total`
+- History: `GET /history/orders`, `GET /history/orders/total`,
+  `GET /history/deals`, `GET /history/deals/total`
+
+### Write Endpoints
+
+- `POST /symbols/{symbol}/select` — Show or hide symbol in MarketWatch
+- `POST /market-book/{symbol}/subscribe` — Subscribe to DOM events
+- `POST /market-book/{symbol}/unsubscribe` — Unsubscribe from DOM events
+- `POST /order/check` — Validate funds for a trade (no execution)
+- `POST /order/send` — Execute a trade request
 
 ## License
 
