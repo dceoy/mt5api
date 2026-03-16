@@ -30,7 +30,7 @@ from .constants import (
 )
 from .dependencies import shutdown_mt5_client
 from .middleware import add_middleware
-from .routers import account, health, history, market, symbols
+from .routers import account, calc, health, history, market, symbols, trading
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -190,5 +190,7 @@ app.include_router(symbols.router, prefix=router_prefix)
 app.include_router(market.router, prefix=router_prefix)
 app.include_router(account.router, prefix=router_prefix)
 app.include_router(history.router, prefix=router_prefix)
+app.include_router(calc.router, prefix=router_prefix)
+app.include_router(trading.router, prefix=router_prefix)
 
 logger.info("MT5 REST API initialized")

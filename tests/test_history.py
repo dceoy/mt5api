@@ -193,3 +193,105 @@ def test_get_orders_returns_parquet(
         group=None,
         ticket=None,
     )
+
+
+def test_get_orders_total_returns_json(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /orders/total returns active orders count."""
+    response = client.get("/orders/total", headers=api_headers)
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["data"]["total"] == 3
+
+    mock_mt5_client.orders_total.assert_called_with()
+
+
+def test_get_positions_total_returns_json(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /positions/total returns open positions count."""
+    response = client.get("/positions/total", headers=api_headers)
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["data"]["total"] == 5
+
+    mock_mt5_client.positions_total.assert_called_with()
+
+
+def test_get_history_orders_total_returns_json(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /history/orders/total returns historical orders count."""
+    response = client.get(
+        "/history/orders/total",
+        params={
+            "date_from": "2024-01-01T00:00:00Z",
+            "date_to": "2024-01-02T00:00:00Z",
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["data"]["total"] == 42
+
+    mock_mt5_client.history_orders_total.assert_called_with(
+        date_from=ANY,
+        date_to=ANY,
+    )
+
+
+def test_get_history_deals_total_returns_json(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /history/deals/total returns historical deals count."""
+    response = client.get(
+        "/history/deals/total",
+        params={
+            "date_from": "2024-01-01T00:00:00Z",
+            "date_to": "2024-01-02T00:00:00Z",
+        },
+        headers=api_headers,
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["data"]["total"] == 37
+
+    mock_mt5_client.history_deals_total.assert_called_with(
+        date_from=ANY,
+        date_to=ANY,
+    )
+
+
+def test_get_history_orders_total_requires_date_range(
+    client: TestClient,
+    api_headers: dict[str, str],
+) -> None:
+    """GET /history/orders/total requires both date_from and date_to."""
+    response = client.get(
+        "/history/orders/total",
+        params={"date_from": "2024-01-01T00:00:00Z"},
+        headers=api_headers,
+    )
+
+    assert response.status_code == 422

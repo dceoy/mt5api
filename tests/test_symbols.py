@@ -127,3 +127,34 @@ def test_get_symbol_tick_accepts_parquet(
     assert response.headers["content-type"].startswith("application/parquet")
 
     mock_mt5_client.symbol_info_tick_as_df.assert_called_with(symbol="EURUSD")
+
+
+def test_get_symbols_total_returns_json(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /symbols/total returns symbol count."""
+    response = client.get("/symbols/total", headers=api_headers)
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["data"]["total"] == 100
+
+    mock_mt5_client.symbols_total.assert_called_with()
+
+
+def test_get_symbols_total_returns_parquet(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """GET /symbols/total supports Parquet output."""
+    response = client.get("/symbols/total?format=parquet", headers=api_headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/parquet")
+
+    mock_mt5_client.symbols_total.assert_called_with()

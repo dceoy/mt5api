@@ -48,6 +48,15 @@ _COPY_TICKS_NAMES = (
     "COPY_TICKS_TRADE",
     "COPY_TICKS_ALL",
 )
+_ORDER_TYPE_DESCRIPTION = (
+    "MetaTrader5 ORDER_TYPE constant. Accepts a constant name such as "
+    "ORDER_TYPE_BUY or the corresponding integer value."
+)
+_ORDER_TYPE_EXAMPLE_NAMES = (
+    "ORDER_TYPE_BUY",
+    "ORDER_TYPE_SELL",
+)
+_ORDER_TYPE_VALIDATION_DESCRIPTION = "MetaTrader5 ORDER_TYPE constant"
 _TIMEFRAME_VALIDATION_DESCRIPTION = "MetaTrader5 TIMEFRAME constant"
 _COPY_TICKS_VALIDATION_DESCRIPTION = "MetaTrader5 COPY_TICKS constant"
 
@@ -115,6 +124,12 @@ _COPY_TICKS_SPEC = Mt5ConstantSpec(
     schema_description=_COPY_TICKS_DESCRIPTION,
     names=_COPY_TICKS_NAMES,
     example_names=_COPY_TICKS_NAMES,
+)
+_ORDER_TYPE_SPEC = Mt5ConstantSpec(
+    validation_description=_ORDER_TYPE_VALIDATION_DESCRIPTION,
+    schema_description=_ORDER_TYPE_DESCRIPTION,
+    prefix="ORDER_TYPE_",
+    example_names=_ORDER_TYPE_EXAMPLE_NAMES,
 )
 
 
@@ -244,6 +259,35 @@ def _validate_mt5_copy_ticks(value: object) -> int:
     return _parse_mt5_constant(value, spec=_COPY_TICKS_SPEC)
 
 
+def get_mt5_order_type_values() -> tuple[int, ...]:
+    """Return all available MT5 ORDER_TYPE values from the pdmt5 MT5 module copy."""
+    return _ORDER_TYPE_SPEC.sorted_values
+
+
+def get_mt5_order_type_names() -> tuple[str, ...]:
+    """Return all available MT5 ORDER_TYPE names from the pdmt5 MT5 module copy."""
+    return _ORDER_TYPE_SPEC.sorted_names
+
+
+def get_mt5_order_type_examples() -> list[int]:
+    """Return common MT5 ORDER_TYPE integer examples."""
+    return _ORDER_TYPE_SPEC.example_values
+
+
+def get_mt5_order_type_example_names() -> list[str]:
+    """Return common MT5 ORDER_TYPE example names."""
+    return _ORDER_TYPE_SPEC.example_name_list
+
+
+def _validate_mt5_order_type(value: object) -> int:
+    """Validate MT5 ORDER_TYPE input.
+
+    Returns:
+        The validated integer ORDER_TYPE value.
+    """
+    return _parse_mt5_constant(value, spec=_ORDER_TYPE_SPEC)
+
+
 Mt5Timeframe: TypeAlias = Annotated[
     int,
     BeforeValidator(_validate_mt5_timeframe),
@@ -268,6 +312,21 @@ Mt5CopyTicks: TypeAlias = Annotated[
             names=get_mt5_copy_ticks_names(),
             values=get_mt5_copy_ticks_values(),
             examples=get_mt5_copy_ticks_example_names(),
+        ),
+        mode="validation",
+    ),
+]
+
+
+Mt5OrderType: TypeAlias = Annotated[
+    int,
+    BeforeValidator(_validate_mt5_order_type),
+    WithJsonSchema(
+        _build_mt5_constant_json_schema(
+            description=_ORDER_TYPE_SPEC.schema_description,
+            names=get_mt5_order_type_names(),
+            values=get_mt5_order_type_values(),
+            examples=get_mt5_order_type_example_names(),
         ),
         mode="validation",
     ),
@@ -578,3 +637,123 @@ class HistoryDealsRequest(HistoryRequestBase):
     group: str | None = Field(default=None)
     symbol: str | None = Field(default=None)
     format: ResponseFormat | None = Field(default=None)
+
+
+class HistoryTotalRequest(BaseModel):
+    """Request parameters for history total count endpoints."""
+
+    date_from: datetime = Field(
+        ...,
+        description="Start date (ISO 8601 format)",
+        examples=["2024-01-01T00:00:00Z"],
+    )
+    date_to: datetime = Field(
+        ...,
+        description="End date (ISO 8601 format)",
+        examples=["2024-01-02T00:00:00Z"],
+    )
+
+    @model_validator(mode="after")
+    def validate_date_range(self) -> Self:
+        """Ensure date_from is before date_to.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If date_from is not before date_to.
+        """
+        if self.date_from >= self.date_to:
+            range_error = "date_from must be before date_to"
+            raise ValueError(range_error)
+        return self
+
+
+class CalcMarginRequest(BaseModel):
+    """Request parameters for margin calculation endpoint."""
+
+    action: Mt5OrderType = Field(
+        ...,
+        description=_ORDER_TYPE_DESCRIPTION,
+    )
+    symbol: str = Field(
+        ...,
+        description="Symbol name",
+        examples=["EURUSD"],
+    )
+    volume: float = Field(
+        ...,
+        description="Trade volume in lots",
+        gt=0,
+        examples=[0.1, 1.0],
+    )
+    price: float = Field(
+        ...,
+        description="Open price",
+        gt=0,
+        examples=[1.08500],
+    )
+
+
+class CalcProfitRequest(BaseModel):
+    """Request parameters for profit calculation endpoint."""
+
+    action: Mt5OrderType = Field(
+        ...,
+        description=_ORDER_TYPE_DESCRIPTION,
+    )
+    symbol: str = Field(
+        ...,
+        description="Symbol name",
+        examples=["EURUSD"],
+    )
+    volume: float = Field(
+        ...,
+        description="Trade volume in lots",
+        gt=0,
+        examples=[0.1, 1.0],
+    )
+    price_open: float = Field(
+        ...,
+        description="Open price",
+        gt=0,
+        examples=[1.08500],
+    )
+    price_close: float = Field(
+        ...,
+        description="Close price",
+        gt=0,
+        examples=[1.09000],
+    )
+
+
+class OrderCheckRequest(BaseModel):
+    """Request parameters for order check endpoint."""
+
+    request: dict[str, Any] = Field(
+        ...,
+        description="Trade request dictionary for order validation",
+    )
+
+
+class OrderSendRequest(BaseModel):
+    """Request parameters for order send endpoint."""
+
+    request: dict[str, Any] = Field(
+        ...,
+        description="Trade request dictionary for order execution",
+    )
+
+
+class SymbolSelectRequest(BaseModel):
+    """Request parameters for symbol select endpoint."""
+
+    symbol: str = Field(
+        ...,
+        description="Symbol name",
+        examples=["EURUSD"],
+    )
+    enable: bool = Field(
+        default=True,
+        description="True to show symbol in MarketWatch, False to hide",
+    )

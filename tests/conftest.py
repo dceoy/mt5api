@@ -186,6 +186,54 @@ def mock_mt5_client() -> Mock:
     client.history_orders_get_as_df.return_value = pd.DataFrame([])
     client.history_deals_get_as_df.return_value = pd.DataFrame([])
 
+    # Mock last error
+    client.last_error_as_dict.return_value = {
+        "error_code": 1,
+        "error_description": "Success",
+    }
+
+    # Mock totals
+    client.symbols_total.return_value = 100
+    client.orders_total.return_value = 3
+    client.positions_total.return_value = 5
+    client.history_orders_total.return_value = 42
+    client.history_deals_total.return_value = 37
+
+    # Mock calculation methods
+    client.order_calc_margin.return_value = 108.50
+    client.order_calc_profit.return_value = 50.0
+
+    # Mock trading write methods
+    client.order_check_as_dict.return_value = {
+        "retcode": 0,
+        "balance": 10000.0,
+        "equity": 10500.0,
+        "profit": 0.0,
+        "margin": 108.50,
+        "margin_free": 10391.50,
+        "margin_level": 9677.42,
+        "comment": "Done",
+        "request_action": 1,
+        "request_symbol": "EURUSD",
+        "request_volume": 0.1,
+        "request_type": 0,
+    }
+    client.order_send_as_dict.return_value = {
+        "retcode": 10009,
+        "deal": 123456789,
+        "order": 987654321,
+        "volume": 0.1,
+        "price": 1.08500,
+        "comment": "Request executed",
+        "request_action": 1,
+        "request_symbol": "EURUSD",
+        "request_volume": 0.1,
+        "request_type": 0,
+    }
+    client.symbol_select.return_value = True
+    client.market_book_add.return_value = True
+    client.market_book_release.return_value = True
+
     return client
 
 
