@@ -84,3 +84,27 @@ async def get_version(
     """
     version_dict = await run_in_threadpool(mt5_client.version_as_dict)
     return format_response(version_dict, response_format)
+
+
+@router.get(
+    "/last-error",
+    response_model=DataResponse,
+    summary="Get last MT5 error",
+    description="Get the last error information from the MetaTrader 5 terminal",
+    dependencies=[Depends(verify_api_key)],
+)
+async def get_last_error(
+    mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
+    response_format: Annotated[ResponseFormat, Depends(get_response_format)],
+) -> DataResponse | Response:
+    """Get the last MT5 error information.
+
+    Args:
+        mt5_client: MT5 data client dependency.
+        response_format: Negotiated response format (JSON or Parquet).
+
+    Returns:
+        JSON or Parquet response with last error data.
+    """
+    error_dict = await run_in_threadpool(mt5_client.last_error_as_dict)
+    return format_response(error_dict, response_format)

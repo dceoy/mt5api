@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from . import account, health, history, market, symbols
+from . import account, calc, health, history, market, symbols, trading
 
-__all__ = ["account", "health", "history", "market", "symbols"]
+__all__ = ["account", "calc", "health", "history", "market", "symbols", "trading"]

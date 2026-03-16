@@ -55,6 +55,25 @@ async def get_symbols(
 
 
 @router.get(
+    "/symbols/total",
+    response_model=DataResponse,
+    summary="Get total symbol count",
+    description="Get the total number of available trading symbols",
+)
+async def get_symbols_total(
+    mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
+    response_format: Annotated[ResponseFormat, Depends(get_response_format)],
+) -> DataResponse | Response:
+    """Get total number of symbols.
+
+    Returns:
+        JSON or Parquet response with total symbol count.
+    """
+    total = await run_in_threadpool(mt5_client.symbols_total)
+    return format_response({"total": total}, response_format)
+
+
+@router.get(
     "/symbols/{symbol}",
     response_model=DataResponse,
     summary="Get symbol info",

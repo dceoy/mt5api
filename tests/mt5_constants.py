@@ -49,7 +49,15 @@ class Mt5BookType(IntEnum):
 class Mt5OrderType(IntEnum):
     """Test copy of MetaTrader5 order type constants."""
 
+    ORDER_TYPE_BUY = 0
+    ORDER_TYPE_SELL = 1
     ORDER_TYPE_BUY_LIMIT = 2
+    ORDER_TYPE_SELL_LIMIT = 3
+    ORDER_TYPE_BUY_STOP = 4
+    ORDER_TYPE_SELL_STOP = 5
+    ORDER_TYPE_BUY_STOP_LIMIT = 6
+    ORDER_TYPE_SELL_STOP_LIMIT = 7
+    ORDER_TYPE_CLOSE_BY = 8
 
 
 MT5_CONSTANT_ENUMS: tuple[type[IntEnum], ...] = (
