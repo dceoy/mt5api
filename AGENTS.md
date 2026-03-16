@@ -13,7 +13,7 @@
 
 **Important**: Run these before committing or creating a PR.
 
-1. **Format, lint, and test**: Use the `local-qa` skill.
+1. **Format, lint, and test**: Use `local-qa` skill.
 2. **Documentation build**: Run `uv run mkdocs build` when documentation, configuration, or OpenAPI-visible behavior changes.
 
 ## Architecture
