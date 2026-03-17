@@ -22,10 +22,14 @@ graph TB
 
     subgraph "Windows Host"
         subgraph "FastAPI Application"
-            Middleware["Middleware Stack<br/>CORS · Logging · Error Handler · Rate Limiter · Auth"]
+            Middleware["Middleware Stack<br/>CORS · Logging · Error Handler · Rate Limiter"]
             Routers["Routers<br/>health · symbols · market · account · history · calc · trading"]
-            Deps["MT5 Client Singleton<br/>+ JSON/Parquet Formatter"]
-            Middleware --> Routers --> Deps
+            Auth["API Key Security Dependency<br/>Security(api_key_header) · verify_api_key"]
+            Deps["FastAPI Dependencies<br/>MT5 Client Singleton · Format Negotiation"]
+            Formatters["Response Formatters<br/>JSON · Parquet"]
+            Middleware --> Routers --> Deps --> Formatters
+            Auth -.-> Routers
+            Formatters --> Middleware
         end
 
         Deps --> pdmt5["pdmt5<br/>MT5 Client Library"]
@@ -33,7 +37,7 @@ graph TB
     end
 
     Client -- "HTTP/REST" --> Middleware
-    Deps -- "JSON / Parquet" --> Client
+    Middleware -- "JSON / Parquet" --> Client
 ```
 
 ## Features
