@@ -14,6 +14,46 @@ The API server must run on Windows. The `MetaTrader5` Python package used by
 machine with a logged-in MetaTrader 5 terminal. HTTP clients can connect from
 any operating system.
 
+## Architecture
+
+```mermaid
+graph TB
+    Client["HTTP Client<br/>(Any OS)"]
+
+    subgraph "Windows Host"
+        subgraph "FastAPI Application"
+            Main["main.py<br/>App Wiring & Lifespan"]
+            Main --> CORS["CORS Middleware"]
+            CORS --> Logging["Logging Middleware"]
+            Logging --> Error["Error Handler Middleware"]
+            Error --> RateLimit["Rate Limiter<br/>(SlowAPI)"]
+            RateLimit --> Auth["API Key Auth<br/>(Optional)"]
+
+            Auth --> HealthRouter["health.py<br/>/health, /version, /last-error"]
+            Auth --> SymbolsRouter["symbols.py<br/>/symbols, /symbols/{symbol}"]
+            Auth --> MarketRouter["market.py<br/>/rates, /ticks, /market-book"]
+            Auth --> AccountRouter["account.py<br/>/account, /terminal"]
+            Auth --> HistoryRouter["history.py<br/>/history/orders, /history/deals"]
+            Auth --> CalcRouter["calc.py<br/>/calc/margin, /calc/profit"]
+            Auth --> TradingRouter["trading.py<br/>/order/check"]
+
+            SymbolsRouter --> Deps["dependencies.py<br/>MT5 Client Singleton"]
+            MarketRouter --> Deps
+            AccountRouter --> Deps
+            HistoryRouter --> Deps
+            CalcRouter --> Deps
+            TradingRouter --> Deps
+            Deps --> Fmt["formatters.py<br/>JSON / Parquet"]
+        end
+
+        Deps --> pdmt5["pdmt5<br/>MT5 Client Library"]
+        pdmt5 --> MT5["MetaTrader 5<br/>Terminal"]
+    end
+
+    Client -- "HTTP/REST" --> Main
+    Fmt -- "JSON / Parquet" --> Client
+```
+
 ## Features
 
 - REST endpoints for symbols, market data, account info, orders, history,
