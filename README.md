@@ -22,36 +22,18 @@ graph TB
 
     subgraph "Windows Host"
         subgraph "FastAPI Application"
-            Main["main.py<br/>App Wiring & Lifespan"]
-            Main --> CORS["CORS Middleware"]
-            CORS --> Logging["Logging Middleware"]
-            Logging --> Error["Error Handler Middleware"]
-            Error --> RateLimit["Rate Limiter<br/>(SlowAPI)"]
-            RateLimit --> Auth["API Key Auth<br/>(Optional)"]
-
-            Auth --> HealthRouter["health.py<br/>/health, /version, /last-error"]
-            Auth --> SymbolsRouter["symbols.py<br/>/symbols, /symbols/{symbol}"]
-            Auth --> MarketRouter["market.py<br/>/rates, /ticks, /market-book"]
-            Auth --> AccountRouter["account.py<br/>/account, /terminal"]
-            Auth --> HistoryRouter["history.py<br/>/history/orders, /history/deals"]
-            Auth --> CalcRouter["calc.py<br/>/calc/margin, /calc/profit"]
-            Auth --> TradingRouter["trading.py<br/>/order/check"]
-
-            SymbolsRouter --> Deps["dependencies.py<br/>MT5 Client Singleton"]
-            MarketRouter --> Deps
-            AccountRouter --> Deps
-            HistoryRouter --> Deps
-            CalcRouter --> Deps
-            TradingRouter --> Deps
-            Deps --> Fmt["formatters.py<br/>JSON / Parquet"]
+            Middleware["Middleware Stack<br/>CORS · Logging · Error Handler · Rate Limiter · Auth"]
+            Routers["Routers<br/>health · symbols · market · account · history · calc · trading"]
+            Deps["MT5 Client Singleton<br/>+ JSON/Parquet Formatter"]
+            Middleware --> Routers --> Deps
         end
 
         Deps --> pdmt5["pdmt5<br/>MT5 Client Library"]
         pdmt5 --> MT5["MetaTrader 5<br/>Terminal"]
     end
 
-    Client -- "HTTP/REST" --> Main
-    Fmt -- "JSON / Parquet" --> Client
+    Client -- "HTTP/REST" --> Middleware
+    Deps -- "JSON / Parquet" --> Client
 ```
 
 ## Features
