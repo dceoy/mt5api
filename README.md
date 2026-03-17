@@ -14,6 +14,32 @@ The API server must run on Windows. The `MetaTrader5` Python package used by
 machine with a logged-in MetaTrader 5 terminal. HTTP clients can connect from
 any operating system.
 
+## Architecture
+
+```mermaid
+graph TB
+    Client["HTTP Client<br/>(Any OS)"]
+
+    subgraph "Windows Host"
+        subgraph "FastAPI Application"
+            Middleware["Middleware Stack<br/>CORS · Logging · Error Handler · Rate Limiter"]
+            Routers["Routers<br/>health · symbols · market · account · history · calc · trading"]
+            Auth["API Key Security Dependency<br/>Security(api_key_header) · verify_api_key"]
+            Deps["FastAPI Dependencies<br/>MT5 Client Singleton · Format Negotiation"]
+            Formatters["Response Formatters<br/>JSON · Parquet"]
+            Middleware --> Routers --> Deps --> Formatters
+            Auth -.-> Routers
+            Formatters --> Middleware
+        end
+
+        Deps --> pdmt5["pdmt5<br/>MT5 Client Library"]
+        pdmt5 --> MT5["MetaTrader 5<br/>Terminal"]
+    end
+
+    Client -- "HTTP/REST" --> Middleware
+    Middleware -- "JSON / Parquet" --> Client
+```
+
 ## Features
 
 - REST endpoints for symbols, market data, account info, orders, history,
