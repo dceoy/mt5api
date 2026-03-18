@@ -138,7 +138,7 @@ trading operations.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>mt5api exposes MT5 data and trading operations over HTTP using FastAPI. It
 relies on the underlying MT5 client library for connectivity and adds optional
-authentication, rate limiting, and response formatting suitable for analytics
+authentication and response formatting suitable for analytics
 workflows.</p>
 <p>The API server must run on Windows because the <code>MetaTrader5</code> Python package is
 Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 installed and
@@ -148,8 +148,8 @@ logged in. API clients can connect from any operating system.</p>
 <li>REST endpoints for symbols, market data, account info, orders, history,
   calculations, and trading operations</li>
 <li>JSON and Apache Parquet responses</li>
-<li>Optional API key authentication and rate limiting</li>
-<li>Structured JSON logging and configurable CORS</li>
+<li>Optional API key authentication</li>
+<li>Structured JSON logging</li>
 <li>OpenAPI/Swagger docs built in</li>
 </ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
@@ -268,5 +268,5 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-03-17 18:51:26.821563+00:00
+Build Date UTC : 2026-03-18 09:48:01.146504+00:00
 -->
