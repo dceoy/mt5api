@@ -167,8 +167,8 @@ async def get_ticks_range(
 @router.get(
     "/market-book/{symbol}",
     response_model=DataResponse,
-    summary="Get market book",
-    description="Get market depth (DOM) for a symbol",
+    summary="Get market book (experimental)",
+    description="**Experimental.** Get market depth (DOM) for a symbol",
 )
 async def get_market_book(
     mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],

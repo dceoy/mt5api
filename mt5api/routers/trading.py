@@ -139,8 +139,8 @@ async def post_symbol_select(
 @router.post(
     "/market-book/{symbol}/subscribe",
     response_model=DataResponse,
-    summary="Subscribe to market depth",
-    description="Subscribe to Market Depth change events for a symbol",
+    summary="Subscribe to market depth (experimental)",
+    description="**Experimental.** Subscribe to Market Depth events for a symbol",
 )
 async def post_market_book_subscribe(
     app_request: Request,
@@ -188,8 +188,8 @@ async def post_market_book_subscribe(
 @router.post(
     "/market-book/{symbol}/unsubscribe",
     response_model=DataResponse,
-    summary="Unsubscribe from market depth",
-    description="Cancel Market Depth subscription for a symbol",
+    summary="Unsubscribe from market depth (experimental)",
+    description="**Experimental.** Cancel Market Depth subscription for a symbol",
 )
 async def post_market_book_unsubscribe(
     app_request: Request,
