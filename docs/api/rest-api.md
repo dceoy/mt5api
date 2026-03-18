@@ -310,6 +310,7 @@ Errors follow RFC 7807 Problem Details:
 Minimum security posture for deployments:
 
 - Set `MT5API_SECRET_KEY` to enable API key authentication when needed
+- Configure rate limiting at the reverse proxy or API gateway level
 - Run behind HTTPS in production
 - Restrict access to operational endpoints (`/order/check`,
   `/symbols/{symbol}/select`, `/market-book/{symbol}/subscribe`,

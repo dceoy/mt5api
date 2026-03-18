@@ -6,8 +6,8 @@ MetaTrader 5 REST API
 
 mt5api exposes MT5 market data, account info, trading history, and trading
 operations over HTTP. It uses the [`pdmt5`](https://github.com/dceoy/pdmt5)
-client internally and adds optional API-key auth, rate limiting, and
-JSON/Parquet response formatting.
+client internally and adds optional API-key auth and JSON/Parquet response
+formatting.
 
 The API server must run on Windows. The `MetaTrader5` Python package used by
 `pdmt5` is supported only on Windows, so you must host `mt5api` on a Windows
@@ -22,7 +22,7 @@ graph TB
 
     subgraph "Windows Host"
         subgraph "FastAPI Application"
-            Middleware["Middleware Stack<br/>CORS · Logging · Error Handler · Rate Limiter"]
+            Middleware["Middleware Stack<br/>Logging · Error Handler"]
             Routers["Routers<br/>health · symbols · market · account · history · calc · trading"]
             Auth["API Key Security Dependency<br/>Security(api_key_header) · verify_api_key"]
             Deps["FastAPI Dependencies<br/>MT5 Client Singleton · Format Negotiation"]
@@ -45,8 +45,8 @@ graph TB
 - REST endpoints for symbols, market data, account info, orders, history,
   calculations, and trading operations
 - JSON and Apache Parquet responses (content negotiation)
-- Optional API key authentication with per-minute rate limiting
-- Structured JSON logging and configurable CORS
+- Optional API key authentication
+- Structured JSON logging
 - OpenAPI/Swagger docs built into the API
 
 ## Requirements
