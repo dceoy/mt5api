@@ -10,11 +10,9 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-from starlette.middleware.cors import CORSMiddleware
 
 from .auth import is_auth_enabled
 from .config import (
-    get_configured_api_cors_origins,
     get_configured_api_log_level,
     get_configured_api_router_prefix,
     get_configured_max_market_book_subscriptions,
@@ -28,7 +26,6 @@ from .constants import (
     API_REDOC_URL,
     API_TITLE,
     API_VERSION,
-    DEFAULT_API_CORS_ORIGINS,
     MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY,
     MAX_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
 )
@@ -68,19 +65,6 @@ def _configure_logging() -> None:
     root_logger.handlers.clear()
     root_logger.setLevel(log_level)
     root_logger.addHandler(handler)
-
-
-def _get_cors_origins() -> list[str]:
-    """Get CORS origins from environment.
-
-    Returns:
-        List of allowed origins.
-    """
-    raw_origins = get_configured_api_cors_origins()
-    if raw_origins.strip() == DEFAULT_API_CORS_ORIGINS:
-        return [DEFAULT_API_CORS_ORIGINS]
-
-    return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
 def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
@@ -211,15 +195,6 @@ app = FastAPI(
     openapi_url=API_OPENAPI_URL,
 )
 app.openapi = _custom_openapi
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_get_cors_origins(),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Add middleware
 add_middleware(app)

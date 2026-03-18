@@ -31,7 +31,7 @@
 ### Package Structure
 
 - `mt5api/`: Main FastAPI package.
-  - `main.py`: App wiring, lifespan handling, middleware, CORS, and router registration.
+  - `main.py`: App wiring, lifespan handling, middleware, and router registration.
   - `__main__.py`: CLI entry point for launching the API from environment-backed configuration.
   - `config.py`: Environment-backed configuration normalization and validation.
   - `auth.py`: Optional API key authentication helpers.
@@ -68,7 +68,7 @@
 ## Security & Configuration Tips
 
 - Do not commit real MT5 credentials or API keys.
-- Configure `MT5API_SECRET_KEY`, `MT5API_RATE_LIMIT`, `MT5API_CORS_ORIGINS`, `MT5API_ROUTER_PREFIX`, and `MT5API_LOG_LEVEL` through environment variables.
+- Configure `MT5API_SECRET_KEY`, `MT5API_ROUTER_PREFIX`, and `MT5API_LOG_LEVEL` through environment variables.
 - Keep runtime configuration in the environment instead of hardcoding deployment values.
 - Authentication mode is fixed at process startup; cover both authenticated and unauthenticated behavior when changing auth-related code.
 
