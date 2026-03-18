@@ -6,18 +6,14 @@ import os
 import re
 
 from .constants import (
-    DEFAULT_API_CORS_ORIGINS,
     DEFAULT_API_HOST,
     DEFAULT_API_LOG_LEVEL,
-    DEFAULT_API_RATE_LIMIT,
     DEFAULT_API_ROUTER_PREFIX,
     DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
-    ENV_MT5API_CORS_ORIGINS,
     ENV_MT5API_HOST,
     ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_PORT,
-    ENV_MT5API_RATE_LIMIT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
 )
@@ -79,24 +75,6 @@ def get_configured_api_log_level() -> str:
         Log level string from configuration.
     """
     return os.getenv(ENV_MT5API_LOG_LEVEL, DEFAULT_API_LOG_LEVEL)
-
-
-def get_configured_api_rate_limit() -> str:
-    """Get the configured API rate limit string.
-
-    Returns:
-        Raw per-minute rate-limit string from configuration.
-    """
-    return os.getenv(ENV_MT5API_RATE_LIMIT, str(DEFAULT_API_RATE_LIMIT))
-
-
-def get_configured_api_cors_origins() -> str:
-    """Get the configured CORS origins string.
-
-    Returns:
-        Raw CORS origins configuration string.
-    """
-    return os.getenv(ENV_MT5API_CORS_ORIGINS, DEFAULT_API_CORS_ORIGINS)
 
 
 def get_configured_api_router_prefix() -> str:

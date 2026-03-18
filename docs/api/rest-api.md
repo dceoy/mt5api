@@ -30,9 +30,7 @@ Set the optional API key and other limits via environment variables:
 ```powershell
 $env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:MT5API_LOG_LEVEL = "INFO"
-$env:MT5API_RATE_LIMIT = "100"
 $env:MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS = "100"
-$env:MT5API_CORS_ORIGINS = "*"
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 ```
 
@@ -70,10 +68,7 @@ disabled and those endpoints are accessible without authorization.
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
 ```
 
-## Rate Limiting
-
-Rate limiting uses `slowapi` with a default limit of `100/minute`. Set
-`MT5API_RATE_LIMIT` to an integer for a different per-minute cap.
+## Subscription Limits
 
 Active market-book subscriptions are capped at `100` symbols by default. Set
 `MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS` to a positive integer to adjust that
@@ -315,9 +310,7 @@ Errors follow RFC 7807 Problem Details:
 Minimum security posture for deployments:
 
 - Set `MT5API_SECRET_KEY` to enable API key authentication when needed
-- Rate limiting enabled (`MT5API_RATE_LIMIT`)
 - Run behind HTTPS in production
-- Restrict CORS origins (`MT5API_CORS_ORIGINS`) for public deployments
 - Restrict access to operational endpoints (`/order/check`,
   `/symbols/{symbol}/select`, `/market-book/{symbol}/subscribe`,
   `/market-book/{symbol}/unsubscribe`) to trusted clients only

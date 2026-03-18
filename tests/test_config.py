@@ -8,38 +8,10 @@ import pytest
 
 from mt5api.constants import (
     DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
-    ENV_MT5API_CORS_ORIGINS,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
-    ENV_MT5API_RATE_LIMIT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
 )
-
-
-def test_get_cors_origins_parses_list(monkeypatch: pytest.MonkeyPatch) -> None:
-    """CORS origins should split on commas and trim whitespace."""
-    monkeypatch.setenv(ENV_MT5API_CORS_ORIGINS, "https://a.example, https://b.example")
-
-    from mt5api import main  # noqa: PLC0415
-
-    assert main._get_cors_origins() == [  # pyright: ignore[reportPrivateUsage]
-        "https://a.example",
-        "https://b.example",
-    ]
-
-
-def test_build_default_rate_limit_handles_invalid_value(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Invalid rate limit values should default to 100/minute."""
-    monkeypatch.setenv(ENV_MT5API_RATE_LIMIT, "not-a-number")
-
-    from mt5api import middleware  # noqa: PLC0415
-
-    assert (
-        middleware._build_default_rate_limit()  # pyright: ignore[reportPrivateUsage]
-        == "100/minute"
-    )
 
 
 @pytest.mark.parametrize(

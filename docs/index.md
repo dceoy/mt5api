@@ -19,8 +19,8 @@ logged in. API clients can connect from any operating system.
 - REST endpoints for symbols, market data, account info, orders, history,
   calculations, and trading operations
 - JSON and Apache Parquet responses
-- Optional API key authentication and rate limiting
-- Structured JSON logging and configurable CORS
+- Optional API key authentication
+- Structured JSON logging
 - OpenAPI/Swagger docs built in
 
 ## Requirements
