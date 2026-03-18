@@ -7,7 +7,7 @@ trading operations.
 
 mt5api exposes MT5 data and trading operations over HTTP using FastAPI. It
 relies on the underlying MT5 client library for connectivity and adds optional
-authentication, rate limiting, and response formatting suitable for analytics
+authentication and response formatting suitable for analytics
 workflows.
 
 The API server must run on Windows because the `MetaTrader5` Python package is
