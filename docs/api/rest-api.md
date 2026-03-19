@@ -116,9 +116,9 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 - `GET /rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
 - `GET /ticks/from` (`symbol`, `date_from`, `count`, `flags`, `format`)
 - `GET /ticks/range` (`symbol`, `date_from`, `date_to`, `flags`, `format`)
-- `GET /market-book/{symbol}` (`format`) — Market depth (DOM) *(experimental)*
-- `POST /market-book/{symbol}/subscribe` — Subscribe to DOM events *(experimental)*
-- `POST /market-book/{symbol}/unsubscribe` — Unsubscribe from DOM events *(experimental)*
+- `GET /market-book/{symbol}` (`format`) — Market depth (DOM) _(experimental)_
+- `POST /market-book/{symbol}/subscribe` — Subscribe to DOM events _(experimental)_
+- `POST /market-book/{symbol}/unsubscribe` — Unsubscribe from DOM events _(experimental)_
 
 ### Calculations
 
