@@ -19,7 +19,6 @@ on:
         options:
           - lint-and-test
           - docs-deploy
-          - release
         description: Choose the workflow to run
         default: lint-and-test
 permissions:
@@ -54,10 +53,7 @@ jobs:
   python-docs-deploy:
     if: >
       github.event_name == 'push'
-      || (
-        github.event_name == 'workflow_dispatch'
-        && (inputs.workflow == 'docs-deploy' || inputs.workflow == 'release')
-      )
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'docs-deploy')
     permissions:
       contents: write
     uses: dceoy/gh-actions-for-devops/.github/workflows/python-package-mkdocs-gh-deploy.yml@main  # zizmor: ignore[unpinned-uses]
@@ -65,23 +61,6 @@ jobs:
       package-path: .
       runs-on: ubuntu-slim
     secrets:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  python-package-release:
-    if: >
-      github.event_name == 'push'
-      || (
-        github.event_name == 'workflow_dispatch'
-        && (inputs.workflow == 'release' || inputs.workflow == 'lint-and-test')
-      )
-    permissions:
-      contents: write
-      id-token: write
-    uses: dceoy/gh-actions-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@main  # zizmor: ignore[unpinned-uses]
-    with:
-      package-path: .
-      create-releases: ${{ github.event_name == 'workflow_dispatch' && inputs.workflow == 'release' }}
-    secrets:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   dependabot-auto-merge:
     if: >
