@@ -60,6 +60,20 @@ graph TB
 
 Install and run the API on the Windows machine where MetaTrader 5 is installed.
 
+Install the latest release from PyPI:
+
+```powershell
+pip install mt5api
+```
+
+Or with `uv`:
+
+```powershell
+uv pip install mt5api
+```
+
+Alternatively, install from source:
+
 ```powershell
 git clone https://github.com/dceoy/mt5api.git
 cd mt5api
