@@ -62,14 +62,14 @@ Install and run the API on the Windows machine where MetaTrader 5 is installed.
 
 Install the latest release from PyPI:
 
-```powershell
+```console
 pip install mt5api
 ```
 
-Or with `uv`:
+Or, when managing the project with `uv`, add it as a dependency:
 
-```powershell
-uv pip install mt5api
+```console
+uv add mt5api
 ```
 
 Alternatively, install from source:
@@ -82,11 +82,23 @@ uv sync
 
 ## Running the API on Windows
 
+After installing from PyPI:
+
 ```powershell
 $env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
-uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+python -m mt5api
 ```
+
+`python -m mt5api` reads `MT5API_HOST`, `MT5API_PORT`, and `MT5API_LOG_LEVEL`
+from the environment. You can also invoke `uvicorn` directly:
+
+```powershell
+uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+```
+
+If you cloned the source tree, prepend `uv run` to either command (for example,
+`uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000`).
 
 Docs:
 
