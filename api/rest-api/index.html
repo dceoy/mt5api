@@ -283,6 +283,14 @@ requests return HTTP <code>429</code> until an existing subscription is released
 structure</a>,
 with typed validation for core fields such as <code>action</code>, <code>symbol</code>, <code>volume</code>,
 <code>type</code>, and <code>price</code>.</p>
+<h3 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>POST /connection/login</code> (body: <code>{"login": ..., "password": "...",
+"server": "...", "timeout": ...}</code>) — Reconnect the MT5 terminal with the
+  supplied credentials. Any active market-book subscriptions are released and
+  the previous MT5 client is shut down before the new connection is
+  established. The supplied password is never echoed in responses or logs.</li>
+</ul>
 <h2 id="response-formatter-utilities">Response Formatter Utilities<a class="headerlink" href="#response-formatter-utilities" title="Permanent link">&para;</a></h2>
 <p>If you are extending the API with custom endpoints, use the formatter helpers
 in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:</p>
@@ -354,15 +362,20 @@ in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:
 <a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="go">  -d &#39;{&quot;request&quot;: {&quot;action&quot;: 1, &quot;symbol&quot;: &quot;EURUSD&quot;, &quot;volume&quot;: 0.1, &quot;type&quot;: 0, &quot;price&quot;: 1.085}}&#39; \</span>
 <a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="go">  &quot;http://windows-host:8000/order/check&quot;</span>
 </code></pre></div>
+<h3 id="reconnect-to-mt5">Reconnect to MT5<a class="headerlink" href="#reconnect-to-mt5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="go">curl -X POST -H &quot;X-API-Key: your-secret-api-key&quot; -H &quot;Content-Type: application/json&quot; \</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="go">  -d &#39;{&quot;login&quot;: 12345678, &quot;password&quot;: &quot;s3cret&quot;, &quot;server&quot;: &quot;MetaQuotes-Demo&quot;, &quot;timeout&quot;: 60000}&#39; \</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="go">  &quot;http://windows-host:8000/connection/login&quot;</span>
+</code></pre></div>
 <h2 id="error-responses">Error Responses<a class="headerlink" href="#error-responses" title="Permanent link">&para;</a></h2>
 <p>Errors follow RFC 7807 Problem Details:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="p">{</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/errors/validation-error&quot;</span><span class="p">,</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Request Validation Failed&quot;</span><span class="p">,</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">400</span><span class="p">,</span>
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">  </span><span class="nt">&quot;detail&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;count must be positive (got: -10)&quot;</span><span class="p">,</span>
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="w">  </span><span class="nt">&quot;instance&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/rates/from&quot;</span>
-<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="p">{</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/errors/validation-error&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Request Validation Failed&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">400</span><span class="p">,</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="w">  </span><span class="nt">&quot;detail&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;count must be positive (got: -10)&quot;</span><span class="p">,</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="w">  </span><span class="nt">&quot;instance&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/rates/from&quot;</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="security-checklist">Security Checklist<a class="headerlink" href="#security-checklist" title="Permanent link">&para;</a></h2>
 <p>Minimum security posture for deployments:</p>
