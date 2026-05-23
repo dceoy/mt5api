@@ -165,7 +165,7 @@ with typed validation for core fields such as `action`, `symbol`, `volume`,
 ### Connection
 
 - `POST /connection/login` (body: `{"login": ..., "password": "...",
-  "server": "...", "timeout": ...}`) — Reconnect the MT5 terminal with the
+"server": "...", "timeout": ...}`) — Reconnect the MT5 terminal with the
   supplied credentials. Any active market-book subscriptions are released and
   the previous MT5 client is shut down before the new connection is
   established. The supplied password is never echoed in responses or logs.
