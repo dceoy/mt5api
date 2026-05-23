@@ -68,16 +68,14 @@ def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
 
 def test_release_market_book_subscriptions_clears_state() -> None:
     """Shutdown cleanup should release tracked market-book subscriptions."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     test_app = FastAPI()
     test_app.state.active_market_book_subscriptions = {"GBPUSD", "EURUSD"}
     test_client = Mock()
     test_app.state.market_book_cleanup_client = test_client
 
-    asyncio.run(
-        main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
-    )
+    asyncio.run(dependencies.release_market_book_subscriptions(test_app))
 
     assert test_client.market_book_release.call_count == 2
     test_client.market_book_release.assert_any_call(symbol="EURUSD")
@@ -88,15 +86,13 @@ def test_release_market_book_subscriptions_clears_state() -> None:
 
 def test_release_market_book_subscriptions_handles_missing_client() -> None:
     """Shutdown cleanup should clear tracked state when no client is available."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     test_app = FastAPI()
     test_app.state.active_market_book_subscriptions = {"EURUSD"}
     test_app.state.market_book_cleanup_client = None
 
-    asyncio.run(
-        main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
-    )
+    asyncio.run(dependencies.release_market_book_subscriptions(test_app))
 
     assert test_app.state.active_market_book_subscriptions == set()
     assert test_app.state.market_book_cleanup_client is None
@@ -104,13 +100,11 @@ def test_release_market_book_subscriptions_handles_missing_client() -> None:
 
 def test_release_market_book_subscriptions_skips_when_state_is_missing() -> None:
     """Shutdown cleanup should no-op when no subscriptions were ever tracked."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     test_app = FastAPI()
 
-    asyncio.run(
-        main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
-    )
+    asyncio.run(dependencies.release_market_book_subscriptions(test_app))
 
     assert not hasattr(test_app.state, "active_market_book_subscriptions")
     assert not hasattr(test_app.state, "market_book_cleanup_client")
@@ -118,16 +112,14 @@ def test_release_market_book_subscriptions_skips_when_state_is_missing() -> None
 
 def test_release_market_book_subscriptions_skips_when_state_is_empty() -> None:
     """Shutdown cleanup should no-op when the tracked subscription set is empty."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     test_app = FastAPI()
     test_app.state.active_market_book_subscriptions = set()
     test_client = Mock()
     test_app.state.market_book_cleanup_client = test_client
 
-    asyncio.run(
-        main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
-    )
+    asyncio.run(dependencies.release_market_book_subscriptions(test_app))
 
     test_client.market_book_release.assert_not_called()
     assert test_app.state.market_book_cleanup_client is test_client
@@ -137,7 +129,7 @@ def test_release_market_book_subscriptions_continues_after_failure(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Shutdown cleanup should continue releasing symbols after one failure."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import dependencies  # noqa: PLC0415
 
     test_app = FastAPI()
     test_app.state.active_market_book_subscriptions = {"GBPUSD", "EURUSD"}
@@ -146,9 +138,7 @@ def test_release_market_book_subscriptions_continues_after_failure(
     test_app.state.market_book_cleanup_client = test_client
 
     with caplog.at_level("ERROR"):
-        asyncio.run(
-            main._release_market_book_subscriptions(test_app)  # pyright: ignore[reportPrivateUsage]
-        )
+        asyncio.run(dependencies.release_market_book_subscriptions(test_app))
 
     assert test_client.market_book_release.call_count == 2
     test_client.market_book_release.assert_any_call(symbol="EURUSD")

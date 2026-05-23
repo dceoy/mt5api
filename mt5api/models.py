@@ -14,6 +14,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    SecretStr,
     WithJsonSchema,
     model_validator,
 )
@@ -865,6 +866,59 @@ class OrderCheckRequest(BaseModel):
     request: TradeRequest = Field(
         ...,
         description="Trade request dictionary for order validation",
+    )
+
+
+class LoginRequest(BaseModel):
+    """Request body for the MT5 connection login endpoint."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    login: int = Field(
+        ...,
+        description="Trading account login",
+        gt=0,
+        examples=[12345678],
+    )
+    password: SecretStr = Field(
+        ...,
+        description="Trading account password (never echoed in responses)",
+        examples=["s3cret"],
+    )
+    server: str = Field(
+        ...,
+        description="Trading server name",
+        min_length=1,
+        max_length=128,
+        examples=["MetaQuotes-Demo"],
+    )
+    timeout: int | None = Field(
+        default=None,
+        description="Connection timeout in milliseconds",
+        gt=0,
+        examples=[60000],
+    )
+
+
+class LoginResponse(BaseModel):
+    """Response body for the MT5 connection login endpoint."""
+
+    login: int = Field(
+        description="Trading account login that was used to connect",
+        examples=[12345678],
+    )
+    server: str = Field(
+        description="Trading server the client connected to",
+        examples=["MetaQuotes-Demo"],
+    )
+    timeout: int | None = Field(
+        default=None,
+        description="Connection timeout in milliseconds, if specified",
+        examples=[60000],
+    )
+    connected: bool = Field(
+        description="Whether the MT5 client successfully connected",
+        examples=[True],
     )
 
 
