@@ -140,24 +140,108 @@ def test_post_connection_login_requires_api_key(
     assert recorder["configs"] == []
 
 
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(
+            {"password": "p", "server": "S"},
+            id="missing-login",
+        ),
+        pytest.param(
+            {"login": 1, "server": "S"},
+            id="missing-password",
+        ),
+        pytest.param(
+            {"login": 1, "password": "p"},
+            id="missing-server",
+        ),
+        pytest.param(
+            {"login": 0, "password": "p", "server": "S"},
+            id="login-not-positive",
+        ),
+        pytest.param(
+            {"login": 1, "password": "", "server": "S"},
+            id="password-empty",
+        ),
+        pytest.param(
+            {"login": 1, "password": "x" * 129, "server": "S"},
+            id="password-too-long",
+        ),
+        pytest.param(
+            {"login": 1, "password": "p", "server": ""},
+            id="server-empty",
+        ),
+        pytest.param(
+            {"login": 1, "password": "p", "server": "x" * 129},
+            id="server-too-long",
+        ),
+        pytest.param(
+            {"login": 1, "password": "p", "server": "S", "timeout": 0},
+            id="timeout-not-positive",
+        ),
+        pytest.param(
+            {"login": 1, "password": "p", "server": "S", "extra": "nope"},
+            id="extra-field-forbidden",
+        ),
+    ],
+)
 def test_post_connection_login_validates_fields(
     connection_client: tuple[TestClient, dict[str, Any]],
+    body: dict[str, Any],
 ) -> None:
-    """The login endpoint must validate required and bounded fields."""
+    """The login endpoint must reject malformed or out-of-bounds payloads."""
     test_client, recorder = connection_client
 
     response = test_client.post(
         "/connection/login",
-        json={
-            "login": 0,
-            "password": "p",
-            "server": "S",
-        },
+        json=body,
         headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
     )
 
     assert response.status_code == 422
     assert recorder["configs"] == []
+
+
+def test_post_connection_login_does_not_leak_password_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A reconnect failure must never reflect the password in the HTTP body.
+
+    Simulates an upstream MT5 exception that quotes the password (as
+    ``pdmt5``/MetaTrader5 can do via ``Mt5Config.__repr__``) and asserts the
+    HTTP response body contains neither the password nor the underlying
+    exception text. Server-side logs may still record diagnostics.
+    """
+    password = "very-secret-pa55word-XYZ"  # noqa: S105
+
+    class LeakyClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            message = f"upstream MT5 error referencing config {self.config!r}"
+            raise ValueError(message)
+
+    monkeypatch.setattr(dependencies, "_mt5_client", Mock(name="old"))
+    monkeypatch.setattr(dependencies, "Mt5DataClient", LeakyClient)
+    app.dependency_overrides.clear()
+    app.state.active_market_book_subscriptions = set()
+    app.state.market_book_cleanup_client = None
+
+    with TestClient(app) as test_client:
+        response = test_client.post(
+            "/connection/login",
+            json={
+                "login": 12345,
+                "password": password,
+                "server": "MetaQuotes-Demo",
+            },
+            headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
+        )
+
+    assert response.status_code == 503
+    assert password not in response.text
+    assert "upstream MT5 error" not in response.text
 
 
 def test_replace_mt5_client_swaps_singleton(
@@ -196,17 +280,19 @@ def test_replace_mt5_client_swaps_singleton(
     assert dependencies._mt5_client is new_client  # pyright: ignore[reportPrivateUsage]
 
 
-def test_replace_mt5_client_clears_singleton_on_failure(
+def test_replace_mt5_client_preserves_old_client_on_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """replace_mt5_client raises and leaves the singleton cleared on failure."""
+    """A failed init must keep the previously installed client in place."""
+    password = "leaked-password-AAA"  # noqa: S105
 
     class FailingClient:
         def __init__(self, config: object) -> None:
             self.config = config
 
         def initialize_and_login_mt5(self) -> None:
-            message = "boom"
+            # Simulate an upstream exception that quotes the secret config.
+            message = f"login refused for {password}"
             raise ValueError(message)
 
     old_client = Mock(name="old_client")
@@ -220,9 +306,13 @@ def test_replace_mt5_client_clears_singleton_on_failure(
     with pytest.raises(RuntimeError) as excinfo:
         asyncio.run(run())
 
-    assert "Failed to initialize MT5 client" in str(excinfo.value)
-    assert dependencies._mt5_client is None  # pyright: ignore[reportPrivateUsage]
-    old_client.shutdown.assert_called_once_with()
+    # The raised message must not include the underlying exception text so
+    # any credentials embedded by upstream libraries do not surface to clients.
+    assert str(excinfo.value) == "Failed to initialize MT5 client"
+    assert password not in str(excinfo.value)
+    # Previous client is preserved and was NOT shut down.
+    assert dependencies._mt5_client is old_client  # pyright: ignore[reportPrivateUsage]
+    old_client.shutdown.assert_not_called()
 
 
 def test_replace_mt5_client_initializes_when_no_previous_client(

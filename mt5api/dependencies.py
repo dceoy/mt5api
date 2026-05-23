@@ -80,10 +80,18 @@ def shutdown_mt5_client() -> None:
 async def replace_mt5_client(config: Mt5Config) -> Mt5DataClient:
     """Swap the MT5 client singleton with a new connection.
 
-    Shuts down the previous client (if any) and creates a fresh
-    ``Mt5DataClient`` using ``config``. Callers MUST hold
-    ``get_mt5_client_lock`` for the duration of the swap so concurrent
-    reconnect requests do not race.
+    Constructs and initializes the new ``Mt5DataClient`` BEFORE touching the
+    singleton so a failed reconnect leaves the existing client in place
+    instead of disconnecting the operator from a working terminal. The new
+    client is installed atomically; the old client (if any) is shut down on
+    a best-effort basis after the swap. Callers MUST hold
+    ``get_mt5_client_lock`` so concurrent reconnect requests do not race.
+
+    The raised ``RuntimeError`` deliberately omits the underlying exception
+    text from its message because third-party ``pdmt5``/MetaTrader5
+    exceptions may include the connection config (and thus the password) in
+    their string form. The original exception is chained via ``raise from``
+    and logged server-side so diagnostics are preserved.
 
     Args:
         config: Configuration for the new MT5 connection.
@@ -92,26 +100,28 @@ async def replace_mt5_client(config: Mt5Config) -> Mt5DataClient:
         The newly initialized MT5 data client.
 
     Raises:
-        RuntimeError: If the new MT5 client cannot be initialized.
+        RuntimeError: If the new MT5 client cannot be constructed or
+            initialized. The previously installed client is preserved.
     """
     global _mt5_client  # noqa: PLW0603
 
+    try:
+        new_client = Mt5DataClient(config=config)
+        await asyncio.to_thread(new_client.initialize_and_login_mt5)
+    except Exception as e:
+        logger.exception("Failed to initialize MT5 client")
+        error_message = "Failed to initialize MT5 client"
+        raise RuntimeError(error_message) from e
+
     old_client = _mt5_client
-    _mt5_client = None
+    _mt5_client = new_client
+
     if old_client is not None:
         try:
             await asyncio.to_thread(old_client.shutdown)
         except Exception:
             logger.exception("Failed to shutdown previous MT5 client")
 
-    new_client = Mt5DataClient(config=config)
-    try:
-        await asyncio.to_thread(new_client.initialize_and_login_mt5)
-    except Exception as e:
-        error_message = f"Failed to initialize MT5 client: {e!s}"
-        raise RuntimeError(error_message) from e
-
-    _mt5_client = new_client
     return new_client
 
 

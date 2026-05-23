@@ -883,6 +883,8 @@ class LoginRequest(BaseModel):
     password: SecretStr = Field(
         ...,
         description="Trading account password (never echoed in responses)",
+        min_length=1,
+        max_length=128,
         examples=["s3cret"],
     )
     server: str = Field(
