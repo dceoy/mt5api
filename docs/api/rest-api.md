@@ -162,6 +162,14 @@ structure](https://www.mql5.com/en/docs/constants/structures/mqltraderequest),
 with typed validation for core fields such as `action`, `symbol`, `volume`,
 `type`, and `price`.
 
+### Connection
+
+- `POST /connection/login` (body: `{"login": ..., "password": "...",
+"server": "...", "timeout": ...}`) — Reconnect the MT5 terminal with the
+  supplied credentials. Any active market-book subscriptions are released and
+  the previous MT5 client is shut down before the new connection is
+  established. The supplied password is never echoed in responses or logs.
+
 ## Response Formatter Utilities
 
 If you are extending the API with custom endpoints, use the formatter helpers
@@ -289,6 +297,14 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/history/order
 curl -X POST -H "X-API-Key: your-secret-api-key" -H "Content-Type: application/json" \
   -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0, "price": 1.085}}' \
   "http://windows-host:8000/order/check"
+```
+
+### Reconnect to MT5
+
+```console
+curl -X POST -H "X-API-Key: your-secret-api-key" -H "Content-Type: application/json" \
+  -d '{"login": 12345678, "password": "s3cret", "server": "MetaQuotes-Demo", "timeout": 60000}' \
+  "http://windows-host:8000/connection/login"
 ```
 
 ## Error Responses

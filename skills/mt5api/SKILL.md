@@ -3,8 +3,8 @@ name: mt5api
 description: >-
   Query the MT5 API for account info, terminal status, health checks, symbol
   data, market data (OHLCV rates, ticks, market depth), open positions, pending
-  orders, and trade history. Use when the user wants to interact with any mt5api
-  endpoint.
+  orders, trade history, and reconnecting the MT5 terminal with new
+  credentials. Use when the user wants to interact with any mt5api endpoint.
 allowed-tools: Bash
 ---
 
@@ -30,6 +30,16 @@ if [ -n "${MT5API_SECRET_KEY:-}" ]; then
 fi
 ```
 
+Login credentials for `/connection/login` are read from the environment so
+the password is never hard-coded in a command:
+
+| Variable          | Description                                | Required for login |
+| ----------------- | ------------------------------------------ | ------------------ |
+| `MT5API_LOGIN`    | Trading account login (integer)            | yes                |
+| `MT5API_PASSWORD` | Trading account password                   | yes                |
+| `MT5API_SERVER`   | Trading server name (e.g., `Broker-Demo`)  | yes                |
+| `MT5API_TIMEOUT`  | Connection timeout in milliseconds (`> 0`) | no                 |
+
 ## Response Formats
 
 All endpoints (except `/health`) return JSON by default. Request Parquet with
@@ -44,6 +54,11 @@ All endpoints (except `/health`) return JSON by default. Request Parquet with
   symbol or skipping DOM data.
 - Empty arrays from `/positions`, `/orders`, `/history/orders`, or
   `/history/deals` are valid results.
+- `/connection/login` reconnects the shared MT5 client to a different account.
+  It shuts down the current connection and releases any active market-book
+  subscriptions before logging in. Never echo the password back to the user
+  and do not log it; the response only confirms `login`, `server`, `timeout`,
+  and `connected`.
 
 ---
 
@@ -74,6 +89,59 @@ curl -s "${AUTH_HEADER[@]}" \
 | Parameter | Type   | Required | Description              |
 | --------- | ------ | -------- | ------------------------ |
 | format    | string | no       | Response format override |
+
+---
+
+## Connection
+
+### Reconnect to MT5
+
+Shut down the current MT5 client and reconnect with new credentials. Active
+market-book subscriptions are released first. The call is serialized so
+concurrent reconnect attempts do not race. The password is sent only in the
+request body and is never echoed in the response.
+
+```bash
+# Build JSON body from env vars; include timeout only when set
+LOGIN_BODY=$(python3 -c "
+import json, os, sys
+body = {
+    'login': int(os.environ['MT5API_LOGIN']),
+    'password': os.environ['MT5API_PASSWORD'],
+    'server': os.environ['MT5API_SERVER'],
+}
+t = os.environ.get('MT5API_TIMEOUT')
+if t:
+    body['timeout'] = int(t)
+print(json.dumps(body))
+")
+curl -s -X POST "${AUTH_HEADER[@]}" \
+  -H 'Content-Type: application/json' \
+  -d "${LOGIN_BODY}" \
+  "${MT5API_URL}/connection/login" | python -m json.tool
+```
+
+Request body:
+
+| Field    | Type   | Required | Description                                |
+| -------- | ------ | -------- | ------------------------------------------ |
+| login    | int    | yes      | Trading account login (positive integer)   |
+| password | string | yes      | Trading account password (never echoed)    |
+| server   | string | yes      | Trading server name (e.g., `Broker-Demo`)  |
+| timeout  | int    | no       | Connection timeout in milliseconds (`> 0`) |
+
+Successful response (`200`):
+
+| Field     | Type   | Description                                  |
+| --------- | ------ | -------------------------------------------- |
+| login     | int    | Login that was used to connect               |
+| server    | string | Trading server that was connected to         |
+| timeout   | int?   | Timeout in milliseconds if one was specified |
+| connected | bool   | `true` when the new connection succeeded     |
+
+On failure, MT5 errors surface as `503 Service Unavailable` with an RFC 7807
+problem-details body. Never include the supplied password in any summary or
+diagnostic you return to the user.
 
 ---
 
@@ -323,3 +391,6 @@ Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
    running or reachable.
 9. For historical queries, remind the user that either a date range or a
    ticket/position filter is required.
+10. For `/connection/login`, always send the password in the POST body and
+    never repeat it in any reply or log message. If the user asks you to
+    reconnect, confirm the target `login`/`server` before sending the request.

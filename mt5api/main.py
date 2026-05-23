@@ -29,9 +29,18 @@ from .constants import (
     MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY,
     MAX_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
 )
-from .dependencies import run_in_threadpool, shutdown_mt5_client
+from .dependencies import release_market_book_subscriptions, shutdown_mt5_client
 from .middleware import add_middleware
-from .routers import account, calc, health, history, market, symbols, trading
+from .routers import (
+    account,
+    calc,
+    connection,
+    health,
+    history,
+    market,
+    symbols,
+    trading,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -122,33 +131,6 @@ _configure_logging()
 logger = logging.getLogger(__name__)
 
 
-async def _release_market_book_subscriptions(app: FastAPI) -> None:
-    """Release active market-book subscriptions before shutting down MT5."""
-    subscriptions = getattr(
-        app.state,
-        ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
-        None,
-    )
-    if not isinstance(subscriptions, set) or not subscriptions:
-        return
-
-    mt5_client = getattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
-    if mt5_client is None:
-        logger.warning("Active market-book subscriptions found without cleanup client")
-        subscriptions.clear()
-        setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
-        return
-
-    for symbol in tuple(sorted(subscriptions)):
-        try:
-            await run_in_threadpool(mt5_client.market_book_release, symbol=symbol)
-        except Exception:
-            logger.exception("Failed to release market book for %s", symbol)
-
-    subscriptions.clear()
-    setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application lifespan (startup and shutdown).
@@ -178,7 +160,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Shutdown
     logger.info("Shutting down MT5 REST API...")
     try:
-        await _release_market_book_subscriptions(app)
+        await release_market_book_subscriptions(app)
     finally:
         shutdown_mt5_client()
     logger.info("MT5 connection closed")
@@ -208,5 +190,6 @@ app.include_router(account.router, prefix=router_prefix)
 app.include_router(history.router, prefix=router_prefix)
 app.include_router(calc.router, prefix=router_prefix)
 app.include_router(trading.router, prefix=router_prefix)
+app.include_router(connection.router, prefix=router_prefix)
 
 logger.info("MT5 REST API initialized")

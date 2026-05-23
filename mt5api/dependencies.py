@@ -3,21 +3,38 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
 from fastapi import Header, Query, Request
 from pdmt5.dataframe import Mt5Config, Mt5DataClient
 
+from .constants import (
+    ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
+    MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY,
+)
 from .models import ResponseFormat
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from fastapi import FastAPI
+
+logger = logging.getLogger(__name__)
 
 # Type variable for return types
 T = TypeVar("T")
 
 # Global singleton instance
 _mt5_client: Mt5DataClient | None = None
+
+# Serializes singleton replacement across concurrent reconnect requests.
+_mt5_client_lock = asyncio.Lock()
+
+
+def get_mt5_client_lock() -> asyncio.Lock:
+    """Return the lock guarding MT5 client singleton replacement."""
+    return _mt5_client_lock
 
 
 def get_mt5_client() -> Mt5DataClient:
@@ -58,6 +75,93 @@ def shutdown_mt5_client() -> None:
     if _mt5_client is not None:
         _mt5_client.shutdown()
         _mt5_client = None
+
+
+async def replace_mt5_client(config: Mt5Config) -> Mt5DataClient:
+    """Swap the MT5 client singleton with a new connection.
+
+    Constructs and initializes the new ``Mt5DataClient`` BEFORE touching the
+    singleton so a failed reconnect leaves the existing client in place
+    instead of disconnecting the operator from a working terminal. The new
+    client is installed atomically; the old client (if any) is shut down on
+    a best-effort basis after the swap. Callers MUST hold
+    ``get_mt5_client_lock`` so concurrent reconnect requests do not race.
+
+    The raised ``RuntimeError`` deliberately omits the underlying exception
+    text from its message because third-party ``pdmt5``/MetaTrader5
+    exceptions may include the connection config (and thus the password) in
+    their string form. The original exception is chained via ``raise from``
+    and logged server-side so diagnostics are preserved.
+
+    Args:
+        config: Configuration for the new MT5 connection.
+
+    Returns:
+        The newly initialized MT5 data client.
+
+    Raises:
+        RuntimeError: If the new MT5 client cannot be constructed or
+            initialized. The previously installed client is preserved.
+    """
+    global _mt5_client  # noqa: PLW0603
+
+    try:
+        new_client = Mt5DataClient(config=config)
+        await asyncio.to_thread(new_client.initialize_and_login_mt5)
+    except Exception as e:
+        logger.exception("Failed to initialize MT5 client")
+        error_message = "Failed to initialize MT5 client"
+        raise RuntimeError(error_message) from e
+
+    old_client = _mt5_client
+    _mt5_client = new_client
+
+    if old_client is not None:
+        try:
+            await asyncio.to_thread(old_client.shutdown)
+        except Exception:
+            logger.exception("Failed to shutdown previous MT5 client")
+
+    return new_client
+
+
+async def release_market_book_subscriptions(app: FastAPI) -> None:
+    """Release tracked market-book subscriptions on the application.
+
+    Iterates the application's tracked subscription set, calls
+    ``market_book_release`` for each symbol using the cleanup client, then
+    clears the tracking state. Individual release failures are logged and do
+    not stop processing.
+
+    Args:
+        app: FastAPI application whose state holds the subscription set.
+    """
+    subscriptions = getattr(
+        app.state,
+        ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
+        None,
+    )
+    if not isinstance(subscriptions, set) or not subscriptions:
+        return
+
+    mt5_client = getattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
+    if mt5_client is None:
+        logger.warning("Active market-book subscriptions found without cleanup client")
+        subscriptions.clear()
+        setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
+        return
+
+    def release_subscriptions() -> None:
+        for symbol in tuple(subscriptions):
+            try:
+                mt5_client.market_book_release(symbol=symbol)
+            except Exception:
+                logger.exception("Failed to release market book for %s", symbol)
+
+    await asyncio.to_thread(release_subscriptions)
+
+    subscriptions.clear()
+    setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
 
 
 async def run_in_threadpool(
