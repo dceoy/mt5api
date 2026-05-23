@@ -30,6 +30,16 @@ if [ -n "${MT5API_SECRET_KEY:-}" ]; then
 fi
 ```
 
+Login credentials for `/connection/login` are read from the environment so
+the password is never hard-coded in a command:
+
+| Variable          | Description                                | Required for login |
+| ----------------- | ------------------------------------------ | ------------------ |
+| `MT5API_LOGIN`    | Trading account login (integer)            | yes                |
+| `MT5API_PASSWORD` | Trading account password                   | yes                |
+| `MT5API_SERVER`   | Trading server name (e.g., `Broker-Demo`)  | yes                |
+| `MT5API_TIMEOUT`  | Connection timeout in milliseconds (`> 0`) | no                 |
+
 ## Response Formats
 
 All endpoints (except `/health`) return JSON by default. Request Parquet with
@@ -92,9 +102,22 @@ concurrent reconnect attempts do not race. The password is sent only in the
 request body and is never echoed in the response.
 
 ```bash
+# Build JSON body from env vars; include timeout only when set
+LOGIN_BODY=$(python3 -c "
+import json, os, sys
+body = {
+    'login': int(os.environ['MT5API_LOGIN']),
+    'password': os.environ['MT5API_PASSWORD'],
+    'server': os.environ['MT5API_SERVER'],
+}
+t = os.environ.get('MT5API_TIMEOUT')
+if t:
+    body['timeout'] = int(t)
+print(json.dumps(body))
+")
 curl -s -X POST "${AUTH_HEADER[@]}" \
   -H 'Content-Type: application/json' \
-  -d '{"login": 12345678, "password": "s3cret", "server": "MetaQuotes-Demo", "timeout": 60000}' \
+  -d "${LOGIN_BODY}" \
   "${MT5API_URL}/connection/login" | python -m json.tool
 ```
 
