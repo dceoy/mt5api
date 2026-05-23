@@ -151,11 +151,14 @@ async def release_market_book_subscriptions(app: FastAPI) -> None:
         setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
         return
 
-    for symbol in tuple(sorted(subscriptions)):
-        try:
-            await asyncio.to_thread(mt5_client.market_book_release, symbol=symbol)
-        except Exception:
-            logger.exception("Failed to release market book for %s", symbol)
+    def release_subscriptions() -> None:
+        for symbol in tuple(subscriptions):
+            try:
+                mt5_client.market_book_release(symbol=symbol)
+            except Exception:
+                logger.exception("Failed to release market book for %s", symbol)
+
+    await asyncio.to_thread(release_subscriptions)
 
     subscriptions.clear()
     setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
