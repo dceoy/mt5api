@@ -19,7 +19,7 @@ from pydantic import (
 
 _TIMEFRAME_DESCRIPTION = (
     "MetaTrader5 TIMEFRAME constant. Accepts a constant name such as "
-    "TIMEFRAME_M1 or the short alias M1, or the corresponding integer value."
+    "TIMEFRAME_M1, short aliases such as M1, or the corresponding integer value."
 )
 _TIMEFRAME_EXAMPLE_NAMES = (
     "TIMEFRAME_M1",
@@ -44,7 +44,7 @@ _COPY_TICKS_EXAMPLE_NAMES = (
 )
 _ORDER_TYPE_DESCRIPTION = (
     "MetaTrader5 ORDER_TYPE constant. Accepts a constant name such as "
-    "ORDER_TYPE_BUY or the short alias BUY, or the corresponding integer value."
+    "ORDER_TYPE_BUY, short aliases such as BUY, or the corresponding integer value."
 )
 _ORDER_TYPE_EXAMPLE_NAMES = (
     "ORDER_TYPE_BUY",
@@ -55,8 +55,8 @@ _ORDER_TYPE_EXAMPLE_NAMES = (
 def _build_mt5_constant_json_schema(
     *,
     description: str,
-    names: tuple[str, ...] | list[str],
-    values: tuple[int, ...] | list[int],
+    names: tuple[str, ...],
+    values: tuple[int, ...],
     examples: list[str],
 ) -> dict[str, Any]:
     """Build a JSON schema for a name-or-integer MT5 constant parameter.

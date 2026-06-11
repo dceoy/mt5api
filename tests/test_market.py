@@ -283,7 +283,8 @@ def test_openapi_documents_mt5_timeframes_consistently(
         assert (
             timeframe_schema["description"]
             == "MetaTrader5 TIMEFRAME constant. Accepts a constant name such as "
-            "TIMEFRAME_M1 or the short alias M1, or the corresponding integer value."
+            "TIMEFRAME_M1, short aliases such as M1, "
+            "or the corresponding integer value."
         )
 
 
