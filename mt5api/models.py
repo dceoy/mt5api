@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime  # noqa: TC003
 from enum import StrEnum
-from functools import cache, cached_property
-from typing import TYPE_CHECKING, Annotated, Any, LiteralString, Self, TypeAlias, cast
+from typing import Annotated, Any, Self, TypeAlias
 
-from pdmt5.mt5 import Mt5Client
+import pdmt5
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -18,23 +16,10 @@ from pydantic import (
     WithJsonSchema,
     model_validator,
 )
-from pydantic_core import PydanticCustomError
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from types import ModuleType
-
-
-class ResponseFormat(StrEnum):
-    """Response format enumeration."""
-
-    JSON = "json"
-    PARQUET = "parquet"
-
 
 _TIMEFRAME_DESCRIPTION = (
     "MetaTrader5 TIMEFRAME constant. Accepts a constant name such as "
-    "TIMEFRAME_M1 or the corresponding integer value."
+    "TIMEFRAME_M1, short aliases such as M1, or the corresponding integer value."
 )
 _TIMEFRAME_EXAMPLE_NAMES = (
     "TIMEFRAME_M1",
@@ -49,142 +34,22 @@ _TIMEFRAME_EXAMPLE_NAMES = (
 )
 _COPY_TICKS_DESCRIPTION = (
     "MetaTrader5 COPY_TICKS constant. Accepts COPY_TICKS_INFO, "
-    "COPY_TICKS_TRADE, COPY_TICKS_ALL, or the corresponding integer value."
+    "COPY_TICKS_TRADE, COPY_TICKS_ALL, short aliases such as ALL, "
+    "or the corresponding integer value."
 )
-_COPY_TICKS_NAMES = (
+_COPY_TICKS_EXAMPLE_NAMES = (
     "COPY_TICKS_INFO",
     "COPY_TICKS_TRADE",
     "COPY_TICKS_ALL",
 )
 _ORDER_TYPE_DESCRIPTION = (
     "MetaTrader5 ORDER_TYPE constant. Accepts a constant name such as "
-    "ORDER_TYPE_BUY or the corresponding integer value."
+    "ORDER_TYPE_BUY, short aliases such as BUY, or the corresponding integer value."
 )
 _ORDER_TYPE_EXAMPLE_NAMES = (
     "ORDER_TYPE_BUY",
     "ORDER_TYPE_SELL",
 )
-_ORDER_TYPE_VALIDATION_DESCRIPTION = "MetaTrader5 ORDER_TYPE constant"
-_TIMEFRAME_VALIDATION_DESCRIPTION = "MetaTrader5 TIMEFRAME constant"
-_COPY_TICKS_VALIDATION_DESCRIPTION = "MetaTrader5 COPY_TICKS constant"
-
-
-@dataclass(frozen=True)
-class Mt5ConstantSpec:
-    """Metadata and cached values for an MT5 constant family."""
-
-    validation_description: str
-    schema_description: str
-    prefix: str = ""
-    names: tuple[str, ...] = ()
-    example_names: tuple[str, ...] = ()
-
-    @cached_property
-    def members(self) -> dict[str, int]:
-        """Return MT5 constant names and values from the pdmt5 MT5 module copy."""
-        mt5 = _get_mt5_module()
-        if self.names:
-            return {name: int(getattr(mt5, name)) for name in self.names}
-        return {
-            name: int(getattr(mt5, name))
-            for name in dir(mt5)
-            if name.startswith(self.prefix) and isinstance(getattr(mt5, name), int)
-        }
-
-    @cached_property
-    def sorted_names(self) -> tuple[str, ...]:
-        """Return sorted MT5 constant names."""
-        return tuple(sorted(self.members))
-
-    @cached_property
-    def sorted_values(self) -> tuple[int, ...]:
-        """Return sorted MT5 constant values."""
-        return tuple(sorted(self.members.values()))
-
-    @cached_property
-    def example_values(self) -> list[int]:
-        """Return MT5 constant value examples."""
-        return [self.members[name] for name in self.example_names]
-
-    @cached_property
-    def example_name_list(self) -> list[str]:
-        """Return MT5 constant name examples."""
-        return list(self.example_names)
-
-
-@cache
-def _get_mt5_module() -> ModuleType:
-    """Return the MetaTrader5 module used by pdmt5."""
-    factory = cast(
-        "Callable[[], ModuleType]", Mt5Client.model_fields["mt5"].default_factory
-    )
-    return factory()
-
-
-_TIMEFRAME_SPEC = Mt5ConstantSpec(
-    validation_description=_TIMEFRAME_VALIDATION_DESCRIPTION,
-    schema_description=_TIMEFRAME_DESCRIPTION,
-    prefix="TIMEFRAME_",
-    example_names=_TIMEFRAME_EXAMPLE_NAMES,
-)
-_COPY_TICKS_SPEC = Mt5ConstantSpec(
-    validation_description=_COPY_TICKS_VALIDATION_DESCRIPTION,
-    schema_description=_COPY_TICKS_DESCRIPTION,
-    names=_COPY_TICKS_NAMES,
-    example_names=_COPY_TICKS_NAMES,
-)
-_ORDER_TYPE_SPEC = Mt5ConstantSpec(
-    validation_description=_ORDER_TYPE_VALIDATION_DESCRIPTION,
-    schema_description=_ORDER_TYPE_DESCRIPTION,
-    prefix="ORDER_TYPE_",
-    example_names=_ORDER_TYPE_EXAMPLE_NAMES,
-)
-
-
-def _parse_mt5_constant(
-    value: object,
-    *,
-    spec: Mt5ConstantSpec,
-) -> int:
-    """Parse an MT5 constant name or integer value.
-
-    Returns:
-        The validated integer constant value.
-
-    Raises:
-        PydanticCustomError: If the value type is not supported.
-        ValueError: If the value is not a supported constant name or integer.
-    """
-    type_error_code = "mt5_constant_type"
-    type_error_template: LiteralString = (
-        "{description} must be specified by constant name or integer value"
-    )
-    type_error_context = {"description": spec.validation_description}
-    type_error_message = type_error_template.format(**type_error_context)
-    if isinstance(value, str):
-        if value in spec.members:
-            return spec.members[value]
-        try:
-            value = int(value)
-        except ValueError as error:
-            raise ValueError(type_error_message) from error
-
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise PydanticCustomError(
-            type_error_code,
-            type_error_template,
-            type_error_context,
-        )
-
-    parsed_value = value
-
-    if parsed_value not in spec.members.values():
-        error_message = (
-            f"Unsupported {spec.validation_description.lower()} value: {parsed_value}"
-        )
-        raise ValueError(error_message)
-
-    return parsed_value
 
 
 def _build_mt5_constant_json_schema(
@@ -210,43 +75,43 @@ def _build_mt5_constant_json_schema(
 
 
 def get_mt5_timeframe_values() -> tuple[int, ...]:
-    """Return all available MT5 timeframe values from the pdmt5 MT5 module copy."""
-    return _TIMEFRAME_SPEC.sorted_values
+    """Return all available MT5 timeframe values from pdmt5."""
+    return tuple(pdmt5.list_timeframe_values())
 
 
 def get_mt5_timeframe_names() -> tuple[str, ...]:
-    """Return all available MT5 timeframe names from the pdmt5 MT5 module copy."""
-    return _TIMEFRAME_SPEC.sorted_names
+    """Return all available MT5 timeframe names from pdmt5."""
+    return tuple(pdmt5.list_timeframe_names())
 
 
 def get_mt5_timeframe_examples() -> list[int]:
-    """Return common MT5 timeframe examples from the pdmt5 MT5 module copy."""
-    return _TIMEFRAME_SPEC.example_values
+    """Return common MT5 timeframe examples from pdmt5."""
+    return [pdmt5.TIMEFRAME_MAP[name] for name in _TIMEFRAME_EXAMPLE_NAMES]
 
 
 def get_mt5_timeframe_example_names() -> list[str]:
     """Return common MT5 timeframe example names."""
-    return _TIMEFRAME_SPEC.example_name_list
+    return list(_TIMEFRAME_EXAMPLE_NAMES)
 
 
 def get_mt5_copy_ticks_values() -> tuple[int, ...]:
-    """Return all MT5 COPY_TICKS values from the pdmt5 MT5 module copy."""
-    return _COPY_TICKS_SPEC.sorted_values
+    """Return all MT5 COPY_TICKS values from pdmt5."""
+    return tuple(pdmt5.list_copy_ticks_values())
 
 
 def get_mt5_copy_ticks_names() -> tuple[str, ...]:
-    """Return all MT5 COPY_TICKS names from the pdmt5 MT5 module copy."""
-    return _COPY_TICKS_SPEC.sorted_names
+    """Return all MT5 COPY_TICKS names from pdmt5."""
+    return tuple(pdmt5.list_copy_ticks_names())
 
 
 def get_mt5_copy_ticks_examples() -> list[int]:
     """Return common MT5 COPY_TICKS integer examples."""
-    return _COPY_TICKS_SPEC.example_values
+    return [pdmt5.COPY_TICKS_MAP[name] for name in _COPY_TICKS_EXAMPLE_NAMES]
 
 
 def get_mt5_copy_ticks_example_names() -> list[str]:
     """Return common MT5 COPY_TICKS example names."""
-    return _COPY_TICKS_SPEC.example_name_list
+    return list(_COPY_TICKS_EXAMPLE_NAMES)
 
 
 def _validate_mt5_timeframe(value: object) -> int:
@@ -255,7 +120,7 @@ def _validate_mt5_timeframe(value: object) -> int:
     Returns:
         The validated integer timeframe value.
     """
-    return _parse_mt5_constant(value, spec=_TIMEFRAME_SPEC)
+    return pdmt5.parse_timeframe(value)
 
 
 def _validate_mt5_copy_ticks(value: object) -> int:
@@ -264,27 +129,27 @@ def _validate_mt5_copy_ticks(value: object) -> int:
     Returns:
         The validated integer COPY_TICKS value.
     """
-    return _parse_mt5_constant(value, spec=_COPY_TICKS_SPEC)
+    return pdmt5.parse_copy_ticks(value)
 
 
 def get_mt5_order_type_values() -> tuple[int, ...]:
-    """Return all available MT5 ORDER_TYPE values from the pdmt5 MT5 module copy."""
-    return _ORDER_TYPE_SPEC.sorted_values
+    """Return all available MT5 ORDER_TYPE values from pdmt5."""
+    return tuple(pdmt5.list_order_type_values())
 
 
 def get_mt5_order_type_names() -> tuple[str, ...]:
-    """Return all available MT5 ORDER_TYPE names from the pdmt5 MT5 module copy."""
-    return _ORDER_TYPE_SPEC.sorted_names
+    """Return all available MT5 ORDER_TYPE names from pdmt5."""
+    return tuple(pdmt5.list_order_type_names())
 
 
 def get_mt5_order_type_examples() -> list[int]:
     """Return common MT5 ORDER_TYPE integer examples."""
-    return _ORDER_TYPE_SPEC.example_values
+    return [pdmt5.ORDER_TYPE_MAP[name] for name in _ORDER_TYPE_EXAMPLE_NAMES]
 
 
 def get_mt5_order_type_example_names() -> list[str]:
     """Return common MT5 ORDER_TYPE example names."""
-    return _ORDER_TYPE_SPEC.example_name_list
+    return list(_ORDER_TYPE_EXAMPLE_NAMES)
 
 
 def _validate_mt5_order_type(value: object) -> int:
@@ -293,7 +158,7 @@ def _validate_mt5_order_type(value: object) -> int:
     Returns:
         The validated integer ORDER_TYPE value.
     """
-    return _parse_mt5_constant(value, spec=_ORDER_TYPE_SPEC)
+    return pdmt5.parse_order_type(value)
 
 
 Mt5Timeframe: TypeAlias = Annotated[
@@ -301,7 +166,7 @@ Mt5Timeframe: TypeAlias = Annotated[
     BeforeValidator(_validate_mt5_timeframe),
     WithJsonSchema(
         _build_mt5_constant_json_schema(
-            description=_TIMEFRAME_SPEC.schema_description,
+            description=_TIMEFRAME_DESCRIPTION,
             names=get_mt5_timeframe_names(),
             values=get_mt5_timeframe_values(),
             examples=get_mt5_timeframe_example_names(),
@@ -316,7 +181,7 @@ Mt5CopyTicks: TypeAlias = Annotated[
     BeforeValidator(_validate_mt5_copy_ticks),
     WithJsonSchema(
         _build_mt5_constant_json_schema(
-            description=_COPY_TICKS_SPEC.schema_description,
+            description=_COPY_TICKS_DESCRIPTION,
             names=get_mt5_copy_ticks_names(),
             values=get_mt5_copy_ticks_values(),
             examples=get_mt5_copy_ticks_example_names(),
@@ -331,7 +196,7 @@ Mt5OrderType: TypeAlias = Annotated[
     BeforeValidator(_validate_mt5_order_type),
     WithJsonSchema(
         _build_mt5_constant_json_schema(
-            description=_ORDER_TYPE_SPEC.schema_description,
+            description=_ORDER_TYPE_DESCRIPTION,
             names=get_mt5_order_type_names(),
             values=get_mt5_order_type_values(),
             examples=get_mt5_order_type_example_names(),
@@ -339,6 +204,13 @@ Mt5OrderType: TypeAlias = Annotated[
         mode="validation",
     ),
 ]
+
+
+class ResponseFormat(StrEnum):
+    """Response format enumeration."""
+
+    JSON = "json"
+    PARQUET = "parquet"
 
 
 class ErrorResponse(BaseModel):
@@ -532,7 +404,7 @@ class TicksFromRequest(BaseModel):
         le=100000,
     )
     flags: Mt5CopyTicks = Field(
-        default=_COPY_TICKS_SPEC.members["COPY_TICKS_ALL"],
+        default=pdmt5.COPY_TICKS_MAP["COPY_TICKS_ALL"],
         description=_COPY_TICKS_DESCRIPTION,
     )
     format: ResponseFormat | None = Field(default=None)
@@ -545,7 +417,7 @@ class TicksRangeRequest(BaseModel):
     date_from: datetime = Field(..., description="Start date (ISO 8601)")
     date_to: datetime = Field(..., description="End date (ISO 8601)")
     flags: Mt5CopyTicks = Field(
-        default=_COPY_TICKS_SPEC.members["COPY_TICKS_ALL"],
+        default=pdmt5.COPY_TICKS_MAP["COPY_TICKS_ALL"],
         description=_COPY_TICKS_DESCRIPTION,
     )
     format: ResponseFormat | None = Field(default=None)

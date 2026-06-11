@@ -56,64 +56,85 @@ def test_mt5_constant_example_helpers_return_integer_examples() -> None:
     ]
 
 
-def test_rates_from_request_accepts_mt5_timeframe_name() -> None:
-    """Rates requests accept MT5 timeframe constant names."""
+@pytest.mark.parametrize(
+    ("timeframe", "expected"),
+    [
+        ("TIMEFRAME_M1", int(Mt5Timeframe.TIMEFRAME_M1)),
+        ("M1", int(Mt5Timeframe.TIMEFRAME_M1)),
+        (int(Mt5Timeframe.TIMEFRAME_M1), int(Mt5Timeframe.TIMEFRAME_M1)),
+        (str(int(Mt5Timeframe.TIMEFRAME_M1)), int(Mt5Timeframe.TIMEFRAME_M1)),
+    ],
+)
+def test_rates_from_request_accepts_mt5_timeframe_inputs(
+    timeframe: object,
+    expected: int,
+) -> None:
+    """Rates requests accept official names, aliases, integers, and numeric strings."""
     request = RatesFromRequest.model_validate({
         "symbol": "EURUSD",
-        "timeframe": "TIMEFRAME_M1",
+        "timeframe": timeframe,
         "date_from": datetime(2024, 1, 1, tzinfo=UTC),
         "count": 10,
     })
 
-    assert request.timeframe == int(Mt5Timeframe.TIMEFRAME_M1)
+    assert request.timeframe == expected
 
 
-def test_rates_from_request_accepts_mt5_timeframe_integer_string() -> None:
-    """Rates requests accept stringified MT5 timeframe integer values."""
-    request = RatesFromRequest.model_validate({
-        "symbol": "EURUSD",
-        "timeframe": str(int(Mt5Timeframe.TIMEFRAME_M1)),
-        "date_from": datetime(2024, 1, 1, tzinfo=UTC),
-        "count": 10,
-    })
-
-    assert request.timeframe == int(Mt5Timeframe.TIMEFRAME_M1)
-
-
-def test_ticks_from_request_accepts_mt5_copy_ticks_name() -> None:
-    """Tick requests accept MT5 COPY_TICKS constant names."""
+@pytest.mark.parametrize(
+    ("flags", "expected"),
+    [
+        ("COPY_TICKS_ALL", int(Mt5CopyTicks.COPY_TICKS_ALL)),
+        ("ALL", int(Mt5CopyTicks.COPY_TICKS_ALL)),
+        (int(Mt5CopyTicks.COPY_TICKS_INFO), int(Mt5CopyTicks.COPY_TICKS_INFO)),
+        (str(int(Mt5CopyTicks.COPY_TICKS_TRADE)), int(Mt5CopyTicks.COPY_TICKS_TRADE)),
+    ],
+)
+def test_ticks_from_request_accepts_mt5_copy_ticks_inputs(
+    flags: object,
+    expected: int,
+) -> None:
+    """Tick requests accept official names, aliases, integers, and numeric strings."""
     request = TicksFromRequest.model_validate({
         "symbol": "EURUSD",
         "date_from": datetime(2024, 1, 1, tzinfo=UTC),
         "count": 10,
-        "flags": "COPY_TICKS_ALL",
+        "flags": flags,
     })
 
-    assert request.flags == int(Mt5CopyTicks.COPY_TICKS_ALL)
+    assert request.flags == expected
 
 
-def test_rates_from_request_rejects_invalid_mt5_timeframe_type() -> None:
-    """Rates requests reject non-string, non-integer timeframe values."""
-    with pytest.raises(ValidationError, match="constant name or integer value"):
+@pytest.mark.parametrize(
+    "timeframe",
+    [True, 1.0, None, [], 99, "BOGUS"],
+)
+def test_rates_from_request_rejects_invalid_mt5_timeframe_values(
+    timeframe: object,
+) -> None:
+    """Rates requests reject bool, float, None, objects, and unsupported integers."""
+    with pytest.raises(ValidationError):
         RatesFromRequest.model_validate({
             "symbol": "EURUSD",
-            "timeframe": [],
+            "timeframe": timeframe,
             "date_from": datetime(2024, 1, 1, tzinfo=UTC),
             "count": 10,
         })
 
 
-def test_ticks_from_request_rejects_invalid_mt5_copy_ticks_value() -> None:
-    """Tick requests reject unsupported MT5 COPY_TICKS integer values."""
-    with pytest.raises(
-        ValidationError,
-        match="Unsupported metatrader5 copy_ticks constant value: 99",
-    ):
+@pytest.mark.parametrize(
+    "flags",
+    [True, 1.0, None, [], 99, "BOGUS"],
+)
+def test_ticks_from_request_rejects_invalid_mt5_copy_ticks_values(
+    flags: object,
+) -> None:
+    """Tick requests reject bool, float, None, objects, and unsupported values."""
+    with pytest.raises(ValidationError):
         TicksFromRequest.model_validate({
             "symbol": "EURUSD",
             "date_from": datetime(2024, 1, 1, tzinfo=UTC),
             "count": 10,
-            "flags": 99,
+            "flags": flags,
         })
 
 
@@ -125,16 +146,45 @@ def test_mt5_order_type_example_helpers_return_integer_examples() -> None:
     ]
 
 
-def test_calc_margin_request_accepts_order_type_name() -> None:
-    """Calc margin request accepts ORDER_TYPE constant names."""
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        ("ORDER_TYPE_BUY", int(Mt5OrderType.ORDER_TYPE_BUY)),
+        ("BUY", int(Mt5OrderType.ORDER_TYPE_BUY)),
+        (int(Mt5OrderType.ORDER_TYPE_SELL), int(Mt5OrderType.ORDER_TYPE_SELL)),
+        (str(int(Mt5OrderType.ORDER_TYPE_SELL)), int(Mt5OrderType.ORDER_TYPE_SELL)),
+    ],
+)
+def test_calc_margin_request_accepts_order_type_inputs(
+    action: object,
+    expected: int,
+) -> None:
+    """Calc margin requests accept official names, aliases, integers, and strings."""
     request = CalcMarginRequest.model_validate({
-        "action": "ORDER_TYPE_BUY",
+        "action": action,
         "symbol": "EURUSD",
         "volume": 0.1,
         "price": 1.085,
     })
 
-    assert request.action == int(Mt5OrderType.ORDER_TYPE_BUY)
+    assert request.action == expected
+
+
+@pytest.mark.parametrize(
+    "action",
+    [True, 1.0, None, [], 99, "BOGUS"],
+)
+def test_calc_margin_request_rejects_invalid_order_type_values(
+    action: object,
+) -> None:
+    """Calc margin requests reject invalid ORDER_TYPE inputs."""
+    with pytest.raises(ValidationError):
+        CalcMarginRequest.model_validate({
+            "action": action,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "price": 1.085,
+        })
 
 
 def test_history_total_request_rejects_invalid_date_range() -> None:
@@ -222,16 +272,6 @@ def test_trade_request_rejects_unknown_field() -> None:
             },
             "greater than 0",
         ),
-        (
-            {
-                "action": 1,
-                "symbol": "EURUSD",
-                "volume": 0.1,
-                "type": 99,
-                "price": 1.085,
-            },
-            "Unsupported metatrader5 order_type constant value: 99",
-        ),
     ],
 )
 def test_trade_request_rejects_invalid_core_fields(
@@ -241,3 +281,15 @@ def test_trade_request_rejects_invalid_core_fields(
     """Trade requests should validate core field constraints."""
     with pytest.raises(ValidationError, match=match):
         TradeRequest.model_validate(payload)
+
+
+def test_trade_request_rejects_unsupported_order_type() -> None:
+    """Trade requests reject unsupported ORDER_TYPE values from pdmt5."""
+    with pytest.raises(ValidationError):
+        TradeRequest.model_validate({
+            "action": 1,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 99,
+            "price": 1.085,
+        })

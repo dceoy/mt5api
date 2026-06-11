@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from mt5api import dependencies
 from mt5api.main import app
 from mt5api.routers import health
+from tests.openapi_mt5_constants import assert_openapi_mt5_order_type_schema
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -521,3 +522,14 @@ def test_openapi_excludes_order_send_endpoint(
     openapi = client.get("/openapi.json").json()
 
     assert "/order/send" not in openapi["paths"]
+
+
+def test_openapi_documents_mt5_order_type_on_order_check(
+    client: TestClient,
+) -> None:
+    """Order check should expose ORDER_TYPE metadata on TradeRequest.type."""
+    openapi = client.get("/openapi.json").json()
+    trade_request_schema = openapi["components"]["schemas"]["TradeRequest"]
+    order_type_schema = trade_request_schema["properties"]["type"]
+
+    assert_openapi_mt5_order_type_schema(order_type_schema)

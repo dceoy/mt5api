@@ -108,9 +108,9 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 
 ### Market Data
 
-- `timeframe` and `flags` accept either the official MetaTrader 5 constant
-  name (for example `TIMEFRAME_M1`, `COPY_TICKS_ALL`) or the equivalent integer
-  value.
+- `timeframe` and `flags` accept the official MetaTrader 5 constant name (for
+  example `TIMEFRAME_M1`, `COPY_TICKS_ALL`), a short alias (for example `M1`,
+  `ALL`), or the equivalent integer value.
 - `GET /rates/from` (`symbol`, `timeframe`, `date_from`, `count`, `format`)
 - `GET /rates/from-pos` (`symbol`, `timeframe`, `start_pos`, `count`, `format`)
 - `GET /rates/range` (`symbol`, `timeframe`, `date_from`, `date_to`, `format`)
@@ -122,8 +122,9 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 
 ### Calculations
 
-- `action` accepts either the official MetaTrader 5 constant name (for example
-  `ORDER_TYPE_BUY`) or the equivalent integer value.
+- `action` accepts the official MetaTrader 5 constant name (for example
+  `ORDER_TYPE_BUY`), a short alias (for example `BUY`), or the equivalent
+  integer value.
 - `GET /calc/margin` (`action`, `symbol`, `volume`, `price`, `format`) —
   Calculate required margin in account currency
 - `GET /calc/profit` (`action`, `symbol`, `volume`, `price_open`,

@@ -36,7 +36,7 @@ class Mt5CopyTicks(IntEnum):
 
     COPY_TICKS_INFO = 1
     COPY_TICKS_TRADE = 2
-    COPY_TICKS_ALL = 3
+    COPY_TICKS_ALL = -1
 
 
 class Mt5BookType(IntEnum):

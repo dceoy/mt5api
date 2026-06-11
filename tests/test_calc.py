@@ -8,6 +8,7 @@ import pytest
 from pdmt5.mt5 import Mt5RuntimeError
 
 from tests.mt5_constants import Mt5OrderType
+from tests.openapi_mt5_constants import assert_openapi_mt5_order_type_schema
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -294,3 +295,18 @@ def test_get_calc_profit_returns_service_unavailable_on_mt5_error(
     payload = response.json()
     assert payload["title"] == "MT5 Terminal Error"
     assert "order_calc_profit returned None" in payload["detail"]
+
+
+def test_openapi_documents_mt5_order_type_consistently(
+    client: TestClient,
+) -> None:
+    """Calc endpoints should expose MT5 ORDER_TYPE names and integer values."""
+    openapi = client.get("/openapi.json").json()
+    paths = ("/calc/margin", "/calc/profit")
+
+    for path in paths:
+        parameters = openapi["paths"][path]["get"]["parameters"]
+        action_parameter = next(
+            parameter for parameter in parameters if parameter["name"] == "action"
+        )
+        assert_openapi_mt5_order_type_schema(action_parameter["schema"])
