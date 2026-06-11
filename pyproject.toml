@@ -14,7 +14,6 @@ dependencies = [
   "uvicorn[standard] >= 0.32.0",
   "pyarrow >= 18.0.0",
   "python-multipart >= 0.0.9",
-  "python-jose[cryptography] >= 3.3.0",
   "passlib[bcrypt] >= 1.7.4",
   "httpx >= 0.27.0",
 ]
@@ -34,6 +33,9 @@ Repository = "https://github.com/dceoy/mt5api.git"
 
 [tool.uv]
 required-environments = ["platform_system == 'Windows'"]
+constraint-dependencies = [
+  "pygments >= 2.20.0",
+]
 
 [dependency-groups]
 dev = [
