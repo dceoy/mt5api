@@ -277,13 +277,13 @@ def test_openapi_documents_mt5_timeframes_consistently(
             if schema["type"] == "integer"
         )
 
-        assert sorted(string_schema["enum"]) == VALID_TIMEFRAME_NAMES
-        assert sorted(integer_schema["enum"]) == VALID_TIMEFRAME_VALUES
+        assert sorted(string_schema["enum"]) == sorted(VALID_TIMEFRAME_NAMES)
+        assert sorted(integer_schema["enum"]) == sorted(VALID_TIMEFRAME_VALUES)
         assert timeframe_schema["examples"] == TIMEFRAME_EXAMPLES
         assert (
             timeframe_schema["description"]
             == "MetaTrader5 TIMEFRAME constant. Accepts a constant name such as "
-            "TIMEFRAME_M1 or the corresponding integer value."
+            "TIMEFRAME_M1 or the short alias M1, or the corresponding integer value."
         )
 
 
@@ -442,13 +442,14 @@ def test_openapi_documents_mt5_copy_ticks_consistently(
             schema for schema in flag_schema["anyOf"] if schema["type"] == "integer"
         )
 
-        assert sorted(string_schema["enum"]) == VALID_TICK_FLAG_NAMES
-        assert sorted(integer_schema["enum"]) == VALID_TICK_FLAG_VALUES
+        assert sorted(string_schema["enum"]) == sorted(VALID_TICK_FLAG_NAMES)
+        assert sorted(integer_schema["enum"]) == sorted(VALID_TICK_FLAG_VALUES)
         assert flag_schema["examples"] == TICK_FLAG_EXAMPLES
         assert (
             flag_schema["description"]
             == "MetaTrader5 COPY_TICKS constant. Accepts COPY_TICKS_INFO, "
-            "COPY_TICKS_TRADE, COPY_TICKS_ALL, or the corresponding integer value."
+            "COPY_TICKS_TRADE, COPY_TICKS_ALL, short aliases such as ALL, "
+            "or the corresponding integer value."
         )
 
 

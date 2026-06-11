@@ -5,14 +5,18 @@ MetaTrader 5 REST API
 [![CI/CD](https://github.com/dceoy/mt5api/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/mt5api/actions/workflows/ci.yml)
 
 mt5api exposes MT5 market data, account info, trading history, and trading
-operations over HTTP. It uses the [`pdmt5`](https://github.com/dceoy/pdmt5)
-client internally and adds optional API-key auth and JSON/Parquet response
-formatting.
+operations over HTTP. It is a FastAPI/HTTP adapter over
+[`pdmt5`](https://github.com/dceoy/pdmt5), which provides the core MT5 client,
+dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
+optional API-key auth and JSON/Parquet response formatting.
 
-The API server must run on Windows. The `MetaTrader5` Python package used by
-`pdmt5` is supported only on Windows, so you must host `mt5api` on a Windows
-machine with a logged-in MetaTrader 5 terminal. HTTP clients can connect from
-any operating system.
+[`mt5cli`](https://github.com/dceoy/mt5cli) is a sibling CLI/batch adapter for
+the same pdmt5 stack; it is not a dependency of mt5api.
+
+The API server must run on Windows. pdmt5 connects through the MetaTrader 5
+Python API, which is supported only on Windows, so you must host `mt5api` on a
+Windows machine with a logged-in MetaTrader 5 terminal. HTTP clients can connect
+from any operating system.
 
 ## Architecture
 
@@ -32,7 +36,7 @@ graph TB
             Formatters --> Middleware
         end
 
-        Deps --> pdmt5["pdmt5<br/>MT5 Client Library"]
+        Deps --> pdmt5["pdmt5<br/>MT5 Client · Constants · Dataframes"]
         pdmt5 --> MT5["MetaTrader 5<br/>Terminal"]
     end
 
@@ -133,9 +137,9 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group
 curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
-Market-data and calculation endpoints accept MetaTrader 5 constants either by
-official name (`TIMEFRAME_M1`, `COPY_TICKS_ALL`, `ORDER_TYPE_BUY`) or by their
-integer value.
+Market-data and calculation endpoints accept MetaTrader 5 constants by official
+name (`TIMEFRAME_M1`, `COPY_TICKS_ALL`, `ORDER_TYPE_BUY`), short alias (`M1`,
+`ALL`, `BUY`), or integer value.
 
 ## Endpoints
 
