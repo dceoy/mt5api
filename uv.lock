@@ -10,9 +10,6 @@ required-markers = [
     "sys_platform == 'win32'",
 ]
 
-[manifest]
-constraints = [{ name = "pygments", specifier = ">=2.20.0" }]
-
 [[package]]
 name = "annotated-doc"
 version = "0.0.4"
@@ -559,7 +556,7 @@ wheels = [
 
 [[package]]
 name = "mt5api"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },

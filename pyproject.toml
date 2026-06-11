@@ -1,6 +1,6 @@
 [project]
 name = "mt5api"
-version = "0.2.0"
+version = "0.3.0"
 description = "MetaTrader 5 REST API"
 authors = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
 maintainers = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
@@ -32,9 +32,6 @@ Repository = "https://github.com/dceoy/mt5api.git"
 
 [tool.uv]
 required-environments = ["platform_system == 'Windows'"]
-constraint-dependencies = [
-  "pygments >= 2.20.0",
-]
 
 [dependency-groups]
 dev = [
