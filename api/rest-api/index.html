@@ -231,9 +231,9 @@ requests return HTTP <code>429</code> until an existing subscription is released
 </ul>
 <h3 id="market-data">Market Data<a class="headerlink" href="#market-data" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>timeframe</code> and <code>flags</code> accept either the official MetaTrader 5 constant
-  name (for example <code>TIMEFRAME_M1</code>, <code>COPY_TICKS_ALL</code>) or the equivalent integer
-  value.</li>
+<li><code>timeframe</code> and <code>flags</code> accept the official MetaTrader 5 constant name (for
+  example <code>TIMEFRAME_M1</code>, <code>COPY_TICKS_ALL</code>), a short alias (for example <code>M1</code>,
+  <code>ALL</code>), or the equivalent integer value.</li>
 <li><code>GET /rates/from</code> (<code>symbol</code>, <code>timeframe</code>, <code>date_from</code>, <code>count</code>, <code>format</code>)</li>
 <li><code>GET /rates/from-pos</code> (<code>symbol</code>, <code>timeframe</code>, <code>start_pos</code>, <code>count</code>, <code>format</code>)</li>
 <li><code>GET /rates/range</code> (<code>symbol</code>, <code>timeframe</code>, <code>date_from</code>, <code>date_to</code>, <code>format</code>)</li>
@@ -245,8 +245,9 @@ requests return HTTP <code>429</code> until an existing subscription is released
 </ul>
 <h3 id="calculations">Calculations<a class="headerlink" href="#calculations" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>action</code> accepts either the official MetaTrader 5 constant name (for example
-  <code>ORDER_TYPE_BUY</code>) or the equivalent integer value.</li>
+<li><code>action</code> accepts the official MetaTrader 5 constant name (for example
+  <code>ORDER_TYPE_BUY</code>), a short alias (for example <code>BUY</code>), or the equivalent
+  integer value.</li>
 <li><code>GET /calc/margin</code> (<code>action</code>, <code>symbol</code>, <code>volume</code>, <code>price</code>, <code>format</code>) —
   Calculate required margin in account currency</li>
 <li><code>GET /calc/profit</code> (<code>action</code>, <code>symbol</code>, <code>volume</code>, <code>price_open</code>,

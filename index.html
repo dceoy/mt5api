@@ -136,13 +136,16 @@
 <p>FastAPI-based REST API for MetaTrader 5 market data, account information, and
 trading operations.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>mt5api exposes MT5 data and trading operations over HTTP using FastAPI. It
-relies on the underlying MT5 client library for connectivity and adds optional
-authentication and response formatting suitable for analytics
-workflows.</p>
-<p>The API server must run on Windows because the <code>MetaTrader5</code> Python package is
-Windows-only. Run <code>mt5api</code> on a Windows host with MetaTrader 5 installed and
-logged in. API clients can connect from any operating system.</p>
+<p>mt5api is a FastAPI/HTTP adapter over
+<a href="https://github.com/dceoy/pdmt5"><code>pdmt5</code></a>. pdmt5 provides the core MT5 client,
+dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
+optional authentication, response formatting, and OpenAPI documentation.</p>
+<p><a href="https://github.com/dceoy/mt5cli"><code>mt5cli</code></a> is a sibling CLI/batch adapter for
+the same pdmt5 stack; it is not a dependency of mt5api.</p>
+<p>The API server must run on Windows because pdmt5 connects through the MetaTrader
+5 Python API, which is Windows-only. Run <code>mt5api</code> on a Windows host with
+MetaTrader 5 installed and logged in. API clients can connect from any operating
+system.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
 <li>REST endpoints for symbols, market data, account info, orders, history,
@@ -268,5 +271,5 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-05-23 15:37:37.793933+00:00
+Build Date UTC : 2026-06-11 14:35:42.186682+00:00
 -->
