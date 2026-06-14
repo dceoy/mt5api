@@ -65,6 +65,7 @@ jobs:
   github-codeql-analysis:
     if: >
       github.event_name == 'push'
+      || github.event_name == 'pull_request'
       || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint-and-test')
     permissions:
       contents: read
