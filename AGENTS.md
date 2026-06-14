@@ -1,92 +1,70 @@
 # Repository Guidelines
 
-## Commands
+## Project Structure & Module Organization
 
-### Development Setup
+`mt5api/` contains the FastAPI application. Core app setup lives in `main.py`,
+configuration and security in `config.py` and `auth.py`, shared request
+dependencies in `dependencies.py`, middleware in `middleware.py`, response
+serialization in `formatters.py`, and Pydantic/data models in `models.py`.
+Endpoint modules are grouped under `mt5api/routers/` by domain, such as
+`market.py`, `symbols.py`, `account.py`, and `trading.py`. Tests live in
+`tests/` and mirror the package domains with `test_*.py` files. Documentation is
+in `docs/`, with MkDocs configured by `mkdocs.yml`; local agent skills are under
+`skills/`.
 
-- `uv sync --dev` installs runtime and development dependencies.
-- `uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000` starts the API locally.
-- `uv run python -m mt5api` starts the app using `MT5API_HOST`, `MT5API_PORT`, and `MT5API_LOG_LEVEL`.
-- `uv run mkdocs serve` previews the documentation site.
+## Build, Test, and Development Commands
 
-### Code Quality and Documentation
+- `uv sync --group dev`: install runtime and development dependencies.
+- `uv run python -m mt5api`: start the API using environment configuration.
+- `uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000`: run the app
+  directly for local API testing.
+- `uv run pytest`: run the full test suite with coverage settings from
+  `pyproject.toml`.
+- `uv run ruff check .` and `uv run ruff format --check .`: lint and verify
+  formatting.
+- `uv run pyright`: run strict static type checking.
+- `uv run mkdocs serve`: preview documentation locally.
+- `.agents/skills/local-qa/scripts/qa.sh`: run the repository QA workflow after
+  any file update. This wraps formatting, linting, type checks, tests, Markdown
+  formatting, and workflow/security checks.
 
-**Important**: Run these before committing or creating a PR.
+The API server runtime requires Windows with MetaTrader 5 installed and logged
+in. Non-Windows systems are suitable for editing docs and most mocked tests.
 
-1. **Format, lint, and test**: Use `local-qa` skill.
-2. **Documentation build**: Run `uv run mkdocs build` when documentation, configuration, or OpenAPI-visible behavior changes.
+## Coding Style & Naming Conventions
 
-## Architecture
+Target Python 3.11+. Use Ruff formatting with an 88-character line length and
+Google-style docstrings. Keep type annotations complete; Pyright runs in strict
+mode. Use `snake_case` for functions, variables, and modules; `PascalCase` for
+classes and Pydantic models; and uppercase names for constants.
 
-### Runtime Constraints
+## Testing Guidelines
 
-- The API server must run on Windows with a logged-in MetaTrader 5 terminal.
-- Linux and macOS are for HTTP clients, documentation work, and local non-runtime development only.
+Pytest discovers `tests/test_*.py`, `*_test.py`, `Test*` classes, and `test_*`
+functions. Coverage is branch-aware and configured to fail below 100%, so add or
+adjust focused tests with each behavior change. Prefer mocked MT5/pdmt5
+interactions unless a test explicitly requires a Windows MT5 terminal.
 
-### Key Dependencies
+## Design Principles
 
-- `pdmt5`: Underlying MetaTrader 5 client integration used by the API layer.
-- `fastapi`: HTTP application framework and OpenAPI generation.
-
-### Package Structure
-
-- `mt5api/`: Main FastAPI package.
-  - `main.py`: App wiring, lifespan handling, middleware, and router registration.
-  - `__main__.py`: CLI entry point for launching the API from environment-backed configuration.
-  - `config.py`: Environment-backed configuration normalization and validation.
-  - `auth.py`: Optional API key authentication helpers.
-  - `dependencies.py`: Shared endpoint dependencies and MT5 accessors.
-  - `formatters.py`: JSON and Parquet response formatting helpers.
-  - `models.py`: Pydantic API models.
-  - `middleware.py`: Request logging and error handling.
-  - `constants.py`: Shared constants and environment variable names.
-  - `routers/`: Endpoint groups for operations: `health.py`, `symbols.py`, `market.py`, `account.py`, `history.py`, `calc.py`, and `trading.py`.
-- `tests/`: Pytest suite covering API behavior, configuration, middleware, and CLI entry points.
-- `docs/`: MkDocs documentation, including REST API and deployment guidance.
-
-## Quality Standards
-
-- Type hints required (pyright strict mode)
-- Comprehensive linting with 35+ rule categories (ruff)
-- Test coverage tracking with 100% (pytest-cov)
-- Parametrized tests for input/result matrices using `pytest.mark.parametrize` (pytest)
-- Test doubles (mocks, stubs) using `pytest_mock` for external dependencies (pytest-mock)
-- Pydantic models for data validation and configuration
-
-## Documentation Workflow
-
-1. Update docstrings and docs when behavior, configuration, or OpenAPI-visible output changes.
-2. Local preview: `uv run mkdocs serve`
-3. Build validation: `uv run mkdocs build`
+Apply KISS, DRY, and YAGNI when changing code. Prefer the simplest direct
+implementation that satisfies the current requirement. Remove duplication when
+it improves clarity or prevents drift, but avoid abstractions that do not serve
+an immediate need. Keep changes small, focused, and easy to review.
 
 ## Commit & Pull Request Guidelines
 
-- Run QA using `local-qa` skill before committing or creating a PR.
-- Branch names use appropriate prefixes on creation (e.g., `feature/...`, `bugfix/...`, `refactor/...`, `docs/...`, `chore/...`).
-- When instructed to create a PR, create it as a draft with appropriate labels by default.
+History uses short imperative subjects and occasional Conventional Commit
+prefixes, for example `refactor: delegate MT5 constant parsing...` or
+`Add checks and statuses read permissions...`. Keep commits scoped to one
+logical change. Before committing or opening a PR, run
+`.agents/skills/local-qa/scripts/qa.sh`. Pull requests should describe the
+behavior change, list verification commands, link related issues when
+applicable, and call out any runtime impact for Windows/MT5 users.
 
 ## Security & Configuration Tips
 
-- Do not commit real MT5 credentials or API keys.
-- Configure `MT5API_SECRET_KEY`, `MT5API_ROUTER_PREFIX`, and `MT5API_LOG_LEVEL` through environment variables.
-- Keep runtime configuration in the environment instead of hardcoding deployment values.
-- Authentication mode is fixed at process startup; cover both authenticated and unauthenticated behavior when changing auth-related code.
-
-## Code Design Principles
-
-Always prefer the simplest design that works.
-
-- **KISS**: Choose straightforward solutions and avoid unnecessary abstraction.
-- **DRY**: Remove duplication when it improves clarity and maintainability.
-- **YAGNI**: Do not add features, hooks, or flexibility until they are needed.
-- **SOLID/Clean Code**: Apply these as tools only when they keep the design simpler and easier to change.
-
-## Development Methodology
-
-Keep delivery incremental, test-backed, and easy to review.
-
-- Make small, safe, reversible changes.
-- Prefer `Red -> Green -> Refactor`.
-- Do not mix feature work and refactoring in the same commit.
-- Refactor when it improves clarity or removes real duplication (Rule of Three).
-- Keep tests fast, focused, and self-validating.
+Do not commit credentials, terminal account details, or real API keys. Configure
+runtime values through environment variables such as `MT5API_SECRET_KEY`,
+`MT5API_ROUTER_PREFIX`, `MT5API_HOST`, `MT5API_PORT`, and
+`MT5API_LOG_LEVEL`.
