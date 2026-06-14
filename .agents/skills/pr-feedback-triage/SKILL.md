@@ -1,0 +1,149 @@
+---
+name: pr-feedback-triage
+description: Triage pull request review comments into fixes, replies, clarification requests, or open follow-ups while respecting safe execution modes.
+---
+
+# PR Feedback Triage
+
+Triage pull request review feedback, decide what action each thread needs, make focused fixes when allowed, and report or resolve only what is actually handled.
+
+## When to Use
+
+- A PR has review comments, requested changes, unresolved review threads, or bot review findings.
+- The user asks to address, respond to, or resolve PR feedback.
+- The user provides a PR URL/number, a branch with an associated PR, or copied comments.
+
+Do not use this skill for a first-pass code review with no existing feedback; use a code review skill instead.
+
+## Inputs
+
+- Pull request URL or number, or a current branch that has an associated pull request.
+- Repository checkout or platform access sufficient to inspect the PR diff and review feedback.
+- Optional reviewer priorities from the user, such as "only address blocking comments" or "do not reply on the PR platform".
+- Optional operating mode flags: `dry_run`, `no_push`, and `no_reply`.
+
+If no PR or review comments are identifiable, ask for the target PR or the copied comments before proceeding.
+
+## Modes
+
+- `dry_run`: inspect review feedback and report the triage only. Do not edit files, run write-mode formatters, commit, push, post replies, or resolve review threads.
+- `no_push`: local edits and verification are allowed, but do not push commits or otherwise update the remote branch. Report the local diff or local commits that still need to be pushed.
+- `no_reply`: do not post replies, submit reviews, or resolve review threads. Provide suggested replies and resolution actions in the final report instead.
+
+When a mode disables an action, skip that destructive or externally visible action even if normal workflow text would otherwise allow it.
+
+## Preflight
+
+1. Identify the current branch and target PR.
+2. Check tracked local changes with `git diff --name-only` and `git diff --cached --name-only`. Ignore untracked files unless the review feedback explicitly concerns them.
+3. Check unpushed commits before relying on remote review feedback.
+4. If tracked local changes or unpushed commits exist, warn that existing PR comments may not cover the latest local state. In `normal` mode, push only when the user request or repository workflow allows it; otherwise continue with a clearly reported limitation.
+
+## Feedback Collection
+
+Gather the complete feedback set before editing:
+
+- Fetch unresolved review threads, requested-change reviews, PR-level summary comments, and copied comments.
+- Use platform-native APIs/CLI when available. Paginate results; do not inspect only the first page of threads or comments.
+- For bot reviewers that post both summary comments and inline comments, collect both. Summary comments often contain severity, rationale, and fix instructions; inline comments contain the exact file and line context.
+- Preserve each thread/comment identifier needed to reply or resolve later.
+- Compare each comment with the current diff and file contents because review lines can become outdated.
+
+## Deduplication and Ordering
+
+Build one triage record per distinct finding:
+
+- Prefer exact review-thread identity when available.
+- For duplicate bot findings appearing in both summary and inline comments, merge by exact issue title first, then by file path plus line range as a fallback.
+- Prefer inline comments for location and current code context.
+- Prefer summary comments for severity, category, rationale, and detailed agent prompts.
+- Preserve the reviewer’s exact issue title and original wording where practical. Do not rename findings in a way that would make replies hard to map back to comments.
+- Preserve the reviewer’s original ordering unless the user asks for priority reordering. Many review bots already order findings by severity.
+
+Each triage record should track: original title, reviewer, source IDs, location, current applicability, severity/priority if available, disposition, planned action, verification, reply text if any, and resolution decision.
+
+## Resolution Policy
+
+In normal mode, `Resolve conversation` is the default action for any review thread that has been fully handled. A thread is handled when the requested change is implemented and verified, the current code already satisfies the comment, the comment is outdated and no longer applies, or a deliberate deferral/won't-fix response has been posted with a clear reason.
+
+Keep a thread open only when it still needs reviewer, maintainer, or product input, the fix is local-only and not pushed, verification is missing for a material change, or the user explicitly requested `dry_run`, `no_push`, or `no_reply` behavior that prevents resolution.
+
+When resolving a thread, add a concise reply first only if it provides useful context, such as what changed, why no code change was needed, why a finding was intentionally deferred, or why the original comment is now outdated. Do not add noisy replies for self-evident fixes unless project norms require them.
+
+## Flow
+
+```mermaid
+flowchart TD
+  A[Identify PR and branch state] --> B[Collect all review feedback]
+  B --> C[Deduplicate and preserve source IDs]
+  C --> D[Inspect current diff and code]
+  D --> E{Classify each triage record}
+  E -->|Fix| F[Implement minimal change]
+  E -->|Answer| G[Prepare concise reply]
+  E -->|Clarify| H[Leave open with question]
+  E -->|Already addressed or Outdated| I[Prepare evidence]
+  E -->|Defer or Won't fix| J[Document reason]
+  F --> K[Verify]
+  G --> L{Mode}
+  H --> L
+  I --> L
+  J --> L
+  K --> L
+  L -->|dry_run| M[Report triage only]
+  L -->|no_push| N[Report local diff or commits]
+  L -->|no_reply| O[Report suggested replies/actions]
+  L -->|normal| P[Commit/push if changed, then batch reply and resolve handled threads]
+  M --> Q[Final summary]
+  N --> Q
+  O --> Q
+  P --> Q
+```
+
+## Compact Workflow
+
+1. **Collect all relevant feedback**
+   - Identify the PR and gather unresolved review threads, requested-change reviews, PR-level summaries, inline comments, and copied comments.
+   - Paginate all platform calls and keep comment/thread IDs for later replies and resolution.
+   - For bot reviews, collect both summary and inline comments, then merge duplicates rather than fixing the same finding twice.
+
+2. **Classify each triage record**
+   - **Fix**: Valid requested change; make the smallest focused edit when not in `dry_run`.
+   - **Answer**: No code change needed; prepare a concise explanation.
+   - **Clarify**: Ambiguous, conflicting, or missing context; leave open with a question.
+   - **Already addressed**: Current code already satisfies it; prepare evidence.
+   - **Outdated**: Commented code or issue no longer exists; prepare evidence.
+   - **Defer / Won't fix**: Valid concern intentionally not changed now; document a specific reason.
+
+3. **Act according to the classification and mode**
+   - Keep edits scoped to the review feedback.
+   - Follow reviewer-provided fix instructions literally when they are still applicable; deviate only when the current code proves the instruction is stale or unsafe.
+   - In `dry_run`, stop at triage, proposed fixes, suggested replies, and verification plan.
+   - In `no_push`, local edits are allowed, but do not push or resolve threads for local-only fixes.
+   - In `no_reply`, do not post replies or resolve threads; report suggested replies/actions instead.
+   - In normal mode, batch replies where practical, then resolve every handled thread by default after the fix, explanation, or deferral reason is available on the PR.
+
+4. **Verify before claiming completion**
+   - For fixes, run appropriate checks or explain why they could not run.
+   - Re-inspect the updated diff and comment context to confirm the concern is resolved.
+   - Do not mark a thread resolved if it still needs reviewer, maintainer, or product input.
+
+5. **Finish**
+   - Normal mode: commit/push changes when appropriate, post useful replies or a summary, and resolve all handled threads by default.
+   - Safe modes: report the local state and the exact replies/resolution actions a human could take.
+
+## Reply Guidance
+
+- Keep inline replies short and tied to the original title or concern.
+- For fixed findings, mention the concrete change or commit if useful.
+- For already-addressed or outdated findings, cite the current code path or behavior that makes the finding no longer applicable.
+- For deferred or won't-fix findings, provide the reason and any follow-up issue or owner if known.
+- If a reply or resolve operation fails, continue with the remaining threads and report the failure in the final summary.
+
+## Final Summary Checklist
+
+- Mode used: `normal`, `dry_run`, `no_push`, or `no_reply`
+- Counts by disposition: fixed, answered, clarified/left open, already addressed, outdated, deferred/won't-fix
+- Threads resolved, intentionally left open, or resolution actions skipped by mode
+- Verification run or planned
+- Commits pushed, local diff/commits, or "none"
+- Remaining open items and who needs to respond
