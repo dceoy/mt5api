@@ -10,9 +10,6 @@ mt5api is a FastAPI/HTTP adapter over
 dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
 optional authentication, response formatting, and OpenAPI documentation.
 
-[`mt5cli`](https://github.com/dceoy/mt5cli) is a sibling CLI/batch adapter for
-the same pdmt5 stack; it is not a dependency of mt5api.
-
 The API server must run on Windows because pdmt5 connects through the MetaTrader
 5 Python API, which is Windows-only. Run `mt5api` on a Windows host with
 MetaTrader 5 installed and logged in. API clients can connect from any operating

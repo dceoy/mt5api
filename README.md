@@ -10,9 +10,6 @@ operations over HTTP. It is a FastAPI/HTTP adapter over
 dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
 optional API-key auth and JSON/Parquet response formatting.
 
-[`mt5cli`](https://github.com/dceoy/mt5cli) is a sibling CLI/batch adapter for
-the same pdmt5 stack; it is not a dependency of mt5api.
-
 The API server must run on Windows. pdmt5 connects through the MetaTrader 5
 Python API, which is supported only on Windows, so you must host `mt5api` on a
 Windows machine with a logged-in MetaTrader 5 terminal. HTTP clients can connect
