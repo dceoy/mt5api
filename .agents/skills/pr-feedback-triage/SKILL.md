@@ -104,8 +104,8 @@ A reliable pattern is:
 Example GraphQL mutation shape:
 
 ```graphql
-mutation($threadId: ID!) {
-  resolveReviewThread(input: {threadId: $threadId}) {
+mutation ($threadId: ID!) {
+  resolveReviewThread(input: { threadId: $threadId }) {
     thread {
       id
       isResolved
