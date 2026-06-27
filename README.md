@@ -4,11 +4,18 @@ MetaTrader 5 REST API
 
 [![CI/CD](https://github.com/dceoy/mt5api/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/mt5api/actions/workflows/ci.yml)
 
-mt5api exposes MT5 market data, account info, trading history, and trading
-operations over HTTP. It is a FastAPI/HTTP adapter over
-[`pdmt5`](https://github.com/dceoy/pdmt5), which provides the core MT5 client,
-dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
-optional API-key auth and JSON/Parquet response formatting.
+mt5api exposes MT5 market data, account info, trading history, trading state,
+order validation, and operational terminal endpoints over HTTP. It is a
+FastAPI/HTTP adapter over [`pdmt5`](https://github.com/dceoy/pdmt5), which
+provides the core MT5 client, dataframe/order primitives, and canonical MT5
+constant parsing. mt5api adds optional API-key auth and JSON/Parquet response
+formatting.
+
+The exposed operational surface is deliberately narrow: mt5api validates trade
+requests, manages terminal-side subscriptions and MarketWatch visibility, and
+supports reconnecting the terminal to a different MT5 account via
+`POST /connection/login`, but it does not expose live order-send endpoints or
+implement strategy orchestration.
 
 The API server must run on Windows. pdmt5 connects through the MetaTrader 5
 Python API, which is supported only on Windows, so you must host `mt5api` on a
@@ -43,8 +50,8 @@ graph TB
 
 ## Features
 
-- REST endpoints for symbols, market data, account info, orders, history,
-  calculations, and trading operations
+- REST endpoints for symbols, market data, account info, orders, positions,
+  history, margin/profit calculations, order validation, and terminal operations
 - JSON and Apache Parquet responses (content negotiation)
 - Optional API key authentication
 - Structured JSON logging
