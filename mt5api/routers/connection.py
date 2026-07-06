@@ -29,8 +29,8 @@ router = APIRouter(
     summary="Login to MT5 terminal",
     description=(
         "Reconnect the MT5 terminal using the supplied credentials. The current "
-        "MT5 client (if any) is shut down and any active market-book "
-        "subscriptions are released before the new connection is established."
+        "MT5 singleton is replaced after the new connection is established, then "
+        "any active market-book subscription tracking is cleared."
     ),
 )
 async def post_connection_login(
@@ -56,8 +56,8 @@ async def post_connection_login(
     )
 
     async with get_mt5_client_lock():
-        await release_market_book_subscriptions(app_request.app)
         await replace_mt5_client(config)
+        await release_market_book_subscriptions(app_request.app)
 
     logger.info(
         "MT5 client reconnected (login=%d, server=%s)",

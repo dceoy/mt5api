@@ -98,7 +98,9 @@ def test_post_order_check_validates_payload(
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"][0]["loc"][-1] == "symbol"
+    payload = response.json()
+    assert payload["type"] == "/errors/validation-error"
+    assert "symbol" in payload["detail"]
     mock_mt5_client.order_check_as_dict.assert_not_called()
 
 

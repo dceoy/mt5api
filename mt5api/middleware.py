@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import ValidationError
@@ -14,11 +15,43 @@ from pydantic import ValidationError
 from .models import ErrorResponse
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from fastapi import FastAPI
     from starlette.middleware.base import RequestResponseEndpoint
     from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
+
+
+def _format_validation_error_location(location: Sequence[Any]) -> str:
+    """Format a Pydantic error location for display.
+
+    Args:
+        location: Pydantic validation error location tuple.
+
+    Returns:
+        Human-readable field path without the request-body prefix.
+    """
+    parts = [str(part) for part in location if str(part) != "body"]
+    return ".".join(parts) if parts else "request"
+
+
+def _format_request_validation_detail(exc: RequestValidationError) -> str:
+    """Build a sanitized validation detail string without echoing request input.
+
+    Args:
+        exc: FastAPI request validation error.
+
+    Returns:
+        Validation summary containing field paths and messages only.
+    """
+    details: list[str] = []
+    for error in exc.errors():
+        location = _format_validation_error_location(error.get("loc", ()))
+        message = str(error.get("msg", "Invalid value"))
+        details.append(f"{location}: {message}")
+    return "; ".join(details) if details else "Request validation failed"
 
 
 def _create_error_response(
@@ -162,11 +195,58 @@ async def logging_middleware(
     return response
 
 
+def http_exception_handler(
+    request: Request,
+    exc: HTTPException,
+) -> JSONResponse:
+    """Convert FastAPI HTTP exceptions to flat RFC 7807 responses.
+
+    Returns:
+        Problem Details JSON response.
+    """
+    if isinstance(exc.detail, dict):
+        detail = exc.detail.get("detail", str(exc.detail))
+        error_type = str(exc.detail.get("type", "/errors/http-error"))
+        title = str(exc.detail.get("title", "HTTP Error"))
+    else:
+        detail = str(exc.detail)
+        error_type = "/errors/http-error"
+        title = "HTTP Error"
+
+    return _create_error_response(
+        error_type,
+        title,
+        exc.status_code,
+        detail,
+        str(request.url),
+    )
+
+
+def request_validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    """Convert FastAPI request validation failures to RFC 7807 responses.
+
+    Returns:
+        Problem Details JSON response.
+    """
+    return _create_error_response(
+        "/errors/validation-error",
+        "Request Validation Failed",
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        _format_request_validation_detail(exc),
+        str(request.url),
+    )
+
+
 def add_middleware(app: FastAPI) -> None:
     """Add middleware and error handlers to the FastAPI application.
 
     Args:
         app: FastAPI application instance.
     """
+    app.exception_handler(HTTPException)(http_exception_handler)
+    app.exception_handler(RequestValidationError)(request_validation_exception_handler)
     app.middleware("http")(error_handler_middleware)
     app.middleware("http")(logging_middleware)

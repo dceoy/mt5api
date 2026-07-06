@@ -22,7 +22,7 @@ def test_version_endpoint_requires_authentication(client: TestClient) -> None:
 
     assert response.status_code == 401
 
-    data = response.json()["detail"]
+    data = response.json()
     assert data["type"] == "/errors/unauthorized"
     assert data["title"] == "Authentication Required"
     assert "Missing API key" in data["detail"]
@@ -35,7 +35,7 @@ def test_version_endpoint_rejects_invalid_api_key(client: TestClient) -> None:
 
     assert response.status_code == 401
 
-    data = response.json()["detail"]
+    data = response.json()
     assert data["type"] == "/errors/unauthorized"
     assert data["title"] == "Authentication Failed"
     assert "Invalid API key" in data["detail"]
@@ -61,7 +61,7 @@ def test_symbols_endpoint_requires_authentication(
     assert response.status_code == 401
     mock_mt5_client.symbols_get_as_df.assert_not_called()
 
-    data = response.json()["detail"]
+    data = response.json()
     assert data["type"] == "/errors/unauthorized"
     assert data["title"] == "Authentication Required"
     assert "Missing API key" in data["detail"]
@@ -78,7 +78,7 @@ def test_symbols_endpoint_rejects_invalid_api_key(
     assert response.status_code == 401
     mock_mt5_client.symbols_get_as_df.assert_not_called()
 
-    data = response.json()["detail"]
+    data = response.json()
     assert data["type"] == "/errors/unauthorized"
     assert data["title"] == "Authentication Failed"
     assert "Invalid API key" in data["detail"]
@@ -120,7 +120,7 @@ def test_trading_endpoints_require_authentication(
     assert response.status_code == 401
     getattr(mock_mt5_client, mock_attr).assert_not_called()
 
-    data = response.json()["detail"]
+    data = response.json()
     assert data["type"] == "/errors/unauthorized"
     assert data["title"] == "Authentication Required"
     assert "Missing API key" in data["detail"]

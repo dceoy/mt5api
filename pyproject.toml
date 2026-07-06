@@ -1,6 +1,6 @@
 [project]
 name = "mt5api"
-version = "1.0.0"
+version = "1.0.1"
 description = "MetaTrader 5 REST API"
 authors = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
 maintainers = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
@@ -9,7 +9,7 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">= 3.11, < 3.14"
 dependencies = [
-  "pdmt5 >= 1.0.1",
+  "pdmt5 >= 1.1.0",
   "fastapi >= 0.115.0",
   "uvicorn[standard] >= 0.32.0",
   "pyarrow >= 18.0.0",
