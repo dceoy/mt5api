@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, cast
 
+import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pdmt5.mt5 import Mt5RuntimeError
@@ -45,21 +46,57 @@ def test_create_error_response_builds_problem_details() -> None:
     }
 
 
-def test_error_handler_handles_mt5_runtime_error() -> None:
-    """Test Mt5RuntimeError mapping to 503 response."""
+class _DummyMt5Error(Mt5RuntimeError):
+    """Test-specific MT5 error."""
 
-    class DummyMt5Error(Mt5RuntimeError):
-        """Test-specific MT5 error."""
+
+class _DummyValueError(ValueError):
+    """Test-specific value error."""
+
+
+class _DummyRuntimeError(RuntimeError):
+    """Test-specific runtime error."""
+
+
+class _UnexpectedError(Exception):
+    """Test-specific unexpected error."""
+
+
+@pytest.mark.parametrize(
+    ("exception_type", "expected_status", "expected_type"),
+    [
+        pytest.param(_DummyMt5Error, 503, "/errors/mt5-error", id="mt5-runtime-error"),
+        pytest.param(_DummyValueError, 400, "/errors/invalid-input", id="value-error"),
+        pytest.param(
+            _DummyRuntimeError,
+            503,
+            "/errors/runtime-error",
+            id="runtime-error",
+        ),
+        pytest.param(
+            _UnexpectedError,
+            500,
+            "/errors/internal-error",
+            id="unexpected-error",
+        ),
+    ],
+)
+def test_error_handler_maps_exceptions(
+    exception_type: type[BaseException],
+    expected_status: int,
+    expected_type: str,
+) -> None:
+    """Test exception types map to RFC 7807 error responses."""
 
     def handler() -> None:
-        raise DummyMt5Error
+        raise exception_type()
 
     client = TestClient(_create_app(handler))
     response = client.get("/boom")
 
     assert (response.status_code, response.json()["type"]) == (
-        503,
-        "/errors/mt5-error",
+        expected_status,
+        expected_type,
     )
 
 
@@ -78,60 +115,6 @@ def test_error_handler_handles_validation_error() -> None:
     assert (response.status_code, response.json()["type"]) == (
         400,
         "/errors/validation-error",
-    )
-
-
-def test_error_handler_handles_value_error() -> None:
-    """Test ValueError mapping to 400 response."""
-
-    class DummyValueError(ValueError):
-        """Test-specific value error."""
-
-    def handler() -> None:
-        raise DummyValueError
-
-    client = TestClient(_create_app(handler))
-    response = client.get("/boom")
-
-    assert (response.status_code, response.json()["type"]) == (
-        400,
-        "/errors/invalid-input",
-    )
-
-
-def test_error_handler_handles_runtime_error() -> None:
-    """Test RuntimeError mapping to 503 response."""
-
-    class DummyRuntimeError(RuntimeError):
-        """Test-specific runtime error."""
-
-    def handler() -> None:
-        raise DummyRuntimeError
-
-    client = TestClient(_create_app(handler))
-    response = client.get("/boom")
-
-    assert (response.status_code, response.json()["type"]) == (
-        503,
-        "/errors/runtime-error",
-    )
-
-
-def test_error_handler_handles_unexpected_error() -> None:
-    """Test unexpected error mapping to 500 response."""
-
-    class UnexpectedError(Exception):
-        """Test-specific unexpected error."""
-
-    def handler() -> None:
-        raise UnexpectedError
-
-    client = TestClient(_create_app(handler))
-    response = client.get("/boom")
-
-    assert (response.status_code, response.json()["type"]) == (
-        500,
-        "/errors/internal-error",
     )
 
 

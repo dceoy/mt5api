@@ -68,19 +68,19 @@ def test_main_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
     assert captured_kwargs["log_level"] == "warning"
 
 
-def test_main_handles_invalid_port(monkeypatch: pytest.MonkeyPatch) -> None:
-    """main() should fail fast on an invalid port value."""
-    monkeypatch.setenv(ENV_MT5API_PORT, "not-a-number")
-
-    from mt5api import __main__ as api_main  # noqa: PLC0415
-
-    with pytest.raises(ValueError, match="Invalid MT5API_PORT"):
-        api_main.main()
-
-
-def test_main_handles_out_of_range_port(monkeypatch: pytest.MonkeyPatch) -> None:
-    """main() should fail fast on an out-of-range port value."""
-    monkeypatch.setenv(ENV_MT5API_PORT, "70000")
+@pytest.mark.parametrize(
+    "raw_port",
+    [
+        pytest.param("not-a-number", id="non-numeric"),
+        pytest.param("70000", id="out-of-range"),
+    ],
+)
+def test_main_rejects_invalid_port(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_port: str,
+) -> None:
+    """main() should fail fast on invalid port values."""
+    monkeypatch.setenv(ENV_MT5API_PORT, raw_port)
 
     from mt5api import __main__ as api_main  # noqa: PLC0415
 
