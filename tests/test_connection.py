@@ -245,6 +245,24 @@ def test_post_connection_login_validates_fields(
     assert recorder["configs"] == []
 
 
+def test_post_connection_login_validation_does_not_leak_password(
+    connection_client: tuple[TestClient, dict[str, Any]],
+) -> None:
+    """Invalid login payloads must not echo submitted passwords in 422 bodies."""
+    test_client, recorder = connection_client
+    password = "very-secret-pa55word-XYZ"  # noqa: S105
+
+    response = test_client.post(
+        "/connection/login",
+        json={"login": 1, "password": password * 6, "server": "S"},
+        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
+    )
+
+    assert response.status_code == 422
+    assert password not in response.text
+    assert recorder["configs"] == []
+
+
 def test_post_connection_login_does_not_leak_password_on_failure(
     mocker: MockerFixture,
 ) -> None:

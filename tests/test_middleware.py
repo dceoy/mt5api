@@ -8,11 +8,16 @@ from typing import TYPE_CHECKING, cast
 
 import pytest
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import BaseModel
 
-from mt5api.middleware import _create_error_response, add_middleware
+from mt5api.middleware import (
+    _create_error_response,
+    _format_request_validation_detail,
+    add_middleware,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -183,6 +188,25 @@ def test_request_validation_error_returns_problem_details() -> None:
     assert payload["status"] == 422
     assert "item_id" in payload["detail"]
     assert payload["instance"] == "http://testserver/items/not-an-int"
+
+
+def test_format_request_validation_detail_omits_request_input() -> None:
+    """Validation detail should summarize field errors without echoing input."""
+    exc = RequestValidationError([
+        {
+            "type": "too_long",
+            "loc": ("body", "password"),
+            "msg": "Value should have at most 128 items after validation, not 129",
+            "input": "super-secret-password-value",
+        }
+    ])
+
+    detail = _format_request_validation_detail(exc)
+
+    assert detail == (
+        "password: Value should have at most 128 items after validation, not 129"
+    )
+    assert "super-secret-password-value" not in detail
 
 
 def test_logging_middleware_adds_process_time_header() -> None:

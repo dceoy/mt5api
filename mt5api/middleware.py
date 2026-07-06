@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -15,11 +15,43 @@ from pydantic import ValidationError
 from .models import ErrorResponse
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from fastapi import FastAPI
     from starlette.middleware.base import RequestResponseEndpoint
     from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
+
+
+def _format_validation_error_location(location: Sequence[Any]) -> str:
+    """Format a Pydantic error location for display.
+
+    Args:
+        location: Pydantic validation error location tuple.
+
+    Returns:
+        Human-readable field path without the request-body prefix.
+    """
+    parts = [str(part) for part in location if str(part) != "body"]
+    return ".".join(parts) if parts else "request"
+
+
+def _format_request_validation_detail(exc: RequestValidationError) -> str:
+    """Build a sanitized validation detail string without echoing request input.
+
+    Args:
+        exc: FastAPI request validation error.
+
+    Returns:
+        Validation summary containing field paths and messages only.
+    """
+    details: list[str] = []
+    for error in exc.errors():
+        location = _format_validation_error_location(error.get("loc", ()))
+        message = str(error.get("msg", "Invalid value"))
+        details.append(f"{location}: {message}")
+    return "; ".join(details) if details else "Request validation failed"
 
 
 def _create_error_response(
@@ -203,7 +235,7 @@ def request_validation_exception_handler(
         "/errors/validation-error",
         "Request Validation Failed",
         status.HTTP_422_UNPROCESSABLE_ENTITY,
-        str(exc),
+        _format_request_validation_detail(exc),
         str(request.url),
     )
 
