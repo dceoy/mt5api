@@ -427,7 +427,7 @@ name = "metatrader5"
 version = "5.0.5735"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", marker = "sys_platform == 'win32'" },
+    { name = "numpy" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/07/0b/3dd5143f14319dca393a3bcf11ddf24f36f16dfb8c6d1bf2b193ce0c5733/metatrader5-5.0.5735-cp311-cp311-win_amd64.whl", hash = "sha256:0d05b69cef5eb3f43ea47cb6d36dac0e7e15f82a4fb77974439c565daa54d1c9", size = 48091, upload-time = "2026-04-04T16:44:08.677Z" },
@@ -556,7 +556,7 @@ wheels = [
 
 [[package]]
 name = "mt5api"
-version = "1.0.0"
+version = "1.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -588,7 +588,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "pdmt5", specifier = ">=1.0.1" },
+    { name = "pdmt5", specifier = ">=1.1.0" },
     { name = "pyarrow", specifier = ">=18.0.0" },
     { name = "python-multipart", specifier = ">=0.0.31" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
@@ -764,16 +764,16 @@ wheels = [
 
 [[package]]
 name = "pdmt5"
-version = "1.0.1"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "metatrader5", marker = "sys_platform == 'win32'" },
     { name = "pandas" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/9d/55f22e0155ad36e82ecd4753fbad822966844edf0597a49e81a0dfdc883a/pdmt5-1.0.1.tar.gz", hash = "sha256:1ceb6637f4976cb53903f85584d09d7e4e870b44301d7e720d8ff0d42484f3fc", size = 114846, upload-time = "2026-06-26T16:46:11.733Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/7a/7caafb93b74ccaa60a1c844948698bed714e04aa3be292a05fd71864faa0/pdmt5-1.1.0.tar.gz", hash = "sha256:fcdab1924e001204ae776dd2afc1f150fe01e6944cba99dae72af23bc99137c6", size = 22160, upload-time = "2026-07-04T04:41:51.476Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/6f/2f4a400a5d3373f4d722516c914d45587aa2b3369870225c99242d6472e3/pdmt5-1.0.1-py3-none-any.whl", hash = "sha256:a54df6d2469781a5959e1f50e9911a492cde17ee1e2c2d9b6d84f84a7bf7c7e7", size = 20059, upload-time = "2026-06-26T16:46:10.432Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/80/1062ea4e4c82de81d91ba8bb43b1a6d4903771010d87eca15d5d18d827df/pdmt5-1.1.0-py3-none-any.whl", hash = "sha256:603273065814824680d6ec8847139b3029c7dd04da7c25868ad7f4ede55a9acf", size = 20489, upload-time = "2026-07-04T04:41:49.999Z" },
 ]
 
 [[package]]

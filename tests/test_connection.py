@@ -95,7 +95,7 @@ def test_post_connection_login_reconnects(
     assert config.login == 12345
     assert config.server == "MetaQuotes-Demo"
     assert config.timeout == 60000
-    assert config.password == "s3cret"  # noqa: S105
+    assert config.password.get_secret_value() == "s3cret"
     assert all("s3cret" not in record.getMessage() for record in caplog.records)
 
 
