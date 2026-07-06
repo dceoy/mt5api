@@ -11,11 +11,7 @@ from .config import (
     get_configured_api_log_level,
     get_configured_api_port,
 )
-from .constants import (
-    API_APP_IMPORT,
-    DEFAULT_API_PORT,
-    MAX_API_PORT,
-)
+from .constants import API_APP_IMPORT
 
 
 def _get_host() -> str:
@@ -33,19 +29,7 @@ def _get_port() -> int:
     Returns:
         Port number for the API server.
     """
-    raw_port = get_configured_api_port()
-    if raw_port is None:
-        return DEFAULT_API_PORT
-
-    try:
-        port_value = int(raw_port)
-    except ValueError:
-        return DEFAULT_API_PORT
-
-    if not 1 <= port_value <= MAX_API_PORT:
-        return DEFAULT_API_PORT
-
-    return port_value
+    return get_configured_api_port()
 
 
 def _get_log_level() -> str:
@@ -54,7 +38,7 @@ def _get_log_level() -> str:
     Returns:
         Log level string for uvicorn.
     """
-    return get_configured_api_log_level().lower()
+    return get_configured_api_log_level()
 
 
 def main() -> None:

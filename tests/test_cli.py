@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import runpy
 import sys
-from typing import TYPE_CHECKING
 
+import pytest
 import uvicorn
 
 from mt5api.constants import (
@@ -15,9 +15,6 @@ from mt5api.constants import (
     ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_PORT,
 )
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def test_main_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -72,28 +69,28 @@ def test_main_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_main_handles_invalid_port(monkeypatch: pytest.MonkeyPatch) -> None:
-    """main() should fall back to default port on invalid value."""
+    """main() should fail fast on an invalid port value."""
     monkeypatch.setenv(ENV_MT5API_PORT, "not-a-number")
-
-    captured_kwargs: dict[str, object] | None = None
-
-    def fake_run(*_args: object, **kwargs: object) -> None:
-        nonlocal captured_kwargs
-        captured_kwargs = kwargs
 
     from mt5api import __main__ as api_main  # noqa: PLC0415
 
-    monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
-
-    api_main.main()
-
-    assert captured_kwargs is not None
-    assert captured_kwargs["port"] == 8000
+    with pytest.raises(ValueError, match="Invalid MT5API_PORT"):
+        api_main.main()
 
 
 def test_main_handles_out_of_range_port(monkeypatch: pytest.MonkeyPatch) -> None:
-    """main() should fall back to default port on out-of-range value."""
+    """main() should fail fast on an out-of-range port value."""
     monkeypatch.setenv(ENV_MT5API_PORT, "70000")
+
+    from mt5api import __main__ as api_main  # noqa: PLC0415
+
+    with pytest.raises(ValueError, match="Invalid MT5API_PORT"):
+        api_main.main()
+
+
+def test_main_accepts_trace_log_level(monkeypatch: pytest.MonkeyPatch) -> None:
+    """main() should pass uvicorn-supported trace logging through."""
+    monkeypatch.setenv(ENV_MT5API_LOG_LEVEL, "trace")
 
     captured_kwargs: dict[str, object] | None = None
 
@@ -108,7 +105,7 @@ def test_main_handles_out_of_range_port(monkeypatch: pytest.MonkeyPatch) -> None
     api_main.main()
 
     assert captured_kwargs is not None
-    assert captured_kwargs["port"] == 8000
+    assert captured_kwargs["log_level"] == "trace"
 
 
 def test_module_entrypoint_invokes_main(monkeypatch: pytest.MonkeyPatch) -> None:

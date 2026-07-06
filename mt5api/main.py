@@ -13,9 +13,9 @@ from fastapi.openapi.utils import get_openapi
 
 from .auth import is_auth_enabled
 from .config import (
-    get_configured_api_log_level,
     get_configured_api_router_prefix,
     get_configured_max_market_book_subscriptions,
+    get_configured_python_log_level,
 )
 from .constants import (
     ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
@@ -65,7 +65,7 @@ class _JsonFormatter(logging.Formatter):
 
 def _configure_logging() -> None:
     """Configure structured logging for the API."""
-    log_level = get_configured_api_log_level().upper()
+    log_level = get_configured_python_log_level()
 
     handler = logging.StreamHandler()
     handler.setFormatter(_JsonFormatter())

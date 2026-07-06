@@ -223,7 +223,9 @@ def test_get_rates_from_rejects_invalid_mt5_timeframe(
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"][0]["loc"][-1] == "timeframe"
+    payload = response.json()
+    assert payload["type"] == "/errors/validation-error"
+    assert "timeframe" in payload["detail"]
 
 
 def test_get_rates_from_rejects_invalid_mt5_timeframe_name(
@@ -243,7 +245,9 @@ def test_get_rates_from_rejects_invalid_mt5_timeframe_name(
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"][0]["loc"][-1] == "timeframe"
+    payload = response.json()
+    assert payload["type"] == "/errors/validation-error"
+    assert "timeframe" in payload["detail"]
 
 
 def test_openapi_documents_mt5_timeframes_consistently(
@@ -419,7 +423,9 @@ def test_get_ticks_from_rejects_invalid_mt5_copy_ticks_name(
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"][0]["loc"][-1] == "flags"
+    payload = response.json()
+    assert payload["type"] == "/errors/validation-error"
+    assert "flags" in payload["detail"]
 
 
 def test_openapi_documents_mt5_copy_ticks_consistently(

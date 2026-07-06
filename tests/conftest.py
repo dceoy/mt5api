@@ -44,9 +44,9 @@ def mock_mt5_client() -> Mock:
 
     # Mock version method
     client.version_as_dict.return_value = {
-        "version": "5.0.4321",
+        "mt5_terminal_version": "5.0.4321",
         "build": 4321,
-        "release_date": "2024-01-01",
+        "build_release_date": "2024-01-01",
     }
 
     # Mock account info

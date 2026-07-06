@@ -80,12 +80,12 @@ def shutdown_mt5_client() -> None:
 async def replace_mt5_client(config: Mt5Config) -> Mt5DataClient:
     """Swap the MT5 client singleton with a new connection.
 
-    Constructs and initializes the new ``Mt5DataClient`` BEFORE touching the
-    singleton so a failed reconnect leaves the existing client in place
-    instead of disconnecting the operator from a working terminal. The new
-    client is installed atomically; the old client (if any) is shut down on
-    a best-effort basis after the swap. Callers MUST hold
-    ``get_mt5_client_lock`` so concurrent reconnect requests do not race.
+    Constructs and initializes the new ``Mt5DataClient`` before replacing the
+    singleton reference. The MetaTrader5 Python module has process-global
+    connection state, so the previous client object must not be shut down after
+    successful reconnect because that would close the connection just opened by
+    the new client. Callers MUST hold ``get_mt5_client_lock`` so concurrent
+    reconnect requests do not race.
 
     The raised ``RuntimeError`` deliberately omits the underlying exception
     text from its message because third-party ``pdmt5``/MetaTrader5
@@ -101,7 +101,7 @@ async def replace_mt5_client(config: Mt5Config) -> Mt5DataClient:
 
     Raises:
         RuntimeError: If the new MT5 client cannot be constructed or
-            initialized. The previously installed client is preserved.
+            initialized.
     """
     global _mt5_client  # noqa: PLW0603
 
@@ -113,14 +113,7 @@ async def replace_mt5_client(config: Mt5Config) -> Mt5DataClient:
         error_message = "Failed to initialize MT5 client"
         raise RuntimeError(error_message) from e
 
-    old_client = _mt5_client
     _mt5_client = new_client
-
-    if old_client is not None:
-        try:
-            await asyncio.to_thread(old_client.shutdown)
-        except Exception:
-            logger.exception("Failed to shutdown previous MT5 client")
 
     return new_client
 

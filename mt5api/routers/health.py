@@ -46,12 +46,12 @@ async def get_health() -> HealthResponse:
     mt5_version = None
 
     try:
-        client = get_mt5_client()
-        mt5_connected = True
+        client = await run_in_threadpool(get_mt5_client)
         version_dict = await run_in_threadpool(client.version_as_dict)
         if version_dict:
-            mt5_version = f"{version_dict.get('version', 'unknown')}"
-    except RuntimeError as e:
+            mt5_version = f"{version_dict.get('mt5_terminal_version', 'unknown')}"
+        mt5_connected = True
+    except (RuntimeError, TypeError, ValueError) as e:
         logger.debug("MT5 not available for health check: %s", e)
 
     return HealthResponse(

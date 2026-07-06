@@ -8,7 +8,9 @@ import pytest
 
 from mt5api.constants import (
     DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+    ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+    ENV_MT5API_PORT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
 )
@@ -70,6 +72,82 @@ def test_get_configured_mt5api_secret_key(
         monkeypatch.setenv(ENV_MT5API_SECRET_KEY, raw_secret_key)
 
     assert config.get_configured_mt5api_secret_key() == expected_secret_key
+
+
+@pytest.mark.parametrize(
+    ("raw_port", "expected_port"),
+    [
+        (None, 8000),
+        ("1", 1),
+        ("65535", 65535),
+    ],
+)
+def test_get_configured_api_port(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_port: str | None,
+    expected_port: int,
+) -> None:
+    """API port config should read a valid TCP port."""
+    from mt5api import config  # noqa: PLC0415
+
+    if raw_port is None:
+        monkeypatch.delenv(ENV_MT5API_PORT, raising=False)
+    else:
+        monkeypatch.setenv(ENV_MT5API_PORT, raw_port)
+
+    assert config.get_configured_api_port() == expected_port
+
+
+@pytest.mark.parametrize("raw_port", ["0", "65536", "not-a-number"])
+def test_get_configured_api_port_rejects_invalid_values(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_port: str,
+) -> None:
+    """API port config should reject invalid values."""
+    from mt5api import config  # noqa: PLC0415
+
+    monkeypatch.setenv(ENV_MT5API_PORT, raw_port)
+
+    with pytest.raises(ValueError, match="Invalid MT5API_PORT"):
+        config.get_configured_api_port()
+
+
+@pytest.mark.parametrize(
+    ("raw_log_level", "expected_log_level", "expected_python_log_level"),
+    [
+        (None, "info", "INFO"),
+        ("WARNING", "warning", "WARNING"),
+        ("trace", "trace", "DEBUG"),
+    ],
+)
+def test_get_configured_api_log_level(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_log_level: str | None,
+    expected_log_level: str,
+    expected_python_log_level: str,
+) -> None:
+    """API log-level config should support uvicorn levels."""
+    from mt5api import config  # noqa: PLC0415
+
+    if raw_log_level is None:
+        monkeypatch.delenv(ENV_MT5API_LOG_LEVEL, raising=False)
+    else:
+        monkeypatch.setenv(ENV_MT5API_LOG_LEVEL, raw_log_level)
+
+    assert config.get_configured_api_log_level() == expected_log_level
+    assert config.get_configured_python_log_level() == expected_python_log_level
+
+
+def test_get_configured_api_log_level_rejects_invalid_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """API log-level config should reject unsupported values."""
+    from mt5api import config  # noqa: PLC0415
+
+    monkeypatch.setenv(ENV_MT5API_LOG_LEVEL, "verbose")
+
+    with pytest.raises(ValueError, match="Invalid MT5API_LOG_LEVEL"):
+        config.get_configured_api_log_level()
 
 
 @pytest.mark.parametrize(

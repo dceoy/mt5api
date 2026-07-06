@@ -99,11 +99,11 @@ def test_post_connection_login_reconnects(
     assert all("s3cret" not in record.getMessage() for record in caplog.records)
 
 
-def test_post_connection_login_releases_market_book(
+def test_post_connection_login_releases_market_book_after_reconnect(
     connection_client: tuple[TestClient, dict[str, Any]],
     mocker: MockerFixture,
 ) -> None:
-    """Reconnect should release tracked market-book subscriptions first."""
+    """Reconnect should release tracked market-book subscriptions after success."""
     test_client, _ = connection_client
     cleanup_client = mocker.Mock(name="cleanup_client")
     app.state.active_market_book_subscriptions = {"EURUSD", "GBPUSD"}
@@ -125,6 +125,43 @@ def test_post_connection_login_releases_market_book(
     cleanup_client.market_book_release.assert_any_call(symbol="GBPUSD")
     assert app.state.active_market_book_subscriptions == set()
     assert app.state.market_book_cleanup_client is None
+
+
+def test_post_connection_login_preserves_market_book_on_reconnect_failure(
+    connection_client: tuple[TestClient, dict[str, Any]],
+    mocker: MockerFixture,
+) -> None:
+    """Reconnect failure should not drop tracked market-book subscriptions."""
+    test_client, recorder = connection_client
+    cleanup_client = mocker.Mock(name="cleanup_client")
+    app.state.active_market_book_subscriptions = {"EURUSD"}
+    app.state.market_book_cleanup_client = cleanup_client
+
+    async def fail_replace(config: object) -> None:
+        await asyncio.sleep(0)
+        recorder["configs"].append(config)
+        error_message = "connection unavailable"
+        raise RuntimeError(error_message)
+
+    mocker.patch(
+        "mt5api.routers.connection.replace_mt5_client",
+        side_effect=fail_replace,
+    )
+
+    response = test_client.post(
+        "/connection/login",
+        json={
+            "login": 7,
+            "password": "p",
+            "server": "Demo",
+        },
+        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
+    )
+
+    assert response.status_code == 503
+    cleanup_client.market_book_release.assert_not_called()
+    assert app.state.active_market_book_subscriptions == {"EURUSD"}
+    assert app.state.market_book_cleanup_client is cleanup_client
 
 
 def test_post_connection_login_requires_api_key(
@@ -345,7 +382,7 @@ def test_post_connection_login_serializes_concurrent_reconnects(
 def test_replace_mt5_client_swaps_singleton(
     mocker: MockerFixture,
 ) -> None:
-    """replace_mt5_client shuts the old client down and installs the new one."""
+    """replace_mt5_client installs the new client without shutting down MT5."""
 
     class DummyClient:
         def __init__(self, config: object) -> None:
@@ -374,7 +411,7 @@ def test_replace_mt5_client_swaps_singleton(
 
     assert new_client.config is config
     assert new_client.initialized is True
-    old_client.shutdown.assert_called_once_with()
+    old_client.shutdown.assert_not_called()
     assert dependencies._mt5_client is new_client  # pyright: ignore[reportPrivateUsage]
 
 
@@ -426,34 +463,6 @@ def test_replace_mt5_client_initializes_when_no_previous_client(
             return None
 
     mocker.patch.object(dependencies, "_mt5_client", None)
-    mocker.patch.object(dependencies, "Mt5DataClient", DummyClient)
-
-    async def run() -> DummyClient:
-        async with dependencies.get_mt5_client_lock():
-            client = await dependencies.replace_mt5_client(mocker.Mock(name="config"))
-        assert isinstance(client, DummyClient)
-        return client
-
-    new_client = asyncio.run(run())
-
-    assert dependencies._mt5_client is new_client  # pyright: ignore[reportPrivateUsage]
-
-
-def test_replace_mt5_client_continues_when_old_shutdown_fails(
-    mocker: MockerFixture,
-) -> None:
-    """A failing old-client shutdown should not block the new connection."""
-
-    class DummyClient:
-        def __init__(self, config: object) -> None:
-            self.config = config
-
-        def initialize_and_login_mt5(self) -> None:
-            return None
-
-    old_client = mocker.Mock(name="old_client")
-    old_client.shutdown.side_effect = RuntimeError("cannot shut down")
-    mocker.patch.object(dependencies, "_mt5_client", old_client)
     mocker.patch.object(dependencies, "Mt5DataClient", DummyClient)
 
     async def run() -> DummyClient:

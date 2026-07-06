@@ -316,8 +316,8 @@ Errors follow RFC 7807 Problem Details:
 {
   "type": "/errors/validation-error",
   "title": "Request Validation Failed",
-  "status": 400,
-  "detail": "count must be positive (got: -10)",
+  "status": 422,
+  "detail": "Request validation error details",
   "instance": "/rates/from"
 }
 ```

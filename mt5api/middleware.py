@@ -6,7 +6,8 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import ValidationError
@@ -162,11 +163,58 @@ async def logging_middleware(
     return response
 
 
+def http_exception_handler(
+    request: Request,
+    exc: HTTPException,
+) -> JSONResponse:
+    """Convert FastAPI HTTP exceptions to flat RFC 7807 responses.
+
+    Returns:
+        Problem Details JSON response.
+    """
+    if isinstance(exc.detail, dict):
+        detail = exc.detail.get("detail", str(exc.detail))
+        error_type = str(exc.detail.get("type", "/errors/http-error"))
+        title = str(exc.detail.get("title", "HTTP Error"))
+    else:
+        detail = str(exc.detail)
+        error_type = "/errors/http-error"
+        title = "HTTP Error"
+
+    return _create_error_response(
+        error_type,
+        title,
+        exc.status_code,
+        detail,
+        str(request.url),
+    )
+
+
+def request_validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    """Convert FastAPI request validation failures to RFC 7807 responses.
+
+    Returns:
+        Problem Details JSON response.
+    """
+    return _create_error_response(
+        "/errors/validation-error",
+        "Request Validation Failed",
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        str(exc),
+        str(request.url),
+    )
+
+
 def add_middleware(app: FastAPI) -> None:
     """Add middleware and error handlers to the FastAPI application.
 
     Args:
         app: FastAPI application instance.
     """
+    app.exception_handler(HTTPException)(http_exception_handler)
+    app.exception_handler(RequestValidationError)(request_validation_exception_handler)
     app.middleware("http")(error_handler_middleware)
     app.middleware("http")(logging_middleware)
