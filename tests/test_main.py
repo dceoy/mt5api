@@ -66,6 +66,108 @@ def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
     assert openapi_schema["components"]["securitySchemes"] == {"Other": {}}
 
 
+def test_patch_validation_error_responses_updates_422_schema() -> None:
+    """OpenAPI validation responses should advertise RFC 7807 Problem Details."""
+    from mt5api import main  # noqa: PLC0415
+
+    openapi_schema: dict[str, Any] = {
+        "components": {
+            "schemas": {
+                "HTTPValidationError": {"type": "object"},
+                "ValidationError": {"type": "object"},
+            },
+        },
+        "paths": {
+            "/bad": [],
+            "/rates/from": {
+                "get": {
+                    "responses": {
+                        "422": {
+                            "description": "Validation Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": (
+                                            "#/components/schemas/HTTPValidationError"
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    main._patch_validation_error_responses(openapi_schema)  # pyright: ignore[reportPrivateUsage]
+
+    schemas = openapi_schema["components"]["schemas"]
+    assert "ErrorResponse" in schemas
+    assert "HTTPValidationError" not in schemas
+    assert "ValidationError" not in schemas
+    assert openapi_schema["paths"]["/rates/from"]["get"]["responses"]["422"] == {
+        "description": "Validation Error",
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+            },
+        },
+    }
+
+
+def test_patch_validation_error_responses_handles_non_dict_components() -> None:
+    """OpenAPI validation patching should tolerate missing component mappings."""
+    from mt5api import main  # noqa: PLC0415
+
+    openapi_schema: dict[str, Any] = {"components": None, "paths": {}}
+
+    main._patch_validation_error_responses(openapi_schema)  # pyright: ignore[reportPrivateUsage]
+
+    assert openapi_schema["components"] is None
+
+
+def test_patch_validation_error_responses_handles_non_dict_schemas() -> None:
+    """OpenAPI validation patching should still update 422 responses."""
+    from mt5api import main  # noqa: PLC0415
+
+    openapi_schema: dict[str, Any] = {
+        "components": {"schemas": []},
+        "paths": {
+            "/rates/from": {
+                "get": {
+                    "responses": {
+                        "422": {
+                            "description": "Validation Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": (
+                                            "#/components/schemas/HTTPValidationError"
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    main._patch_validation_error_responses(openapi_schema)  # pyright: ignore[reportPrivateUsage]
+
+    assert openapi_schema["components"]["schemas"] == []
+    assert openapi_schema["paths"]["/rates/from"]["get"]["responses"]["422"] == {
+        "description": "Validation Error",
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+            },
+        },
+    }
+
+
 def test_release_market_book_subscriptions_clears_state(
     mocker: MockerFixture,
 ) -> None:

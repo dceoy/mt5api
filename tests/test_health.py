@@ -73,7 +73,18 @@ def test_docs_and_openapi_available(client: TestClient) -> None:
 
     openapi_response = client.get("/openapi.json")
     assert openapi_response.status_code == 200
-    assert "paths" in openapi_response.json()
+    openapi = openapi_response.json()
+    assert "paths" in openapi
+    assert "ErrorResponse" in openapi["components"]["schemas"]
+    assert "HTTPValidationError" not in openapi["components"]["schemas"]
+    assert openapi["paths"]["/rates/from"]["get"]["responses"]["422"] == {
+        "description": "Validation Error",
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+            },
+        },
+    }
 
 
 def test_last_error_returns_json(
@@ -138,6 +149,30 @@ async def test_get_health_handles_version_probe_failure(
         def version_as_dict(self) -> dict[str, str]:
             error_message = "MT5 disconnected"
             raise TypeError(error_message)
+
+    def get_client() -> DummyClient:
+        return DummyClient()
+
+    monkeypatch.setattr(health, "get_mt5_client", get_client)
+
+    response = await health.get_health()
+
+    assert response.mt5_connected is False
+    assert response.status == "unhealthy"
+    assert response.mt5_version is None
+
+
+@pytest.mark.asyncio
+async def test_get_health_handles_unexpected_probe_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test get_health reports unhealthy for unexpected MT5 probe failures."""
+    from mt5api.routers import health  # noqa: PLC0415
+
+    class DummyClient:
+        def version_as_dict(self) -> dict[str, str]:
+            error_message = "IPC failure"
+            raise OSError(error_message)
 
     def get_client() -> DummyClient:
         return DummyClient()

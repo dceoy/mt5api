@@ -51,7 +51,7 @@ async def get_health() -> HealthResponse:
         if version_dict:
             mt5_version = f"{version_dict.get('mt5_terminal_version', 'unknown')}"
         mt5_connected = True
-    except (RuntimeError, TypeError, ValueError) as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug("MT5 not available for health check: %s", e)
 
     return HealthResponse(

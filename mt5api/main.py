@@ -31,6 +31,7 @@ from .constants import (
 )
 from .dependencies import release_market_book_subscriptions, shutdown_mt5_client
 from .middleware import add_middleware
+from .models import ErrorResponse
 from .routers import (
     account,
     calc,
@@ -96,6 +97,37 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
                 operation.pop("security", None)
 
 
+def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
+    """Advertise RFC 7807 Problem Details for request validation failures."""
+    components = openapi_schema.setdefault("components", {})
+    if not isinstance(components, dict):
+        return
+
+    schemas = components.setdefault("schemas", {})
+    if isinstance(schemas, dict):
+        schemas["ErrorResponse"] = ErrorResponse.model_json_schema(
+            ref_template="#/components/schemas/{model}",
+        )
+        schemas.pop("HTTPValidationError", None)
+        schemas.pop("ValidationError", None)
+
+    error_response = {
+        "description": "Validation Error",
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+            },
+        },
+    }
+
+    for methods in openapi_schema.get("paths", {}).values():
+        if not isinstance(methods, dict):
+            continue
+        for operation in methods.values():
+            if isinstance(operation, dict) and "422" in operation.get("responses", {}):
+                operation["responses"]["422"] = error_response
+
+
 def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
     """Build OpenAPI schema for the current authentication mode.
 
@@ -113,6 +145,7 @@ def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
     )
     if not is_auth_enabled():
         _strip_auth_from_openapi(openapi_schema)
+    _patch_validation_error_responses(openapi_schema)
 
     app.openapi_schema = openapi_schema
     return openapi_schema
