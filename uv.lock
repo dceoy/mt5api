@@ -588,7 +588,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "pdmt5", specifier = ">=1.1.0" },
+    { name = "pdmt5", specifier = ">=1.1.1" },
     { name = "pyarrow", specifier = ">=18.0.0" },
     { name = "python-multipart", specifier = ">=0.0.31" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
@@ -764,16 +764,16 @@ wheels = [
 
 [[package]]
 name = "pdmt5"
-version = "1.1.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "metatrader5", marker = "sys_platform == 'win32'" },
     { name = "pandas" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/7a/7caafb93b74ccaa60a1c844948698bed714e04aa3be292a05fd71864faa0/pdmt5-1.1.0.tar.gz", hash = "sha256:fcdab1924e001204ae776dd2afc1f150fe01e6944cba99dae72af23bc99137c6", size = 22160, upload-time = "2026-07-04T04:41:51.476Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/9c/4c51e9b109440629762a5ca719c367798469bb590b8ce99aa0652c467549/pdmt5-1.1.1.tar.gz", hash = "sha256:2d8e4e9b87d237793f8534813b373545eadb5c0e1ced13ee8be8dc473c77190d", size = 23879, upload-time = "2026-07-07T15:50:19.604Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6f/80/1062ea4e4c82de81d91ba8bb43b1a6d4903771010d87eca15d5d18d827df/pdmt5-1.1.0-py3-none-any.whl", hash = "sha256:603273065814824680d6ec8847139b3029c7dd04da7c25868ad7f4ede55a9acf", size = 20489, upload-time = "2026-07-04T04:41:49.999Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/18/4221deef65dc320da9b6299e1914c36c1e81b29a5557f0c1083718b36545/pdmt5-1.1.1-py3-none-any.whl", hash = "sha256:9df16148ebec754c15ce3d1b02af82aaeec3c5cb1603a47258fa68c74f45b453", size = 22274, upload-time = "2026-07-07T15:50:18.489Z" },
 ]
 
 [[package]]
