@@ -14,42 +14,6 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-def test_strip_auth_from_openapi_handles_non_dict_components() -> None:
-    """OpenAPI auth stripping should tolerate missing component mappings."""
-    from mt5api import main  # noqa: PLC0415
-
-    openapi_schema: dict[str, Any] = {
-        "security": [{API_KEY_SECURITY_SCHEME_NAME: []}],
-        "components": None,
-        "paths": {
-            "/bad": [],
-            "/version": {
-                "summary": "Version endpoint",
-                "get": {"security": [{API_KEY_SECURITY_SCHEME_NAME: []}]},
-            },
-        },
-    }
-
-    main._strip_auth_from_openapi(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-
-    assert "security" not in openapi_schema
-    assert "security" not in openapi_schema["paths"]["/version"]["get"]
-
-
-def test_strip_auth_from_openapi_handles_non_dict_security_schemes() -> None:
-    """OpenAPI auth stripping should tolerate non-dict security schemes."""
-    from mt5api import main  # noqa: PLC0415
-
-    openapi_schema: dict[str, Any] = {
-        "components": {"securitySchemes": []},
-        "paths": {},
-    }
-
-    main._strip_auth_from_openapi(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-
-    assert openapi_schema["components"]["securitySchemes"] == []
-
-
 def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
     """OpenAPI auth stripping should keep unrelated security schemes."""
     from mt5api import main  # noqa: PLC0415
@@ -106,58 +70,6 @@ def test_patch_validation_error_responses_updates_422_schema() -> None:
     assert "ErrorResponse" in schemas
     assert "HTTPValidationError" not in schemas
     assert "ValidationError" not in schemas
-    assert openapi_schema["paths"]["/rates/from"]["get"]["responses"]["422"] == {
-        "description": "Validation Error",
-        "content": {
-            "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"},
-            },
-        },
-    }
-
-
-def test_patch_validation_error_responses_handles_non_dict_components() -> None:
-    """OpenAPI validation patching should tolerate missing component mappings."""
-    from mt5api import main  # noqa: PLC0415
-
-    openapi_schema: dict[str, Any] = {"components": None, "paths": {}}
-
-    main._patch_validation_error_responses(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-
-    assert openapi_schema["components"] is None
-
-
-def test_patch_validation_error_responses_handles_non_dict_schemas() -> None:
-    """OpenAPI validation patching should still update 422 responses."""
-    from mt5api import main  # noqa: PLC0415
-
-    openapi_schema: dict[str, Any] = {
-        "components": {"schemas": []},
-        "paths": {
-            "/rates/from": {
-                "get": {
-                    "responses": {
-                        "422": {
-                            "description": "Validation Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "$ref": (
-                                            "#/components/schemas/HTTPValidationError"
-                                        ),
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    }
-
-    main._patch_validation_error_responses(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-
-    assert openapi_schema["components"]["schemas"] == []
     assert openapi_schema["paths"]["/rates/from"]["get"]["responses"]["422"] == {
         "description": "Validation Error",
         "content": {

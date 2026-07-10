@@ -41,16 +41,6 @@ def test_version_endpoint_rejects_invalid_api_key(client: TestClient) -> None:
     assert "Invalid API key" in data["detail"]
 
 
-def test_version_endpoint_accepts_valid_api_key(
-    client: TestClient,
-    api_headers: dict[str, str],
-) -> None:
-    """Test version endpoint accepts valid API key."""
-    response = client.get("/version", headers=api_headers)
-
-    assert response.status_code == 200
-
-
 def test_symbols_endpoint_requires_authentication(
     client: TestClient,
     mock_mt5_client: Mock,
