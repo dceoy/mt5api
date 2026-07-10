@@ -427,7 +427,7 @@ name = "metatrader5"
 version = "5.0.5735"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "sys_platform == 'win32'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/07/0b/3dd5143f14319dca393a3bcf11ddf24f36f16dfb8c6d1bf2b193ce0c5733/metatrader5-5.0.5735-cp311-cp311-win_amd64.whl", hash = "sha256:0d05b69cef5eb3f43ea47cb6d36dac0e7e15f82a4fb77974439c565daa54d1c9", size = 48091, upload-time = "2026-04-04T16:44:08.677Z" },
@@ -588,7 +588,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "pdmt5", specifier = ">=1.1.1" },
+    { name = "pdmt5", specifier = ">=1.2.0" },
     { name = "pyarrow", specifier = ">=18.0.0" },
     { name = "python-multipart", specifier = ">=0.0.31" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
@@ -764,16 +764,16 @@ wheels = [
 
 [[package]]
 name = "pdmt5"
-version = "1.1.1"
+version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "metatrader5", marker = "sys_platform == 'win32'" },
     { name = "pandas" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4d/9c/4c51e9b109440629762a5ca719c367798469bb590b8ce99aa0652c467549/pdmt5-1.1.1.tar.gz", hash = "sha256:2d8e4e9b87d237793f8534813b373545eadb5c0e1ced13ee8be8dc473c77190d", size = 23879, upload-time = "2026-07-07T15:50:19.604Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/44/410bdc4d567ddb49f5b8d0d366467c9cce5e1862ecfbbcd09734c8f34eac/pdmt5-1.2.0.tar.gz", hash = "sha256:972f500ee7e50032a14f83874baccbef69bf7377335011f72d0bbdd6e221edcd", size = 24017, upload-time = "2026-07-10T15:21:27.215Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/18/4221deef65dc320da9b6299e1914c36c1e81b29a5557f0c1083718b36545/pdmt5-1.1.1-py3-none-any.whl", hash = "sha256:9df16148ebec754c15ce3d1b02af82aaeec3c5cb1603a47258fa68c74f45b453", size = 22274, upload-time = "2026-07-07T15:50:18.489Z" },
+    { url = "https://files.pythonhosted.org/packages/12/ec/88297de8aad400c922715cbdc15804dcf1ac5fbc0a3a0abeafc988c3c25d/pdmt5-1.2.0-py3-none-any.whl", hash = "sha256:ce355f24f4ec08ba5cc0148b5c529f73c671ea2e83b1d65248de1150369daeb7", size = 22369, upload-time = "2026-07-10T15:21:25.833Z" },
 ]
 
 [[package]]
