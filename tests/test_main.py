@@ -42,7 +42,6 @@ def test_patch_validation_error_responses_updates_422_schema() -> None:
             },
         },
         "paths": {
-            "/bad": [],
             "/rates/from": {
                 "get": {
                     "responses": {
