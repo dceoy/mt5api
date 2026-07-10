@@ -6,7 +6,7 @@ API_DESCRIPTION = (
     "Provides market data, account information, trading history, calculations, "
     "and safe operational endpoints via HTTP."
 )
-API_VERSION = "1.0.1"
+API_VERSION = "1.0.2"
 API_DOCS_URL = "/docs"
 API_REDOC_URL = "/redoc"
 API_OPENAPI_URL = "/openapi.json"

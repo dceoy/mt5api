@@ -6,7 +6,22 @@ from datetime import datetime  # noqa: TC003
 from enum import StrEnum
 from typing import Annotated, Any, Self, TypeAlias
 
-import pdmt5
+from pdmt5 import (
+    COPY_TICKS_MAP,
+    ORDER_TYPE_MAP,
+    TIMEFRAME_MAP,
+    parse_copy_ticks,
+    parse_order_type,
+    parse_timeframe,
+)
+from pdmt5.constants import (
+    list_copy_ticks_names,
+    list_copy_ticks_values,
+    list_order_type_names,
+    list_order_type_values,
+    list_timeframe_names,
+    list_timeframe_values,
+)
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -76,17 +91,17 @@ def _build_mt5_constant_json_schema(
 
 def get_mt5_timeframe_values() -> tuple[int, ...]:
     """Return all available MT5 timeframe values from pdmt5."""
-    return tuple(pdmt5.list_timeframe_values())
+    return tuple(list_timeframe_values())
 
 
 def get_mt5_timeframe_names() -> tuple[str, ...]:
     """Return all available MT5 timeframe names from pdmt5."""
-    return tuple(pdmt5.list_timeframe_names())
+    return tuple(list_timeframe_names())
 
 
 def get_mt5_timeframe_examples() -> list[int]:
     """Return common MT5 timeframe examples from pdmt5."""
-    return [pdmt5.TIMEFRAME_MAP[name] for name in _TIMEFRAME_EXAMPLE_NAMES]
+    return [TIMEFRAME_MAP[name] for name in _TIMEFRAME_EXAMPLE_NAMES]
 
 
 def get_mt5_timeframe_example_names() -> list[str]:
@@ -96,17 +111,17 @@ def get_mt5_timeframe_example_names() -> list[str]:
 
 def get_mt5_copy_ticks_values() -> tuple[int, ...]:
     """Return all MT5 COPY_TICKS values from pdmt5."""
-    return tuple(pdmt5.list_copy_ticks_values())
+    return tuple(list_copy_ticks_values())
 
 
 def get_mt5_copy_ticks_names() -> tuple[str, ...]:
     """Return all MT5 COPY_TICKS names from pdmt5."""
-    return tuple(pdmt5.list_copy_ticks_names())
+    return tuple(list_copy_ticks_names())
 
 
 def get_mt5_copy_ticks_examples() -> list[int]:
     """Return common MT5 COPY_TICKS integer examples."""
-    return [pdmt5.COPY_TICKS_MAP[name] for name in _COPY_TICKS_EXAMPLE_NAMES]
+    return [COPY_TICKS_MAP[name] for name in _COPY_TICKS_EXAMPLE_NAMES]
 
 
 def get_mt5_copy_ticks_example_names() -> list[str]:
@@ -120,7 +135,7 @@ def _validate_mt5_timeframe(value: object) -> int:
     Returns:
         The validated integer timeframe value.
     """
-    return pdmt5.parse_timeframe(value)
+    return parse_timeframe(value)
 
 
 def _validate_mt5_copy_ticks(value: object) -> int:
@@ -129,22 +144,22 @@ def _validate_mt5_copy_ticks(value: object) -> int:
     Returns:
         The validated integer COPY_TICKS value.
     """
-    return pdmt5.parse_copy_ticks(value)
+    return parse_copy_ticks(value)
 
 
 def get_mt5_order_type_values() -> tuple[int, ...]:
     """Return all available MT5 ORDER_TYPE values from pdmt5."""
-    return tuple(pdmt5.list_order_type_values())
+    return tuple(list_order_type_values())
 
 
 def get_mt5_order_type_names() -> tuple[str, ...]:
     """Return all available MT5 ORDER_TYPE names from pdmt5."""
-    return tuple(pdmt5.list_order_type_names())
+    return tuple(list_order_type_names())
 
 
 def get_mt5_order_type_examples() -> list[int]:
     """Return common MT5 ORDER_TYPE integer examples."""
-    return [pdmt5.ORDER_TYPE_MAP[name] for name in _ORDER_TYPE_EXAMPLE_NAMES]
+    return [ORDER_TYPE_MAP[name] for name in _ORDER_TYPE_EXAMPLE_NAMES]
 
 
 def get_mt5_order_type_example_names() -> list[str]:
@@ -158,7 +173,7 @@ def _validate_mt5_order_type(value: object) -> int:
     Returns:
         The validated integer ORDER_TYPE value.
     """
-    return pdmt5.parse_order_type(value)
+    return parse_order_type(value)
 
 
 Mt5Timeframe: TypeAlias = Annotated[
@@ -404,7 +419,7 @@ class TicksFromRequest(BaseModel):
         le=100000,
     )
     flags: Mt5CopyTicks = Field(
-        default=pdmt5.COPY_TICKS_MAP["COPY_TICKS_ALL"],
+        default=COPY_TICKS_MAP["COPY_TICKS_ALL"],
         description=_COPY_TICKS_DESCRIPTION,
     )
     format: ResponseFormat | None = Field(default=None)
@@ -417,7 +432,7 @@ class TicksRangeRequest(BaseModel):
     date_from: datetime = Field(..., description="Start date (ISO 8601)")
     date_to: datetime = Field(..., description="End date (ISO 8601)")
     flags: Mt5CopyTicks = Field(
-        default=pdmt5.COPY_TICKS_MAP["COPY_TICKS_ALL"],
+        default=COPY_TICKS_MAP["COPY_TICKS_ALL"],
         description=_COPY_TICKS_DESCRIPTION,
     )
     format: ResponseFormat | None = Field(default=None)
