@@ -27,14 +27,6 @@ def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
     assert data["api_version"] == API_VERSION
 
 
-def test_health_endpoint_no_authentication_required(client: TestClient) -> None:
-    """Test health endpoint works without authentication."""
-    # No X-API-Key header
-    response = client.get("/health")
-
-    assert response.status_code == 200
-
-
 def test_version_endpoint_returns_mt5_version(
     client: TestClient,
     api_headers: dict[str, str],

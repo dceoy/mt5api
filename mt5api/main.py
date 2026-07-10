@@ -81,17 +81,13 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
     """Remove API key requirements from OpenAPI when auth is disabled."""
     openapi_schema.pop("security", None)
 
-    components = openapi_schema.get("components")
-    if isinstance(components, dict):
-        security_schemes = components.get("securitySchemes")
-        if isinstance(security_schemes, dict):
-            security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
-            if not security_schemes:
-                components.pop("securitySchemes", None)
+    components = openapi_schema.get("components", {})
+    security_schemes = components.get("securitySchemes", {})
+    security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
+    if not security_schemes:
+        components.pop("securitySchemes", None)
 
     for methods in openapi_schema.get("paths", {}).values():
-        if not isinstance(methods, dict):
-            continue
         for operation in methods.values():
             if isinstance(operation, dict):
                 operation.pop("security", None)
@@ -100,16 +96,12 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
 def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
     """Advertise RFC 7807 Problem Details for request validation failures."""
     components = openapi_schema.setdefault("components", {})
-    if not isinstance(components, dict):
-        return
-
     schemas = components.setdefault("schemas", {})
-    if isinstance(schemas, dict):
-        schemas["ErrorResponse"] = ErrorResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}",
-        )
-        schemas.pop("HTTPValidationError", None)
-        schemas.pop("ValidationError", None)
+    schemas["ErrorResponse"] = ErrorResponse.model_json_schema(
+        ref_template="#/components/schemas/{model}",
+    )
+    schemas.pop("HTTPValidationError", None)
+    schemas.pop("ValidationError", None)
 
     error_response = {
         "description": "Validation Error",
@@ -121,8 +113,6 @@ def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
     }
 
     for methods in openapi_schema.get("paths", {}).values():
-        if not isinstance(methods, dict):
-            continue
         for operation in methods.values():
             if isinstance(operation, dict) and "422" in operation.get("responses", {}):
                 operation["responses"]["422"] = error_response
