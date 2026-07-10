@@ -556,7 +556,7 @@ wheels = [
 
 [[package]]
 name = "mt5api"
-version = "1.0.1"
+version = "1.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
