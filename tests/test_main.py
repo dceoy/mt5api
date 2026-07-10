@@ -22,12 +22,21 @@ def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
         "components": {
             "securitySchemes": {API_KEY_SECURITY_SCHEME_NAME: {}, "Other": {}}
         },
-        "paths": {},
+        "paths": {
+            "/rates/from": {
+                "parameters": [{"name": "symbol", "in": "query"}],
+                "get": {"security": [{API_KEY_SECURITY_SCHEME_NAME: []}]},
+            },
+        },
     }
 
     main._strip_auth_from_openapi(openapi_schema)  # pyright: ignore[reportPrivateUsage]
 
     assert openapi_schema["components"]["securitySchemes"] == {"Other": {}}
+    assert "security" not in openapi_schema["paths"]["/rates/from"]["get"]
+    assert openapi_schema["paths"]["/rates/from"]["parameters"] == [
+        {"name": "symbol", "in": "query"}
+    ]
 
 
 def test_patch_validation_error_responses_updates_422_schema() -> None:
@@ -43,6 +52,7 @@ def test_patch_validation_error_responses_updates_422_schema() -> None:
         },
         "paths": {
             "/rates/from": {
+                "parameters": [{"name": "symbol", "in": "query"}],
                 "get": {
                     "responses": {
                         "422": {
@@ -69,6 +79,9 @@ def test_patch_validation_error_responses_updates_422_schema() -> None:
     assert "ErrorResponse" in schemas
     assert "HTTPValidationError" not in schemas
     assert "ValidationError" not in schemas
+    assert openapi_schema["paths"]["/rates/from"]["parameters"] == [
+        {"name": "symbol", "in": "query"}
+    ]
     assert openapi_schema["paths"]["/rates/from"]["get"]["responses"]["422"] == {
         "description": "Validation Error",
         "content": {

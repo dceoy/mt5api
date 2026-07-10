@@ -89,7 +89,8 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
 
     for methods in openapi_schema.get("paths", {}).values():
         for operation in methods.values():
-            operation.pop("security", None)
+            if isinstance(operation, dict):
+                operation.pop("security", None)
 
 
 def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
@@ -113,7 +114,7 @@ def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
 
     for methods in openapi_schema.get("paths", {}).values():
         for operation in methods.values():
-            if "422" in operation.get("responses", {}):
+            if isinstance(operation, dict) and "422" in operation.get("responses", {}):
                 operation["responses"]["422"] = error_response
 
 
