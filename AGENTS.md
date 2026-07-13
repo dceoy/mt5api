@@ -42,8 +42,10 @@ classes and Pydantic models; and uppercase names for constants.
 
 Pytest discovers `tests/test_*.py`, `*_test.py`, `Test*` classes, and `test_*`
 functions. Coverage is branch-aware and configured to fail below 100%, so add or
-adjust focused tests with each behavior change. Prefer mocked MT5/pdmt5
-interactions unless a test explicitly requires a Windows MT5 terminal.
+adjust focused tests with each behavior change. Parametrize unit tests with
+`pytest.mark.parametrize` when the same behavior should be verified across
+multiple input and expected-output cases. Prefer mocked MT5/pdmt5 interactions
+unless a test explicitly requires a Windows MT5 terminal.
 
 ## Design Principles
 
