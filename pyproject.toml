@@ -15,7 +15,6 @@ dependencies = [
   "pandas >= 3.0.3",
   "pydantic >= 2.13.4",
   "pyarrow >= 18.0.0",
-  "python-multipart >= 0.0.31",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -54,6 +53,9 @@ dev = [
   "mkdocs-material >= 9.6.15",
   "mkdocstrings[python] >= 0.29.1",
 ]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["mt5api"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["mt5api"]
