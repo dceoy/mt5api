@@ -287,9 +287,12 @@ with typed validation for core fields such as <code>action</code>, <code>symbol<
 <ul>
 <li><code>POST /connection/login</code> (body: <code>{"login": ..., "password": "...",
 "server": "...", "timeout": ...}</code>) — Reconnect the MT5 terminal with the
-  supplied credentials. Any active market-book subscriptions are released and
-  the previous MT5 client is shut down before the new connection is
-  established. The supplied password is never echoed in responses or logs.</li>
+  supplied credentials. The replacement client is initialized and installed
+  before active market-book subscriptions are released and cleared. The old
+  wrapper is not shut down after a successful replacement because MetaTrader5
+  connection state is process-global; shutting it down could close the newly
+  established session. If replacement fails, existing subscription tracking is
+  preserved. The supplied password is never echoed in responses or logs.</li>
 </ul>
 <h2 id="response-formatter-utilities">Response Formatter Utilities<a class="headerlink" href="#response-formatter-utilities" title="Permanent link">&para;</a></h2>
 <p>If you are extending the API with custom endpoints, use the formatter helpers
