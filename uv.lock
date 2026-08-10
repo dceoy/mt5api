@@ -15,7 +15,7 @@ required-markers = [
 
 [options]
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
-exclude-newer-span = "P7D"
+exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
 pdmt5 = false
@@ -888,16 +888,16 @@ wheels = [
 
 [[package]]
 name = "pdmt5"
-version = "1.2.1"
+version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "metatrader5", marker = "sys_platform == 'win32'" },
     { name = "pandas" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/38/04/b174121ba695d1bea76ff62437df4e64dc187346a004e938838986d6824c/pdmt5-1.2.1.tar.gz", hash = "sha256:84f54f0cd90a126c7e3b0b06715793f66908e976d9623f1c2a47071445ca0310", size = 23989, upload-time = "2026-08-10T12:41:40.104Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/e4/4ae54de033681980404477ab2ffe81d2819af539dbe20b0181dc69e3711f/pdmt5-1.2.2.tar.gz", hash = "sha256:d1f889ae45bd2629fbec6033dbef401cd5b8eba29dfac390f9ef5108bae85f85", size = 24254, upload-time = "2026-08-10T16:25:35.887Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/88/b89eb62d7fdf7fae100f1bf38e49e664cfd037b4b8cef2effaaa64faec13/pdmt5-1.2.1-py3-none-any.whl", hash = "sha256:2eb27d1271d1a7c46022125c6797390e376a960c741f2ff8dbc2d33050b0ee72", size = 22324, upload-time = "2026-08-10T12:41:38.692Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/2f/1bd5daad98debf36f5c4323827f9cbcc2691e6be1bbd2597963374e4c57f/pdmt5-1.2.2-py3-none-any.whl", hash = "sha256:e90228eb2ccd70b0925737192e344815280c7130c152c668cb380a56474aec5f", size = 22586, upload-time = "2026-08-10T16:25:34.529Z" },
 ]
 
 [[package]]
