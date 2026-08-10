@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -176,7 +175,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Note: MT5 client is initialized lazily on first request via dependency
     # This avoids blocking startup if MT5 is not available
-    await asyncio.sleep(0)  # Make function truly async
 
     yield
 
