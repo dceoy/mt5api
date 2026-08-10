@@ -209,7 +209,7 @@ def client(
     from mt5api.main import app  # noqa: PLC0415
     from mt5api.routers import health  # noqa: PLC0415
 
-    monkeypatch.setattr(health, "get_mt5_client", lambda: mock_mt5_client)
+    monkeypatch.setattr(health, "get_mt5_client", lambda _request: mock_mt5_client)
     app.dependency_overrides.clear()
     app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client
 
