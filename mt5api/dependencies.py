@@ -16,6 +16,7 @@ from .models import ResponseFormat
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
     from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ class Mt5RuntimeState:
 
     client: Mt5DataClient | None = None
     client_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
-    market_book_subscriptions: set[str] = field(default_factory=set)
+    market_book_subscriptions: set[str] = field(default_factory=set[str])
     market_book_cleanup_client: Mt5DataClient | None = None
     max_market_book_subscriptions: int = 0
 

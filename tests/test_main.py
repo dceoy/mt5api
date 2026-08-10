@@ -92,13 +92,72 @@ def test_patch_parquet_success_responses_only_updates_formatted_operations() -> 
         }
     }
     main._patch_parquet_success_responses(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-    rate_content = openapi_schema["paths"]["/rates/from"]["get"]["responses"]["200"]["content"]
+    rate_content = openapi_schema["paths"]["/rates/from"]["get"]["responses"]["200"][
+        "content"
+    ]
     assert rate_content["application/parquet"]["schema"] == {
         "type": "string",
         "format": "binary",
     }
-    health_content = openapi_schema["paths"]["/health"]["get"]["responses"]["200"]["content"]
+    health_content = openapi_schema["paths"]["/health"]["get"]["responses"]["200"][
+        "content"
+    ]
     assert "application/parquet" not in health_content
+
+
+def test_openapi_helpers_ignore_malformed_dynamic_values() -> None:
+    """OpenAPI patchers skip values with unexpected runtime shapes."""
+    from mt5api import main  # noqa: PLC0415
+
+    main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
+        {"components": [], "paths": []}
+    )
+    main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
+        {"components": {"securitySchemes": []}, "paths": {}}
+    )
+    main._patch_validation_error_responses(  # pyright: ignore[reportPrivateUsage]
+        {"components": [], "paths": {}},
+    )
+    main._patch_validation_error_responses(  # pyright: ignore[reportPrivateUsage]
+        {"components": {"schemas": []}, "paths": {}},
+    )
+
+    malformed_schema: dict[str, Any] = {
+        "paths": {
+            "/bad-methods": [],
+            "/bad-operation": {"get": []},
+            "/missing-responses": {
+                "get": {"parameters": [{"in": "query", "name": "format"}]},
+            },
+            "/bad-parameters": {
+                "get": {
+                    "parameters": "invalid",
+                    "responses": {},
+                },
+            },
+            "/bad-responses": {
+                "get": {
+                    "parameters": [{"in": "query", "name": "format"}],
+                    "responses": [],
+                },
+            },
+            "/bad-success": {
+                "get": {
+                    "parameters": [{"in": "query", "name": "format"}],
+                    "responses": {"200": []},
+                },
+            },
+            "/bad-content": {
+                "get": {
+                    "parameters": [{"in": "query", "name": "format"}],
+                    "responses": {"200": {"content": []}},
+                },
+            },
+        }
+    }
+    main._patch_parquet_success_responses(  # pyright: ignore[reportPrivateUsage]
+        malformed_schema
+    )
 
 
 def test_release_market_book_subscriptions_clears_runtime_state(

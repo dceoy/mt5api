@@ -73,8 +73,7 @@ def test_format_dataframe_to_parquet_returns_binary() -> None:
     assert response.media_type == "application/parquet"
     assert "data.parquet" in response.headers.get("Content-Disposition", "")
 
-    # Verify StreamingResponse - async generator tested in integration
-    assert hasattr(response, "body_iterator")
+    assert response.body
 
 
 def test_format_dict_to_parquet_returns_binary() -> None:
@@ -85,8 +84,7 @@ def test_format_dict_to_parquet_returns_binary() -> None:
 
     assert response.media_type == "application/parquet"
 
-    # Verify StreamingResponse - async generator tested in integration
-    assert hasattr(response, "body_iterator")
+    assert response.body
 
 
 @pytest.mark.parametrize(

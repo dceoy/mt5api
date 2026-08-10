@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import pandas as pd
 import pyarrow as pa  # type: ignore[import-untyped]
@@ -16,6 +16,38 @@ _SUPPORTED_RESPONSE_FORMATS = {ResponseFormat.JSON, ResponseFormat.PARQUET}
 _INVALID_DATA_MESSAGE = "data must be a pandas DataFrame or dict[str, Any]"
 
 if TYPE_CHECKING:  # pragma: no cover
+    from typing import Protocol
+
+    class _PyArrowTable(Protocol):
+        """Structural type for the PyArrow table passed to Parquet output."""
+
+    class _PyArrowTableFactory(Protocol):
+        """Structural type for the supported PyArrow table factory API."""
+
+        @staticmethod
+        def from_pandas(
+            dataframe: pd.DataFrame,
+            *,
+            preserve_index: bool = True,
+        ) -> _PyArrowTable: ...
+
+    class _PyArrowModule(Protocol):
+        """Structural type for the supported PyArrow module API."""
+
+        Table: _PyArrowTableFactory
+
+    class _PyArrowParquetModule(Protocol):
+        """Structural type for the supported PyArrow Parquet API."""
+
+        def write_table(
+            self,
+            table: _PyArrowTable,
+            where: io.BytesIO,
+            *,
+            compression: str = "snappy",
+            use_dictionary: bool = True,
+            write_statistics: bool = True,
+        ) -> None: ...
 
     @overload
     def format_response(
@@ -41,12 +73,18 @@ def format_dataframe_to_json(
         JSON data response.
     """
     if orient == "records":
-        data_value: list[dict[str, Any]] | dict[str, Any] = dataframe.to_dict(
-            orient=orient  # type: ignore[arg-type]
+        data_value: list[dict[str, Any]] | dict[str, Any] = cast(
+            "list[dict[str, Any]] | dict[str, Any]",
+            dataframe.to_dict(orient=orient),  # type: ignore[arg-type]
         )
     else:
-        data_value = dataframe.to_dict(orient=orient)  # type: ignore[arg-type]
-    return DataResponse(data=data_value, count=len(dataframe), format=ResponseFormat.JSON)
+        data_value = cast(
+            "list[dict[str, Any]] | dict[str, Any]",
+            dataframe.to_dict(orient=orient),  # type: ignore[arg-type]
+        )
+    return DataResponse(
+        data=data_value, count=len(dataframe), format=ResponseFormat.JSON
+    )
 
 
 def format_dict_to_json(data: dict[str, Any]) -> DataResponse:
@@ -64,9 +102,17 @@ def format_dataframe_to_parquet(dataframe: pd.DataFrame) -> Response:
     Returns:
         Binary Parquet HTTP response.
     """
-    table = pa.Table.from_pandas(dataframe, preserve_index=False)
+    arrow_module = cast(
+        "_PyArrowModule",
+        pa,  # pyright: ignore[reportUnknownArgumentType]
+    )
+    parquet_module = cast(
+        "_PyArrowParquetModule",
+        pq,  # pyright: ignore[reportUnknownArgumentType]
+    )
+    table = arrow_module.Table.from_pandas(dataframe, preserve_index=False)
     buffer = io.BytesIO()
-    pq.write_table(
+    parquet_module.write_table(
         table,
         buffer,
         compression="snappy",
@@ -110,6 +156,7 @@ def format_response(
             return format_dataframe_to_parquet(data)
         return format_dataframe_to_json(data)
     if isinstance(data, dict):
+        data = cast("dict[str, Any]", data)
         if response_format == ResponseFormat.PARQUET:
             return format_dict_to_parquet(data)
         return format_dict_to_json(data)

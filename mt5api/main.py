@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -32,10 +32,26 @@ from .dependencies import (
 )
 from .middleware import add_middleware
 from .models import ErrorResponse
-from .routers import account, calc, connection, health, history, market, symbols, trading
+from .routers import (
+    account,
+    calc,
+    connection,
+    health,
+    history,
+    market,
+    symbols,
+    trading,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Iterator
+
+
+def _as_dict(value: object) -> dict[str, Any] | None:
+    """Return a typed dictionary after checking a dynamic OpenAPI value."""
+    if not isinstance(value, dict):
+        return None
+    return cast("dict[str, Any]", value)
 
 
 class _JsonFormatter(logging.Formatter):
@@ -64,30 +80,34 @@ def _configure_logging() -> None:
     root_logger.addHandler(handler)
 
 
-def _iter_openapi_operations(openapi_schema: dict[str, Any]) -> Iterator[dict[str, Any]]:
+def _iter_openapi_operations(
+    openapi_schema: dict[str, Any],
+) -> Iterator[dict[str, Any]]:
     """Yield operation mappings from an OpenAPI schema.
 
     Yields:
         Individual HTTP operation mappings.
     """
-    paths = openapi_schema.get("paths", {})
-    if not isinstance(paths, dict):
+    paths = _as_dict(openapi_schema.get("paths", {}))
+    if paths is None:
         return
-    for methods in paths.values():
-        if not isinstance(methods, dict):
+    for methods_value in paths.values():
+        methods = _as_dict(methods_value)
+        if methods is None:
             continue
-        for operation in methods.values():
-            if isinstance(operation, dict):
+        for operation_value in methods.values():
+            operation = _as_dict(operation_value)
+            if operation is not None:
                 yield operation
 
 
 def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
     """Remove API key requirements from OpenAPI when auth is disabled."""
     openapi_schema.pop("security", None)
-    components = openapi_schema.get("components", {})
-    if isinstance(components, dict):
-        security_schemes = components.get("securitySchemes", {})
-        if isinstance(security_schemes, dict):
+    components = _as_dict(openapi_schema.get("components", {}))
+    if components is not None:
+        security_schemes = _as_dict(components.get("securitySchemes", {}))
+        if security_schemes is not None:
             security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
             if not security_schemes:
                 components.pop("securitySchemes", None)
@@ -97,8 +117,12 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
 
 def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
     """Advertise RFC 7807 Problem Details for request validation failures."""
-    components = openapi_schema.setdefault("components", {})
-    schemas = components.setdefault("schemas", {})
+    components = _as_dict(openapi_schema.setdefault("components", {}))
+    if components is None:
+        return
+    schemas = _as_dict(components.setdefault("schemas", {}))
+    if schemas is None:
+        return
     schemas["ErrorResponse"] = ErrorResponse.model_json_schema(
         ref_template="#/components/schemas/{model}",
     )
@@ -114,18 +138,24 @@ def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
     }
     for operation in _iter_openapi_operations(openapi_schema):
         responses = operation.get("responses")
-        if isinstance(responses, dict) and "422" in responses:
+        responses = _as_dict(
+            cast("object", responses),  # pyright: ignore[reportUnknownArgumentType]
+        )
+        if responses is not None and "422" in responses:
             responses["422"] = error_response
 
 
 def _supports_format_query(operation: dict[str, Any]) -> bool:
     """Return whether an OpenAPI operation exposes the shared format query."""
     parameters = operation.get("parameters", [])
-    return isinstance(parameters, list) and any(
-        isinstance(parameter, dict)
+    if not isinstance(parameters, list):
+        return False
+    parameters = cast("list[object]", parameters)
+    return any(
+        (parameter := _as_dict(parameter_value)) is not None
         and parameter.get("in") == "query"
         and parameter.get("name") == "format"
-        for parameter in parameters
+        for parameter_value in parameters
     )
 
 
@@ -136,13 +166,16 @@ def _patch_parquet_success_responses(openapi_schema: dict[str, Any]) -> None:
         if not _supports_format_query(operation):
             continue
         responses = operation.get("responses")
-        if not isinstance(responses, dict):
+        responses = _as_dict(
+            cast("object", responses),  # pyright: ignore[reportUnknownArgumentType]
+        )
+        if responses is None:
             continue
-        success = responses.get("200")
-        if not isinstance(success, dict):
+        success = _as_dict(responses.get("200"))
+        if success is None:
             continue
-        content = success.setdefault("content", {})
-        if isinstance(content, dict):
+        content = _as_dict(success.setdefault("content", {}))
+        if content is not None:
             content.setdefault("application/parquet", parquet_schema)
 
 

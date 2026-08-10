@@ -88,7 +88,9 @@ async def post_order_check(
     "/symbols/{symbol}/select",
     response_model=DataResponse,
     summary="Select symbol",
-    description="Select a symbol in the MarketWatch window or remove it from the window",
+    description=(
+        "Select a symbol in the MarketWatch window or remove it from the window"
+    ),
 )
 async def post_symbol_select(
     mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
@@ -131,7 +133,10 @@ async def post_market_book_subscribe(
     state = get_mt5_runtime_state(app_request)
     subscriptions = state.market_book_subscriptions
     symbol = request.symbol
-    if symbol not in subscriptions and len(subscriptions) >= state.max_market_book_subscriptions:
+    if (
+        symbol not in subscriptions
+        and len(subscriptions) >= state.max_market_book_subscriptions
+    ):
         logger.warning(
             "Market-book subscription limit reached for %s (%d active)",
             symbol,

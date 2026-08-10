@@ -16,6 +16,7 @@ from mt5api.main import app
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    import httpx2
     from pytest_mock import MockerFixture
 
 
@@ -44,7 +45,7 @@ def connection_client(
     new_client = mocker.Mock(name="new_mt5_client")
     recorder["new_client"] = new_client
 
-    async def fake_replace(
+    def fake_replace(
         state: dependencies.Mt5RuntimeState,
         config: object,
     ) -> object:
@@ -66,17 +67,26 @@ def _login(
     test_client: TestClient,
     *,
     login: int = 12345,
-    password: str = "s3cret",
+    password: str | None = None,
     server: str = "MetaQuotes-Demo",
-) -> httpx.Response:
+    timeout: int | None = None,
+) -> httpx2.Response:
     """Submit a valid authenticated login request.
 
     Returns:
         HTTP response from the login endpoint.
     """
+    request_password = "s3cret" if password is None else password
+    request_body: dict[str, object] = {
+        "login": login,
+        "password": request_password,
+        "server": server,
+    }
+    if timeout is not None:
+        request_body["timeout"] = timeout
     return test_client.post(
         "/connection/login",
-        json={"login": login, "password": password, "server": server},
+        json=request_body,
         headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
     )
 
@@ -88,7 +98,7 @@ def test_post_connection_login_reconnects(
     """POST /connection/login installs the replacement and returns metadata."""
     test_client, recorder = connection_client
     with caplog.at_level("INFO"):
-        response = _login(test_client)
+        response = _login(test_client, timeout=60000)
     assert response.status_code == 200
     assert response.json() == {
         "login": 12345,
@@ -134,7 +144,7 @@ def test_post_connection_login_preserves_subscriptions_on_failure(
     state.market_book_subscriptions.add("EURUSD")
     state.market_book_cleanup_client = cleanup_client
 
-    async def fail_replace(
+    def fail_replace(
         runtime_state: dependencies.Mt5RuntimeState,
         config: object,
     ) -> None:

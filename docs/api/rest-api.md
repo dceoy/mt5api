@@ -165,7 +165,7 @@ with typed validation for core fields such as `action`, `symbol`, `volume`,
 ### Connection
 
 - `POST /connection/login` (body: `{"login": ..., "password": "...",
-  "server": "...", "timeout": ...}`) — Reconnect the MT5 terminal with the
+"server": "...", "timeout": ...}`) — Reconnect the MT5 terminal with the
   supplied credentials. The replacement client is initialized and installed
   before active market-book subscriptions are released and cleared. The old
   wrapper is not shut down after a successful replacement because MetaTrader5

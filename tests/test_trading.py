@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from fastapi.testclient import TestClient
-
 from mt5api.constants import MT5_RUNTIME_STATE_KEY
-from mt5api.dependencies import Mt5RuntimeState
 from tests.openapi_mt5_constants import assert_openapi_mt5_order_type_schema
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
 
     from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from mt5api.dependencies import Mt5RuntimeState
 
 
 def _runtime_state(client: TestClient) -> Mt5RuntimeState:
@@ -301,4 +301,8 @@ def test_market_book_symbol_length_is_validated(
 
 def test_trading_openapi_uses_mt5_order_type_schema(client: TestClient) -> None:
     """OpenAPI retains the canonical MT5 order-type schema."""
-    assert_openapi_mt5_order_type_schema(client.get("/openapi.json").json())
+    openapi = client.get("/openapi.json").json()
+    order_type_schema = openapi["components"]["schemas"]["TradeRequest"]["properties"][
+        "type"
+    ]
+    assert_openapi_mt5_order_type_schema(order_type_schema)
