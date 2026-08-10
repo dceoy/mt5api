@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from starlette.requests import Request
 
+from mt5api import dependencies
 
-def test_get_request_info_extracts_request_data() -> None:
-    """Test request info extraction."""
-    from mt5api.dependencies import get_request_info  # noqa: PLC0415
 
+def _request(app: FastAPI) -> Request:
+    """Build a minimal request bound to ``app``.
+
+    Returns:
+        Starlette request suitable for dependency tests.
+    """
     scope: dict[str, Any] = {
         "type": "http",
+        "app": app,
         "method": "GET",
         "path": "/health",
         "headers": [(b"user-agent", b"pytest")],
@@ -23,9 +30,12 @@ def test_get_request_info_extracts_request_data() -> None:
         "root_path": "",
         "query_string": b"",
     }
+    return Request(scope)
 
-    info = get_request_info(Request(scope))
 
+def test_get_request_info_extracts_request_data() -> None:
+    """Test request info extraction."""
+    info = dependencies.get_request_info(_request(FastAPI()))
     assert info == {
         "method": "GET",
         "url": "http://testserver/health",
@@ -34,11 +44,27 @@ def test_get_request_info_extracts_request_data() -> None:
     }
 
 
-def test_get_mt5_client_initializes_and_returns_singleton(
+def test_runtime_state_is_application_scoped() -> None:
+    """Runtime state and reconnect lock are owned by one application."""
+    app = FastAPI()
+    request = _request(app)
+    state = dependencies.get_mt5_runtime_state(request)
+    assert dependencies.get_mt5_runtime_state(request) is state
+    assert dependencies.get_mt5_client_lock(request) is state.client_lock
+
+
+def test_initialize_runtime_state_accepts_explicit_limit() -> None:
+    """Explicit subscription limits are retained in application state."""
+    state = dependencies.initialize_mt5_runtime_state(
+        FastAPI(), max_market_book_subscriptions=7
+    )
+    assert state.max_market_book_subscriptions == 7
+
+
+def test_get_mt5_client_initializes_and_reuses_state_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test MT5 client initialization success path."""
-    from mt5api import dependencies  # noqa: PLC0415
+    """MT5 client initialization is lazy and cached per application."""
 
     class DummyClient:
         def __init__(self, config: str) -> None:
@@ -53,105 +79,127 @@ def test_get_mt5_client_initializes_and_returns_singleton(
 
     monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
-    monkeypatch.setattr(dependencies, "_mt5_client", None)
+    request = _request(FastAPI())
 
-    client = dependencies.get_mt5_client()
-
+    client = dependencies.get_mt5_client(request)
     assert isinstance(client, DummyClient)
-
-
-def test_get_mt5_client_returns_existing_singleton(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test returning existing MT5 client without reinitialization."""
-    from mt5api import dependencies  # noqa: PLC0415
-
-    existing_client = object()
-    monkeypatch.setattr(dependencies, "_mt5_client", existing_client)
-
-    client = dependencies.get_mt5_client()
-
-    assert client is existing_client
+    assert client.initialized is True
+    assert dependencies.get_mt5_client(request) is client
 
 
 def test_get_mt5_client_raises_runtime_error_on_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test MT5 client initialization failure path."""
-    from mt5api import dependencies  # noqa: PLC0415
+    """Failed lazy initialization leaves no cached client."""
 
     class FailingClient:
         def __init__(self, config: str) -> None:
             self.config = config
 
         def initialize_and_login_mt5(self) -> None:
-            error_message = "boom"
-            raise ValueError(error_message)
+            raise ValueError("boom")
 
     monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
-    monkeypatch.setattr(dependencies, "_mt5_client", None)
+    request = _request(FastAPI())
 
-    with pytest.raises(RuntimeError) as excinfo:
-        dependencies.get_mt5_client()
-
-    assert "Failed to initialize MT5 client" in str(excinfo.value)
-
-    class DummyClient:
-        def __init__(self, config: str) -> None:
-            self.config = config
-
-        def initialize_and_login_mt5(self) -> None:
-            return None
-
-    monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
-
-    client = dependencies.get_mt5_client()
-
-    assert isinstance(client, DummyClient)
+    with pytest.raises(RuntimeError, match="Failed to initialize MT5 client"):
+        dependencies.get_mt5_client(request)
+    assert dependencies.get_mt5_runtime_state(request).client is None
 
 
-def test_shutdown_mt5_client_resets_singleton(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test shutdown clears singleton and calls shutdown."""
-    from mt5api import dependencies  # noqa: PLC0415
+def test_shutdown_mt5_client_clears_state() -> None:
+    """Shutdown clears and closes the application client."""
+    client = pytest.MonkeyPatch.context  # keep a concrete non-Any symbol for typing
+    del client
 
     class DummyClient:
-        def __init__(self) -> None:
-            self.shutdown_called = False
+        shutdown_called = False
 
         def shutdown(self) -> None:
             self.shutdown_called = True
 
-    client = DummyClient()
-    monkeypatch.setattr(dependencies, "_mt5_client", client)
+    dummy = DummyClient()
+    state = dependencies.Mt5RuntimeState(client=dummy)  # type: ignore[arg-type]
+    dependencies.shutdown_mt5_client(state)
+    assert state.client is None
+    assert dummy.shutdown_called is True
+    dependencies.shutdown_mt5_client(state)
 
-    dependencies.shutdown_mt5_client()
 
-    class NewClient:
-        def __init__(self, config: str) -> None:
+def test_replace_mt5_client_preserves_old_client_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reconnect swaps only after successful initialization."""
+
+    class DummyClient:
+        def __init__(self, config: object) -> None:
             self.config = config
 
         def initialize_and_login_mt5(self) -> None:
             return None
 
-    monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
-    monkeypatch.setattr(dependencies, "Mt5DataClient", NewClient)
+    old_client = object()
+    state = dependencies.Mt5RuntimeState(client=old_client)  # type: ignore[arg-type]
+    monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
+    config = object()
+    new_client = asyncio.run(
+        dependencies.replace_mt5_client(state, config)  # type: ignore[arg-type]
+    )
+    assert state.client is new_client
+    assert new_client.config is config
 
-    new_client = dependencies.get_mt5_client()
+    class FailingClient(DummyClient):
+        def initialize_and_login_mt5(self) -> None:
+            raise ValueError("secret upstream error")
 
-    assert (client.shutdown_called, new_client is client) == (True, False)
+    state.client = old_client  # type: ignore[assignment]
+    monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
+    with pytest.raises(RuntimeError, match="^Failed to initialize MT5 client$"):
+        asyncio.run(
+            dependencies.replace_mt5_client(state, config)  # type: ignore[arg-type]
+        )
+    assert state.client is old_client
 
 
-def test_shutdown_mt5_client_noop_when_none(
-    monkeypatch: pytest.MonkeyPatch,
+def test_release_market_book_subscriptions_cleans_all_state(
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test shutdown is a no-op when no singleton is set."""
-    from mt5api import dependencies  # noqa: PLC0415
+    """Subscription cleanup continues after failures and clears ownership."""
 
-    monkeypatch.setattr(dependencies, "_mt5_client", None)
+    class CleanupClient:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
 
-    result = dependencies.shutdown_mt5_client()
+        def market_book_release(self, *, symbol: str) -> None:
+            self.calls.append(symbol)
+            if symbol == "EURUSD":
+                raise RuntimeError("boom")
 
-    assert result is None
+    cleanup = CleanupClient()
+    state = dependencies.Mt5RuntimeState(
+        market_book_subscriptions={"EURUSD", "GBPUSD"},
+        market_book_cleanup_client=cleanup,  # type: ignore[arg-type]
+    )
+    with caplog.at_level("ERROR"):
+        asyncio.run(dependencies.release_market_book_subscriptions(state))
+    assert set(cleanup.calls) == {"EURUSD", "GBPUSD"}
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
+
+
+def test_release_market_book_subscriptions_handles_missing_or_empty_client() -> None:
+    """Missing cleanup ownership is cleared deterministically."""
+    state = dependencies.Mt5RuntimeState(market_book_subscriptions={"EURUSD"})
+    asyncio.run(dependencies.release_market_book_subscriptions(state))
+    assert state.market_book_subscriptions == set()
+
+    state.market_book_cleanup_client = object()  # type: ignore[assignment]
+    asyncio.run(dependencies.release_market_book_subscriptions(state))
+    assert state.market_book_cleanup_client is None
+
+
+def test_run_in_threadpool_returns_result() -> None:
+    """Threadpool helper forwards positional and keyword arguments."""
+    result = asyncio.run(dependencies.run_in_threadpool(lambda a, b: a + b, 2, b=3))
+    assert result == 5
