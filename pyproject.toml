@@ -7,14 +7,15 @@ maintainers = [{name = "dceoy", email = "dceoy@users.noreply.github.com"}]
 license = "MIT"
 license-files = ["LICENSE"]
 readme = "README.md"
-requires-python = ">= 3.11, < 3.14"
+requires-python = ">= 3.11, < 3.15"
 dependencies = [
   "pdmt5 >= 1.2.0",
   "fastapi >= 0.115.0",
   "uvicorn[standard] >= 0.32.0",
+  "pandas >= 3.0.3",
+  "pydantic >= 2.13.4",
   "pyarrow >= 18.0.0",
   "python-multipart >= 0.0.31",
-  "httpx >= 0.27.0",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -34,8 +35,10 @@ Repository = "https://github.com/dceoy/mt5api.git"
 required-environments = ["platform_system == 'Windows'"]
 exclude-newer = "1 week"
 exclude-newer-package = { pdmt5 = false }
+
 [dependency-groups]
 dev = [
+  "httpx >= 0.27.0",
   "ruff >= 0.11.0",
   "pyright >= 1.1.407",
   "pytest >= 8.0.0",
@@ -50,10 +53,6 @@ dev = [
   "mkdocs-material >= 9.6.15",
   "mkdocstrings[python] >= 0.29.1",
 ]
-
-[tool.uv.build-backend]
-source-include = ["mt5api/**", "LICENSE"]
-source-exclude = ["tests/**"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["mt5api"]
