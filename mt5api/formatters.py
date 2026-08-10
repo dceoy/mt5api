@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import pandas as pd
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 
 from .models import DataResponse, ResponseFormat
 
@@ -16,6 +16,38 @@ _SUPPORTED_RESPONSE_FORMATS = {ResponseFormat.JSON, ResponseFormat.PARQUET}
 _INVALID_DATA_MESSAGE = "data must be a pandas DataFrame or dict[str, Any]"
 
 if TYPE_CHECKING:  # pragma: no cover
+    from typing import Protocol
+
+    class _PyArrowTable(Protocol):
+        """Structural type for the PyArrow table passed to Parquet output."""
+
+    class _PyArrowTableFactory(Protocol):
+        """Structural type for the supported PyArrow table factory API."""
+
+        @staticmethod
+        def from_pandas(
+            dataframe: pd.DataFrame,
+            *,
+            preserve_index: bool = True,
+        ) -> _PyArrowTable: ...
+
+    class _PyArrowModule(Protocol):
+        """Structural type for the supported PyArrow module API."""
+
+        Table: _PyArrowTableFactory
+
+    class _PyArrowParquetModule(Protocol):
+        """Structural type for the supported PyArrow Parquet API."""
+
+        def write_table(
+            self,
+            table: _PyArrowTable,
+            where: io.BytesIO,
+            *,
+            compression: str = "snappy",
+            use_dictionary: bool = True,
+            write_statistics: bool = True,
+        ) -> None: ...
 
     @overload
     def format_response(
@@ -37,123 +69,95 @@ def format_dataframe_to_json(
 ) -> DataResponse:
     """Format DataFrame as JSON response.
 
-    Args:
-        dataframe: DataFrame to format.
-        orient: JSON orientation (records, index, columns, etc.).
-
     Returns:
-        DataResponse model with JSON data.
+        JSON data response.
     """
-    # Convert DataFrame to dict/list based on orientation
     if orient == "records":
-        data_value: list[dict[str, Any]] | dict[str, Any] = dataframe.to_dict(
-            orient=orient  # type: ignore[arg-type]
+        data_value: list[dict[str, Any]] | dict[str, Any] = cast(
+            "list[dict[str, Any]] | dict[str, Any]",
+            dataframe.to_dict(orient=orient),  # type: ignore[arg-type]
         )
     else:
-        data_value = dataframe.to_dict(orient=orient)  # type: ignore[arg-type]
-
+        data_value = cast(
+            "list[dict[str, Any]] | dict[str, Any]",
+            dataframe.to_dict(orient=orient),  # type: ignore[arg-type]
+        )
     return DataResponse(
-        data=data_value,
-        count=len(dataframe),
-        format=ResponseFormat.JSON,
+        data=data_value, count=len(dataframe), format=ResponseFormat.JSON
     )
 
 
 def format_dict_to_json(data: dict[str, Any]) -> DataResponse:
     """Format dictionary as JSON response.
 
-    Args:
-        data: Dictionary to format.
-
     Returns:
-        DataResponse model with JSON data.
+        Single-record JSON data response.
     """
-    return DataResponse(
-        data=data,
-        count=1,
-        format=ResponseFormat.JSON,
-    )
+    return DataResponse(data=data, count=1, format=ResponseFormat.JSON)
 
 
 def format_dataframe_to_parquet(dataframe: pd.DataFrame) -> Response:
-    """Format DataFrame as Apache Parquet response.
-
-    Args:
-        dataframe: DataFrame to format.
+    """Format DataFrame as a materialized Apache Parquet response.
 
     Returns:
-        StreamingResponse with Parquet binary data.
+        Binary Parquet HTTP response.
     """
-    # Convert DataFrame to Arrow Table
-    table = pa.Table.from_pandas(dataframe, preserve_index=False)
-
-    # Write to in-memory buffer
+    arrow_module = cast(
+        "_PyArrowModule",
+        pa,  # pyright: ignore[reportUnknownArgumentType]
+    )
+    parquet_module = cast(
+        "_PyArrowParquetModule",
+        pq,  # pyright: ignore[reportUnknownArgumentType]
+    )
+    table = arrow_module.Table.from_pandas(dataframe, preserve_index=False)
     buffer = io.BytesIO()
-    pq.write_table(
+    parquet_module.write_table(
         table,
         buffer,
         compression="snappy",
         use_dictionary=True,
         write_statistics=True,
     )
-    buffer.seek(0)
-
-    return StreamingResponse(
-        content=iter([buffer.getvalue()]),
+    return Response(
+        content=buffer.getvalue(),
         media_type="application/parquet",
-        headers={
-            "Content-Disposition": "attachment; filename=data.parquet",
-        },
+        headers={"Content-Disposition": "attachment; filename=data.parquet"},
     )
 
 
 def format_dict_to_parquet(data: dict[str, Any]) -> Response:
-    """Format dictionary as Apache Parquet response.
-
-    Args:
-        data: Dictionary to format (will be converted to single-row DataFrame).
+    """Format a dictionary as a single-row Apache Parquet response.
 
     Returns:
-        StreamingResponse with Parquet binary data.
+        Binary Parquet HTTP response.
     """
-    # Convert dict to single-row DataFrame
-    dataframe = pd.DataFrame([data])
-    return format_dataframe_to_parquet(dataframe)
+    return format_dataframe_to_parquet(pd.DataFrame([data]))
 
 
 def format_response(
     data: object,
     response_format: ResponseFormat,
 ) -> DataResponse | Response:
-    """Format data based on requested response format.
-
-    Unified formatter that handles both DataFrame and dict data types,
-    selecting the appropriate output format (JSON or Parquet).
-
-    Args:
-        data: Data to format. Must be a pandas DataFrame or dict with string
-            keys.
-        response_format: Requested response format (JSON or Parquet).
+    """Format a DataFrame or mapping as JSON or Parquet.
 
     Returns:
-        DataResponse for JSON format, StreamingResponse for Parquet format.
+        JSON model or binary Parquet response.
 
     Raises:
-        TypeError: If the data type is neither DataFrame nor dict.
-        ValueError: If the response format is not supported.
+        ValueError: If the response format is unsupported.
+        TypeError: If ``data`` is not a DataFrame or mapping.
     """
     if response_format not in _SUPPORTED_RESPONSE_FORMATS:
         message = f"Unsupported response format: {response_format}"
         raise ValueError(message)
-
     if isinstance(data, pd.DataFrame):
         if response_format == ResponseFormat.PARQUET:
             return format_dataframe_to_parquet(data)
         return format_dataframe_to_json(data)
-
     if isinstance(data, dict):
+        data = cast("dict[str, Any]", data)
         if response_format == ResponseFormat.PARQUET:
             return format_dict_to_parquet(data)
         return format_dict_to_json(data)
-
     raise TypeError(_INVALID_DATA_MESSAGE)

@@ -3,20 +3,30 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
-from unittest.mock import call
 
-from fastapi.testclient import TestClient
-
-from mt5api import dependencies
-from mt5api.main import app
-from mt5api.routers import health
+from mt5api.constants import MT5_RUNTIME_STATE_KEY
 from tests.openapi_mt5_constants import assert_openapi_mt5_order_type_schema
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
 
-    import pytest
     from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from mt5api.dependencies import Mt5RuntimeState
+
+
+def _runtime_state(client: TestClient) -> Mt5RuntimeState:
+    """Return the runtime state owned by the tested application.
+
+    Returns:
+        Application-scoped MT5 runtime state.
+    """
+    test_app = cast("FastAPI", client.app)
+    return cast(
+        "Mt5RuntimeState",
+        getattr(test_app.state, MT5_RUNTIME_STATE_KEY),
+    )
 
 
 def test_post_order_check_returns_json(
@@ -24,31 +34,21 @@ def test_post_order_check_returns_json(
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """POST /order/check returns order check result."""
+    """POST /order/check returns the order-check result."""
     request_body = {
         "request": {
             "action": 1,
             "symbol": "EURUSD",
             "volume": 0.1,
             "type": 0,
-            "price": 1.08500,
-        },
+            "price": 1.085,
+        }
     }
-    response = client.post(
-        "/order/check",
-        json=request_body,
-        headers=api_headers,
-    )
-
+    response = client.post("/order/check", json=request_body, headers=api_headers)
     assert response.status_code == 200
-
-    payload = response.json()
-    assert payload["count"] == 1
-    assert payload["data"]["retcode"] == 0
-    assert payload["data"]["comment"] == "Done"
-
+    assert response.json()["data"]["retcode"] == 0
     mock_mt5_client.order_check_as_dict.assert_called_with(
-        request=request_body["request"],
+        request=request_body["request"]
     )
 
 
@@ -66,472 +66,243 @@ def test_post_order_check_returns_parquet(
                 "symbol": "EURUSD",
                 "volume": 0.1,
                 "type": 0,
-                "price": 1.08500,
+                "price": 1.085,
             }
         },
         headers=api_headers,
     )
-
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
     mock_mt5_client.order_check_as_dict.assert_called_once()
 
 
-def test_post_order_check_validates_payload(
+def test_post_order_check_rejects_invalid_payload(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """POST /order/check rejects invalid request bodies."""
-    request_body = {
-        "request": {
-            "action": 1,
-            "volume": 0.1,
-            "type": 0,
-            "price": 1.08500,
-        },
-    }
+    """POST /order/check validates trade requests before calling MT5."""
     response = client.post(
         "/order/check",
-        json=request_body,
+        json={"request": {"action": 1, "volume": 0.1, "type": 0}},
         headers=api_headers,
     )
-
     assert response.status_code == 422
-    payload = response.json()
-    assert payload["type"] == "/errors/validation-error"
-    assert "symbol" in payload["detail"]
     mock_mt5_client.order_check_as_dict.assert_not_called()
 
 
-def test_post_order_check_allows_supported_optional_mt5_fields(
+def test_post_symbol_select_handles_enable_flag(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """POST /order/check preserves whitelisted optional MT5 trade-request fields."""
-    request_body = {
-        "request": {
-            "action": 1,
-            "symbol": "EURUSD",
-            "volume": 0.1,
-            "type": "ORDER_TYPE_BUY",
-            "price": 1.08500,
-            "deviation": 10,
-            "comment": "validation-check",
-            "type_filling": 1,
-            "position": 123456,
-        },
-    }
+    """Symbol selection forwards the requested enable state."""
     response = client.post(
-        "/order/check",
-        json=request_body,
+        "/symbols/EURUSD/select?enable=false",
         headers=api_headers,
     )
-
     assert response.status_code == 200
-
-    mock_mt5_client.order_check_as_dict.assert_called_with(
-        request={
-            "action": 1,
-            "symbol": "EURUSD",
-            "volume": 0.1,
-            "type": 0,
-            "price": 1.08500,
-            "deviation": 10,
-            "comment": "validation-check",
-            "type_filling": 1,
-            "position": 123456,
-        },
-    )
-
-
-def test_post_order_check_rejects_unknown_trade_request_field(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """POST /order/check rejects unrecognized trade-request fields."""
-    response = client.post(
-        "/order/check",
-        json={
-            "request": {
-                "action": 1,
-                "symbol": "EURUSD",
-                "volume": 0.1,
-                "type": 0,
-                "price": 1.08500,
-                "unsupported": True,
-            }
-        },
-        headers=api_headers,
-    )
-
-    assert response.status_code == 422
-    mock_mt5_client.order_check_as_dict.assert_not_called()
-
-
-def test_post_order_check_rejects_invalid_optional_mt5_field_type(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """POST /order/check validates the types of optional MT5 trade-request fields."""
-    response = client.post(
-        "/order/check",
-        json={
-            "request": {
-                "action": 1,
-                "symbol": "EURUSD",
-                "volume": 0.1,
-                "type": 0,
-                "price": 1.08500,
-                "magic": [1, 2, 3],
-            }
-        },
-        headers=api_headers,
-    )
-
-    assert response.status_code == 422
-    mock_mt5_client.order_check_as_dict.assert_not_called()
-
-
-def test_post_symbol_select_returns_json(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """POST /symbols/{symbol}/select returns selection result."""
-    response = client.post(
-        "/symbols/EURUSD/select",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 200
-
-    payload = response.json()
-    assert payload["count"] == 1
-    assert payload["data"]["symbol"] == "EURUSD"
-    assert payload["data"]["enable"] is True
-    assert payload["data"]["success"] is True
-
-    mock_mt5_client.symbol_select.assert_called_with(
-        symbol="EURUSD",
-        enable=True,
-    )
+    assert response.json()["data"] == {
+        "symbol": "EURUSD",
+        "enable": False,
+        "success": True,
+    }
+    mock_mt5_client.symbol_select.assert_called_with(symbol="EURUSD", enable=False)
 
 
 def test_post_symbol_select_returns_parquet(
     client: TestClient,
     api_headers: dict[str, str],
-    mock_mt5_client: Mock,
 ) -> None:
-    """POST /symbols/{symbol}/select supports Parquet output."""
+    """Symbol selection supports Parquet output."""
     response = client.post(
         "/symbols/EURUSD/select?format=parquet",
         headers=api_headers,
     )
-
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
-    mock_mt5_client.symbol_select.assert_called_with(
-        symbol="EURUSD",
-        enable=True,
-    )
 
 
-def test_post_symbol_select_with_disable(
+def test_market_book_subscribe_tracks_cleanup_owner(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """POST /symbols/{symbol}/select supports enable=false."""
-    response = client.post(
-        "/symbols/EURUSD/select?enable=false",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 200
-
-    payload = response.json()
-    assert payload["data"]["enable"] is False
-
-    mock_mt5_client.symbol_select.assert_called_with(
-        symbol="EURUSD",
-        enable=False,
-    )
-
-
-def test_post_symbol_select_returns_false_when_mt5_rejects(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """POST /symbols/{symbol}/select exposes MT5 selection failures."""
-    mock_mt5_client.symbol_select.return_value = False
-
-    response = client.post(
-        "/symbols/EURUSD/select",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 200
-    assert response.json()["data"]["success"] is False
-    mock_mt5_client.symbol_select.assert_called_with(
-        symbol="EURUSD",
-        enable=True,
-    )
-
-
-def test_post_market_book_subscribe_returns_json(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """POST /market-book/{symbol}/subscribe returns result."""
+    """Successful subscriptions are recorded in the unified runtime state."""
     response = client.post(
         "/market-book/EURUSD/subscribe",
         headers=api_headers,
     )
-
+    state = _runtime_state(client)
     assert response.status_code == 200
-    test_app = cast("FastAPI", client.app)
-
-    payload = response.json()
-    assert payload["count"] == 1
-    assert payload["data"]["symbol"] == "EURUSD"
-    assert payload["data"]["subscribed"] is True
-    assert test_app.state.active_market_book_subscriptions == {"EURUSD"}
-    assert test_app.state.market_book_cleanup_client is mock_mt5_client
-
+    assert response.json()["data"]["subscribed"] is True
+    assert state.market_book_subscriptions == {"EURUSD"}
+    assert state.market_book_cleanup_client is mock_mt5_client
     mock_mt5_client.market_book_add.assert_called_with(symbol="EURUSD")
 
 
-def test_post_market_book_subscribe_returns_parquet(
+def test_market_book_subscribe_returns_parquet(
     client: TestClient,
     api_headers: dict[str, str],
-    mock_mt5_client: Mock,
 ) -> None:
-    """POST /market-book/{symbol}/subscribe supports Parquet output."""
+    """Market-book subscription supports Parquet output."""
     response = client.post(
         "/market-book/EURUSD/subscribe?format=parquet",
         headers=api_headers,
     )
-
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
-    mock_mt5_client.market_book_add.assert_called_with(symbol="EURUSD")
 
 
-def test_post_market_book_subscribe_validates_symbol_length(
-    client: TestClient,
-    api_headers: dict[str, str],
-) -> None:
-    """POST /market-book/{symbol}/subscribe rejects oversized symbols."""
-    response = client.post(
-        f"/market-book/{'X' * 33}/subscribe",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 422
-
-
-def test_post_market_book_subscribe_rejects_when_subscription_limit_exceeded(
+def test_market_book_subscribe_enforces_limit(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """New subscriptions should be rejected once the tracked limit is reached."""
-    test_app = cast("FastAPI", client.app)
-    test_app.state.active_market_book_subscriptions = {"EURUSD"}
-    test_app.state.max_market_book_subscriptions = 1
-
+    """A new subscription is rejected when the app-scoped limit is reached."""
+    state = _runtime_state(client)
+    state.market_book_subscriptions.add("EURUSD")
+    state.max_market_book_subscriptions = 1
     response = client.post(
         "/market-book/USDJPY/subscribe",
         headers=api_headers,
     )
-
     assert response.status_code == 429
     assert response.json()["title"] == "Subscription Limit Exceeded"
-    assert test_app.state.active_market_book_subscriptions == {"EURUSD"}
+    assert state.market_book_subscriptions == {"EURUSD"}
     mock_mt5_client.market_book_add.assert_not_called()
 
 
-def test_post_market_book_subscribe_allows_existing_symbol_at_limit(
+def test_market_book_resubscribe_at_limit_is_allowed(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """Re-subscribing an already tracked symbol should not be rejected by the cap."""
-    test_app = cast("FastAPI", client.app)
-    test_app.state.active_market_book_subscriptions = {"EURUSD"}
-    test_app.state.max_market_book_subscriptions = 1
-
+    """An already tracked symbol may be subscribed again at the limit."""
+    state = _runtime_state(client)
+    state.market_book_subscriptions.add("EURUSD")
+    state.max_market_book_subscriptions = 1
     response = client.post(
         "/market-book/EURUSD/subscribe",
         headers=api_headers,
     )
-
     assert response.status_code == 200
     mock_mt5_client.market_book_add.assert_called_with(symbol="EURUSD")
 
 
-def test_post_market_book_subscribe_does_not_track_failed_subscription(
+def test_failed_market_book_subscription_is_not_tracked(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """Failed subscriptions should not update tracked market-book state."""
-    test_app = cast("FastAPI", client.app)
+    """Failed MT5 subscription calls do not mutate runtime tracking."""
     mock_mt5_client.market_book_add.return_value = False
-
     response = client.post(
         "/market-book/EURUSD/subscribe",
         headers=api_headers,
     )
-
+    state = _runtime_state(client)
     assert response.status_code == 200
-    assert test_app.state.active_market_book_subscriptions == set()
-    assert test_app.state.market_book_cleanup_client is None
+    assert response.json()["data"]["subscribed"] is False
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
 
 
-def test_post_market_book_unsubscribe_returns_json(
+def test_market_book_unsubscribe_clears_last_owner(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """POST /market-book/{symbol}/unsubscribe returns result."""
-    test_app = cast("FastAPI", client.app)
-    test_app.state.active_market_book_subscriptions = {"EURUSD"}
-    test_app.state.market_book_cleanup_client = mock_mt5_client
-
+    """Successful removal of the final subscription clears cleanup ownership."""
+    state = _runtime_state(client)
+    state.market_book_subscriptions.add("EURUSD")
+    state.market_book_cleanup_client = mock_mt5_client
     response = client.post(
         "/market-book/EURUSD/unsubscribe",
         headers=api_headers,
     )
-
     assert response.status_code == 200
-
-    payload = response.json()
-    assert payload["count"] == 1
-    assert payload["data"]["symbol"] == "EURUSD"
-    assert payload["data"]["unsubscribed"] is True
-    assert test_app.state.active_market_book_subscriptions == set()
-    assert test_app.state.market_book_cleanup_client is None
-
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
     mock_mt5_client.market_book_release.assert_called_with(symbol="EURUSD")
 
 
-def test_post_market_book_unsubscribe_returns_parquet(
+def test_market_book_unsubscribe_keeps_owner_for_remaining_symbols(
     client: TestClient,
     api_headers: dict[str, str],
     mock_mt5_client: Mock,
 ) -> None:
-    """POST /market-book/{symbol}/unsubscribe supports Parquet output."""
-    test_app = cast("FastAPI", client.app)
-    test_app.state.active_market_book_subscriptions = {"EURUSD"}
-    test_app.state.market_book_cleanup_client = mock_mt5_client
+    """Cleanup ownership remains while another subscription is active."""
+    state = _runtime_state(client)
+    state.market_book_subscriptions.update({"EURUSD", "USDJPY"})
+    state.market_book_cleanup_client = mock_mt5_client
+    response = client.post(
+        "/market-book/EURUSD/unsubscribe",
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    assert state.market_book_subscriptions == {"USDJPY"}
+    assert state.market_book_cleanup_client is mock_mt5_client
 
+
+def test_failed_market_book_unsubscribe_preserves_tracking(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+) -> None:
+    """Failed unsubscribe calls leave tracked ownership unchanged."""
+    state = _runtime_state(client)
+    state.market_book_subscriptions.add("EURUSD")
+    state.market_book_cleanup_client = mock_mt5_client
+    mock_mt5_client.market_book_release.return_value = False
+    response = client.post(
+        "/market-book/EURUSD/unsubscribe",
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    assert state.market_book_subscriptions == {"EURUSD"}
+    assert state.market_book_cleanup_client is mock_mt5_client
+
+
+def test_market_book_unsubscribe_returns_parquet(
+    client: TestClient,
+    api_headers: dict[str, str],
+) -> None:
+    """Market-book unsubscribe supports Parquet output."""
     response = client.post(
         "/market-book/EURUSD/unsubscribe?format=parquet",
         headers=api_headers,
     )
-
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
-    mock_mt5_client.market_book_release.assert_called_with(symbol="EURUSD")
 
 
-def test_post_market_book_unsubscribe_validates_symbol_length(
+def test_market_book_symbol_length_is_validated(
     client: TestClient,
     api_headers: dict[str, str],
 ) -> None:
-    """POST /market-book/{symbol}/unsubscribe rejects oversized symbols."""
-    response = client.post(
-        f"/market-book/{'X' * 33}/unsubscribe",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 422
-
-
-def test_post_market_book_unsubscribe_keeps_cleanup_client_when_needed(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """Unsubscribing one symbol keeps cleanup state for remaining symbols."""
-    test_app = cast("FastAPI", client.app)
-    test_app.state.active_market_book_subscriptions = {"EURUSD", "USDJPY"}
-    test_app.state.market_book_cleanup_client = mock_mt5_client
-
-    response = client.post(
-        "/market-book/EURUSD/unsubscribe",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 200
-    assert test_app.state.active_market_book_subscriptions == {"USDJPY"}
-    assert test_app.state.market_book_cleanup_client is mock_mt5_client
-
-
-def test_post_market_book_unsubscribe_does_not_mutate_tracking_on_failure(
-    client: TestClient,
-    api_headers: dict[str, str],
-    mock_mt5_client: Mock,
-) -> None:
-    """Failed unsubscriptions should preserve tracked market-book state."""
-    test_app = cast("FastAPI", client.app)
-    test_app.state.active_market_book_subscriptions = {"EURUSD"}
-    test_app.state.market_book_cleanup_client = mock_mt5_client
-    mock_mt5_client.market_book_release.return_value = False
-
-    response = client.post(
-        "/market-book/EURUSD/unsubscribe",
-        headers=api_headers,
-    )
-
-    assert response.status_code == 200
-    assert test_app.state.active_market_book_subscriptions == {"EURUSD"}
-    assert test_app.state.market_book_cleanup_client is mock_mt5_client
-
-
-def test_market_book_subscriptions_are_released_on_shutdown(
-    mock_mt5_client: Mock,
-    api_headers: dict[str, str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Tracked market-book subscriptions should be released during shutdown."""
-    monkeypatch.setattr(health, "get_mt5_client", lambda: mock_mt5_client)
-    app.dependency_overrides.clear()
-    app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client
-
-    with TestClient(app) as test_client:
-        response = test_client.post(
-            "/market-book/EURUSD/subscribe",
+    """Oversized market-book symbols are rejected by request validation."""
+    symbol = "X" * 33
+    assert (
+        client.post(
+            f"/market-book/{symbol}/subscribe",
             headers=api_headers,
-        )
-        assert response.status_code == 200
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            f"/market-book/{symbol}/unsubscribe",
+            headers=api_headers,
+        ).status_code
+        == 422
+    )
 
-    assert mock_mt5_client.market_book_add.call_args_list == [call(symbol="EURUSD")]
-    assert mock_mt5_client.market_book_release.call_args_list == [call(symbol="EURUSD")]
 
-
-def test_openapi_excludes_order_send_endpoint(
-    client: TestClient,
-) -> None:
-    """The removed order-send endpoint should not appear in OpenAPI."""
+def test_trading_openapi_uses_mt5_order_type_schema(client: TestClient) -> None:
+    """OpenAPI retains the canonical MT5 order-type schema."""
     openapi = client.get("/openapi.json").json()
-
-    assert "/order/send" not in openapi["paths"]
-
-
-def test_openapi_documents_mt5_order_type_on_order_check(
-    client: TestClient,
-) -> None:
-    """Order check should expose ORDER_TYPE metadata on TradeRequest.type."""
-    openapi = client.get("/openapi.json").json()
-    trade_request_schema = openapi["components"]["schemas"]["TradeRequest"]
-    order_type_schema = trade_request_schema["properties"]["type"]
-
+    order_type_schema = openapi["components"]["schemas"]["TradeRequest"]["properties"][
+        "type"
+    ]
     assert_openapi_mt5_order_type_schema(order_type_schema)

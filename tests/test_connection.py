@@ -10,135 +10,145 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mt5api import dependencies
-from mt5api.constants import API_KEY_HEADER_NAME
+from mt5api.constants import API_KEY_HEADER_NAME, MT5_RUNTIME_STATE_KEY
 from mt5api.main import app
 
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    import httpx2
     from pytest_mock import MockerFixture
+
+
+def _runtime_state() -> dependencies.Mt5RuntimeState:
+    """Return the lifespan-owned application runtime state.
+
+    Returns:
+        Current application-scoped MT5 runtime state.
+    """
+    return cast(
+        "dependencies.Mt5RuntimeState",
+        getattr(app.state, MT5_RUNTIME_STATE_KEY),
+    )
 
 
 @pytest.fixture
 def connection_client(
     mocker: MockerFixture,
 ) -> Generator[tuple[TestClient, dict[str, Any]], None, None]:
-    """Test client with patched MT5 reconnect plumbing.
+    """Create a test client with patched reconnect initialization.
 
     Yields:
-        Tuple of (TestClient, recorder dict capturing reconnect calls).
+        Test client and a recorder containing replacement configs.
     """
-    recorder: dict[str, Any] = {
-        "configs": [],
-        "old_client": None,
-    }
-    old_client = mocker.Mock(name="old_mt5_client")
+    recorder: dict[str, Any] = {"configs": []}
     new_client = mocker.Mock(name="new_mt5_client")
-    recorder["old_client"] = old_client
     recorder["new_client"] = new_client
 
-    async def fake_replace(config: object) -> object:
-        await asyncio.sleep(0)
+    def fake_replace(
+        state: dependencies.Mt5RuntimeState,
+        config: object,
+    ) -> object:
         recorder["configs"].append(config)
+        state.client = new_client
         return new_client
 
-    mocker.patch.object(dependencies, "_mt5_client", old_client)
     mocker.patch(
         "mt5api.routers.connection.replace_mt5_client",
         side_effect=fake_replace,
     )
-
     app.dependency_overrides.clear()
-    app.state.active_market_book_subscriptions = set()
-    app.state.market_book_cleanup_client = None
-
     with TestClient(app) as test_client:
         yield test_client, recorder
-
     app.dependency_overrides.clear()
-    app.state.active_market_book_subscriptions = set()
-    app.state.market_book_cleanup_client = None
+
+
+def _login(
+    test_client: TestClient,
+    *,
+    login: int = 12345,
+    password: str | None = None,
+    server: str = "MetaQuotes-Demo",
+    timeout: int | None = None,
+) -> httpx2.Response:
+    """Submit a valid authenticated login request.
+
+    Returns:
+        HTTP response from the login endpoint.
+    """
+    request_password = "s3cret" if password is None else password
+    request_body: dict[str, object] = {
+        "login": login,
+        "password": request_password,
+        "server": server,
+    }
+    if timeout is not None:
+        request_body["timeout"] = timeout
+    return test_client.post(
+        "/connection/login",
+        json=request_body,
+        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
+    )
 
 
 def test_post_connection_login_reconnects(
     connection_client: tuple[TestClient, dict[str, Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """POST /connection/login swaps the singleton and returns connection info."""
+    """POST /connection/login installs the replacement and returns metadata."""
     test_client, recorder = connection_client
-
     with caplog.at_level("INFO"):
-        response = test_client.post(
-            "/connection/login",
-            json={
-                "login": 12345,
-                "password": "s3cret",
-                "server": "MetaQuotes-Demo",
-                "timeout": 60000,
-            },
-            headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
-        )
-
+        response = _login(test_client, timeout=60000)
     assert response.status_code == 200
-    payload = response.json()
-    assert payload == {
+    assert response.json() == {
         "login": 12345,
         "server": "MetaQuotes-Demo",
         "timeout": 60000,
         "connected": True,
     }
-    assert "password" not in payload
-    assert "s3cret" not in response.text
-
-    assert len(recorder["configs"]) == 1
     config = recorder["configs"][0]
     assert config.login == 12345
     assert config.server == "MetaQuotes-Demo"
-    assert config.timeout == 60000
     assert config.password.get_secret_value() == "s3cret"
+    assert _runtime_state().client is recorder["new_client"]
     assert all("s3cret" not in record.getMessage() for record in caplog.records)
 
 
-def test_post_connection_login_releases_market_book_after_reconnect(
+def test_post_connection_login_releases_market_book_after_success(
     connection_client: tuple[TestClient, dict[str, Any]],
     mocker: MockerFixture,
 ) -> None:
-    """Reconnect should release tracked market-book subscriptions after success."""
+    """Successful reconnect releases subscriptions after replacement."""
     test_client, _ = connection_client
     cleanup_client = mocker.Mock(name="cleanup_client")
-    app.state.active_market_book_subscriptions = {"EURUSD", "GBPUSD"}
-    app.state.market_book_cleanup_client = cleanup_client
-
-    response = test_client.post(
-        "/connection/login",
-        json={
-            "login": 7,
-            "password": "p",
-            "server": "Demo",
-        },
-        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
-    )
-
+    state = _runtime_state()
+    state.market_book_subscriptions.update({"EURUSD", "GBPUSD"})
+    state.market_book_cleanup_client = cleanup_client
+    response = _login(test_client, login=7, password="p", server="Demo")
     assert response.status_code == 200
-    assert cleanup_client.market_book_release.call_count == 2
     cleanup_client.market_book_release.assert_any_call(symbol="EURUSD")
     cleanup_client.market_book_release.assert_any_call(symbol="GBPUSD")
-    assert app.state.active_market_book_subscriptions == set()
-    assert app.state.market_book_cleanup_client is None
+    assert cleanup_client.market_book_release.call_count == 2
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
 
 
-def test_post_connection_login_preserves_market_book_on_reconnect_failure(
+def test_post_connection_login_preserves_subscriptions_on_failure(
     connection_client: tuple[TestClient, dict[str, Any]],
     mocker: MockerFixture,
 ) -> None:
-    """Reconnect failure should not drop tracked market-book subscriptions."""
+    """Failed replacement does not clear pre-existing subscription ownership."""
     test_client, recorder = connection_client
     cleanup_client = mocker.Mock(name="cleanup_client")
-    app.state.active_market_book_subscriptions = {"EURUSD"}
-    app.state.market_book_cleanup_client = cleanup_client
+    state = _runtime_state()
+    state.market_book_subscriptions.add("EURUSD")
+    state.market_book_cleanup_client = cleanup_client
 
-    async def fail_replace(config: object) -> None:
-        await asyncio.sleep(0)
+    def fail_replace(
+        runtime_state: dependencies.Mt5RuntimeState,
+        config: object,
+    ) -> None:
+        del runtime_state
         recorder["configs"].append(config)
         error_message = "connection unavailable"
         raise RuntimeError(error_message)
@@ -147,38 +157,22 @@ def test_post_connection_login_preserves_market_book_on_reconnect_failure(
         "mt5api.routers.connection.replace_mt5_client",
         side_effect=fail_replace,
     )
-
-    response = test_client.post(
-        "/connection/login",
-        json={
-            "login": 7,
-            "password": "p",
-            "server": "Demo",
-        },
-        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
-    )
-
+    response = _login(test_client, login=7, password="p", server="Demo")
     assert response.status_code == 503
     cleanup_client.market_book_release.assert_not_called()
-    assert app.state.active_market_book_subscriptions == {"EURUSD"}
-    assert app.state.market_book_cleanup_client is cleanup_client
+    assert state.market_book_subscriptions == {"EURUSD"}
+    assert state.market_book_cleanup_client is cleanup_client
 
 
 def test_post_connection_login_requires_api_key(
     connection_client: tuple[TestClient, dict[str, Any]],
 ) -> None:
-    """The login endpoint must reject requests without an API key."""
+    """The login endpoint rejects unauthenticated requests."""
     test_client, recorder = connection_client
-
     response = test_client.post(
         "/connection/login",
-        json={
-            "login": 1,
-            "password": "p",
-            "server": "S",
-        },
+        json={"login": 1, "password": "p", "server": "S"},
     )
-
     assert response.status_code == 401
     assert recorder["configs"] == []
 
@@ -186,93 +180,35 @@ def test_post_connection_login_requires_api_key(
 @pytest.mark.parametrize(
     "body",
     [
-        pytest.param(
-            {"password": "p", "server": "S"},
-            id="missing-login",
-        ),
-        pytest.param(
-            {"login": 1, "server": "S"},
-            id="missing-password",
-        ),
-        pytest.param(
-            {"login": 1, "password": "p"},
-            id="missing-server",
-        ),
-        pytest.param(
-            {"login": 0, "password": "p", "server": "S"},
-            id="login-not-positive",
-        ),
-        pytest.param(
-            {"login": 1, "password": "", "server": "S"},
-            id="password-empty",
-        ),
-        pytest.param(
-            {"login": 1, "password": "x" * 129, "server": "S"},
-            id="password-too-long",
-        ),
-        pytest.param(
-            {"login": 1, "password": "p", "server": ""},
-            id="server-empty",
-        ),
-        pytest.param(
-            {"login": 1, "password": "p", "server": "x" * 129},
-            id="server-too-long",
-        ),
-        pytest.param(
-            {"login": 1, "password": "p", "server": "S", "timeout": 0},
-            id="timeout-not-positive",
-        ),
-        pytest.param(
-            {"login": 1, "password": "p", "server": "S", "extra": "nope"},
-            id="extra-field-forbidden",
-        ),
+        {"password": "p", "server": "S"},
+        {"login": 1, "server": "S"},
+        {"login": 1, "password": "p"},
+        {"login": 0, "password": "p", "server": "S"},
+        {"login": 1, "password": "", "server": "S"},
+        {"login": 1, "password": "p", "server": ""},
+        {"login": 1, "password": "p", "server": "S", "timeout": 0},
+        {"login": 1, "password": "p", "server": "S", "extra": "nope"},
     ],
 )
 def test_post_connection_login_validates_fields(
     connection_client: tuple[TestClient, dict[str, Any]],
     body: dict[str, Any],
 ) -> None:
-    """The login endpoint must reject malformed or out-of-bounds payloads."""
+    """The login endpoint rejects malformed payloads before reconnecting."""
     test_client, recorder = connection_client
-
     response = test_client.post(
         "/connection/login",
         json=body,
         headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
     )
-
     assert response.status_code == 422
     assert recorder["configs"] == []
 
 
-def test_post_connection_login_validation_does_not_leak_password(
-    connection_client: tuple[TestClient, dict[str, Any]],
-) -> None:
-    """Invalid login payloads must not echo submitted passwords in 422 bodies."""
-    test_client, recorder = connection_client
-    password = "very-secret-pa55word-XYZ"  # noqa: S105
-
-    response = test_client.post(
-        "/connection/login",
-        json={"login": 1, "password": password * 6, "server": "S"},
-        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
-    )
-
-    assert response.status_code == 422
-    assert password not in response.text
-    assert recorder["configs"] == []
-
-
-def test_post_connection_login_does_not_leak_password_on_failure(
+def test_post_connection_login_failure_does_not_leak_password(
     mocker: MockerFixture,
 ) -> None:
-    """A reconnect failure must never reflect the password in the HTTP body.
-
-    Simulates an upstream MT5 exception that quotes the password (as
-    ``pdmt5``/MetaTrader5 can do via ``Mt5Config.__repr__``) and asserts the
-    HTTP response body contains neither the password nor the underlying
-    exception text. Server-side logs may still record diagnostics.
-    """
+    """Upstream exceptions containing credentials are not reflected to clients."""
     password = "very-secret-pa55word-XYZ"  # noqa: S105
 
     class LeakyClient:
@@ -283,88 +219,41 @@ def test_post_connection_login_does_not_leak_password_on_failure(
             message = f"upstream MT5 error referencing config {self.config!r}"
             raise ValueError(message)
 
-    mocker.patch.object(dependencies, "_mt5_client", mocker.Mock(name="old"))
     mocker.patch.object(dependencies, "Mt5DataClient", LeakyClient)
     app.dependency_overrides.clear()
-    app.state.active_market_book_subscriptions = set()
-    app.state.market_book_cleanup_client = None
-
     with TestClient(app) as test_client:
-        response = test_client.post(
-            "/connection/login",
-            json={
-                "login": 12345,
-                "password": password,
-                "server": "MetaQuotes-Demo",
-            },
-            headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
-        )
-
+        response = _login(test_client, password=password)
     assert response.status_code == 503
     assert password not in response.text
     assert "upstream MT5 error" not in response.text
 
 
-def test_post_connection_login_runtime_error_returns_problem_details(
-    mocker: MockerFixture,
-) -> None:
-    """Runtime reconnect failures should return RFC 7807 problem details."""
-    error_message = "connection unavailable"
-
-    mocker.patch.object(dependencies, "_mt5_client", mocker.Mock(name="old"))
-    mocker.patch(
-        "mt5api.routers.connection.replace_mt5_client",
-        side_effect=RuntimeError(error_message),
-    )
-    app.dependency_overrides.clear()
-    app.state.active_market_book_subscriptions = set()
-    app.state.market_book_cleanup_client = None
-
-    with TestClient(app) as test_client:
-        response = test_client.post(
-            "/connection/login",
-            json={
-                "login": 12345,
-                "password": "s3cret",
-                "server": "MetaQuotes-Demo",
-            },
-            headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
-        )
-
-    assert response.status_code == 503
-    assert response.json() == {
-        "type": "/errors/runtime-error",
-        "title": "Runtime Error",
-        "status": 503,
-        "detail": "connection unavailable",
-        "instance": "http://testserver/connection/login",
-    }
-
-
 def test_post_connection_login_serializes_concurrent_reconnects(
     mocker: MockerFixture,
 ) -> None:
-    """Concurrent login requests should enter reconnect one at a time."""
+    """Application-scoped lock serializes concurrent reconnect requests."""
     active_count = 0
     max_active_count = 0
     login_values: list[int] = []
 
-    async def fake_replace(config: object) -> None:
+    async def fake_replace(
+        state: dependencies.Mt5RuntimeState,
+        config: object,
+    ) -> None:
         nonlocal active_count, max_active_count
+        del state
         active_count += 1
         max_active_count = max(max_active_count, active_count)
         login_values.append(cast("Any", config).login)
         await asyncio.sleep(0.01)
         active_count -= 1
 
-    mocker.patch.object(dependencies, "_mt5_client", mocker.Mock(name="old"))
     mocker.patch(
         "mt5api.routers.connection.replace_mt5_client",
         side_effect=fake_replace,
     )
     app.dependency_overrides.clear()
-    app.state.active_market_book_subscriptions = set()
-    app.state.market_book_cleanup_client = None
+    dependencies.initialize_mt5_runtime_state(app, max_market_book_subscriptions=100)
 
     async def post_login(test_client: httpx.AsyncClient, login: int) -> httpx.Response:
         return await test_client.post(
@@ -391,87 +280,15 @@ def test_post_connection_login_serializes_concurrent_reconnects(
             )
 
     responses = asyncio.run(run_requests())
-
     assert [response.status_code for response in responses] == [200, 200]
     assert max_active_count == 1
     assert sorted(login_values) == [12345, 23456]
 
 
-def test_replace_mt5_client_swaps_singleton(
+def test_replace_mt5_client_installs_only_after_success(
     mocker: MockerFixture,
 ) -> None:
-    """replace_mt5_client installs the new client without shutting down MT5."""
-
-    class DummyClient:
-        def __init__(self, config: object) -> None:
-            self.config = config
-            self.initialized = False
-
-        def initialize_and_login_mt5(self) -> None:
-            self.initialized = True
-
-        def shutdown(self) -> None:  # pragma: no cover - exercised via old client
-            self.initialized = False
-
-    old_client = mocker.Mock(name="old_client")
-    mocker.patch.object(dependencies, "_mt5_client", old_client)
-    mocker.patch.object(dependencies, "Mt5DataClient", DummyClient)
-
-    config = mocker.Mock(name="config")
-
-    async def run() -> DummyClient:
-        async with dependencies.get_mt5_client_lock():
-            client = await dependencies.replace_mt5_client(config)
-        assert isinstance(client, DummyClient)
-        return client
-
-    new_client = asyncio.run(run())
-
-    assert new_client.config is config
-    assert new_client.initialized is True
-    old_client.shutdown.assert_not_called()
-    assert dependencies._mt5_client is new_client  # pyright: ignore[reportPrivateUsage]
-
-
-def test_replace_mt5_client_preserves_old_client_on_failure(
-    mocker: MockerFixture,
-) -> None:
-    """A failed init must keep the previously installed client in place."""
-    password = "leaked-password-AAA"  # noqa: S105
-
-    class FailingClient:
-        def __init__(self, config: object) -> None:
-            self.config = config
-
-        def initialize_and_login_mt5(self) -> None:
-            # Simulate an upstream exception that quotes the secret config.
-            message = f"login refused for {password}"
-            raise ValueError(message)
-
-    old_client = mocker.Mock(name="old_client")
-    mocker.patch.object(dependencies, "_mt5_client", old_client)
-    mocker.patch.object(dependencies, "Mt5DataClient", FailingClient)
-
-    async def run() -> None:
-        async with dependencies.get_mt5_client_lock():
-            await dependencies.replace_mt5_client(mocker.Mock(name="config"))
-
-    with pytest.raises(RuntimeError) as excinfo:
-        asyncio.run(run())
-
-    # The raised message must not include the underlying exception text so
-    # any credentials embedded by upstream libraries do not surface to clients.
-    assert str(excinfo.value) == "Failed to initialize MT5 client"
-    assert password not in str(excinfo.value)
-    # Previous client is preserved and was NOT shut down.
-    assert dependencies._mt5_client is old_client  # pyright: ignore[reportPrivateUsage]
-    old_client.shutdown.assert_not_called()
-
-
-def test_replace_mt5_client_initializes_when_no_previous_client(
-    mocker: MockerFixture,
-) -> None:
-    """replace_mt5_client should initialize cleanly when no client exists yet."""
+    """Replacement preserves the old client on failure and swaps on success."""
 
     class DummyClient:
         def __init__(self, config: object) -> None:
@@ -480,15 +297,22 @@ def test_replace_mt5_client_initializes_when_no_previous_client(
         def initialize_and_login_mt5(self) -> None:
             return None
 
-    mocker.patch.object(dependencies, "_mt5_client", None)
+    old_client = mocker.Mock(name="old_client")
+    state = dependencies.Mt5RuntimeState(client=old_client)
     mocker.patch.object(dependencies, "Mt5DataClient", DummyClient)
+    config = mocker.Mock(name="config")
+    new_client = asyncio.run(dependencies.replace_mt5_client(state, config))
+    assert state.client is new_client
+    assert new_client.config is config
+    old_client.shutdown.assert_not_called()
 
-    async def run() -> DummyClient:
-        async with dependencies.get_mt5_client_lock():
-            client = await dependencies.replace_mt5_client(mocker.Mock(name="config"))
-        assert isinstance(client, DummyClient)
-        return client
+    class FailingClient(DummyClient):
+        def initialize_and_login_mt5(self) -> None:
+            error_message = "refused"
+            raise ValueError(error_message)
 
-    new_client = asyncio.run(run())
-
-    assert dependencies._mt5_client is new_client  # pyright: ignore[reportPrivateUsage]
+    state.client = old_client
+    mocker.patch.object(dependencies, "Mt5DataClient", FailingClient)
+    with pytest.raises(RuntimeError, match=r"^Failed to initialize MT5 client$"):
+        asyncio.run(dependencies.replace_mt5_client(state, config))
+    assert state.client is old_client

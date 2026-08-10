@@ -9,6 +9,7 @@ export NPM_CONFIG_MIN_RELEASE_AGE="${COOLDOWN_DAYS}"
 export PNPM_CONFIG_MINIMUM_RELEASE_AGE=$((COOLDOWN_DAYS * 24 * 60))
 
 # Python
+uv sync
 uv run ruff format .
 uv run ruff check --fix .
 uv run pyright .

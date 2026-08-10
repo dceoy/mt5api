@@ -166,9 +166,12 @@ with typed validation for core fields such as `action`, `symbol`, `volume`,
 
 - `POST /connection/login` (body: `{"login": ..., "password": "...",
 "server": "...", "timeout": ...}`) — Reconnect the MT5 terminal with the
-  supplied credentials. Any active market-book subscriptions are released and
-  the previous MT5 client is shut down before the new connection is
-  established. The supplied password is never echoed in responses or logs.
+  supplied credentials. The replacement client is initialized and installed
+  before active market-book subscriptions are released and cleared. The old
+  wrapper is not shut down after a successful replacement because MetaTrader5
+  connection state is process-global; shutting it down could close the newly
+  established session. If replacement fails, existing subscription tracking is
+  preserved. The supplied password is never echoed in responses or logs.
 
 ## Response Formatter Utilities
 

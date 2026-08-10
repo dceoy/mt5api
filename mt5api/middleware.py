@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -205,9 +205,10 @@ def http_exception_handler(
         Problem Details JSON response.
     """
     if isinstance(exc.detail, dict):
-        detail = exc.detail.get("detail", str(exc.detail))
-        error_type = str(exc.detail.get("type", "/errors/http-error"))
-        title = str(exc.detail.get("title", "HTTP Error"))
+        detail_data = cast("dict[str, Any]", exc.detail)
+        detail = str(detail_data.get("detail", str(exc.detail)))
+        error_type = str(detail_data.get("type", "/errors/http-error"))
+        title = str(detail_data.get("title", "HTTP Error"))
     else:
         detail = str(exc.detail)
         error_type = "/errors/http-error"

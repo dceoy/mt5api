@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
 
 from mt5api.auth import verify_api_key
@@ -32,12 +32,15 @@ router = APIRouter(tags=["health"])
     summary="Health check",
     description="Check API and MT5 terminal connection status",
 )
-async def get_health() -> HealthResponse:
+async def get_health(request: Request) -> HealthResponse:
     """Check API health and MT5 terminal connectivity.
 
     This endpoint does NOT require authentication (public health check).
     Returns 200 OK even if MT5 is unavailable to allow infrastructure
     health monitoring without failing on MT5 outages.
+
+    Args:
+        request: Request whose application owns the MT5 runtime state.
 
     Returns:
         HealthResponse with API and MT5 connection status.
@@ -46,7 +49,7 @@ async def get_health() -> HealthResponse:
     mt5_version = None
 
     try:
-        client = await run_in_threadpool(get_mt5_client)
+        client = await run_in_threadpool(get_mt5_client, request)
         version_dict = await run_in_threadpool(client.version_as_dict)
         if version_dict:
             mt5_version = f"{version_dict.get('mt5_terminal_version', 'unknown')}"

@@ -18,7 +18,7 @@ def test_lifespan_calls_shutdown_on_exit(
 
     shutdown_called = {"value": False}
 
-    def fake_shutdown() -> None:
+    def fake_shutdown(_state: object) -> None:
         shutdown_called["value"] = True
 
     monkeypatch.setattr(main, "shutdown_mt5_client", fake_shutdown)
