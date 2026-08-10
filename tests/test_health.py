@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib.metadata import version
 from typing import TYPE_CHECKING
 
 import pytest
@@ -12,6 +13,11 @@ if TYPE_CHECKING:
     from unittest.mock import Mock
 
     from fastapi.testclient import TestClient
+
+
+def test_api_version_uses_package_metadata() -> None:
+    """Test API version has one authoritative package-metadata source."""
+    assert version("mt5api") == API_VERSION
 
 
 def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:

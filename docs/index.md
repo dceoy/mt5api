@@ -26,7 +26,6 @@ system.
 
 ## Requirements
 
-- Python 3.11+
 - Windows OS with MetaTrader 5 terminal installed and logged in
 - Linux and macOS are not supported for the API server runtime, but they work
   for HTTP clients

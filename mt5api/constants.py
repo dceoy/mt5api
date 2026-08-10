@@ -1,12 +1,14 @@
 """Application-wide constants."""
 
+from importlib.metadata import version
+
 API_TITLE = "MT5 REST API"
 API_DESCRIPTION = (
     "REST API for MetaTrader 5 data access and non-executing terminal utilities. "
     "Provides market data, account information, trading history, calculations, "
     "and safe operational endpoints via HTTP."
 )
-API_VERSION = "1.0.2"
+API_VERSION = version("mt5api")
 API_DOCS_URL = "/docs"
 API_REDOC_URL = "/redoc"
 API_OPENAPI_URL = "/openapi.json"
