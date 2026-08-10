@@ -10,7 +10,6 @@ macOS because the `MetaTrader5` Python package is supported only on Windows.
 
 - Windows 10/11
 - MetaTrader 5 installed and logged in
-- Python 3.11+
 - `mt5api` installed
 - PowerShell access with permission to install and manage services
 
