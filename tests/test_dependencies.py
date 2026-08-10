@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from operator import add
 from typing import Any
 
 import pytest
@@ -80,7 +81,6 @@ def test_get_mt5_client_initializes_and_reuses_state_client(
     monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
     request = _request(FastAPI())
-
     client = dependencies.get_mt5_client(request)
     assert isinstance(client, DummyClient)
     assert client.initialized is True
@@ -97,12 +97,12 @@ def test_get_mt5_client_raises_runtime_error_on_failure(
             self.config = config
 
         def initialize_and_login_mt5(self) -> None:
-            raise ValueError("boom")
+            error_message = "boom"
+            raise ValueError(error_message)
 
     monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
     request = _request(FastAPI())
-
     with pytest.raises(RuntimeError, match="Failed to initialize MT5 client"):
         dependencies.get_mt5_client(request)
     assert dependencies.get_mt5_runtime_state(request).client is None
@@ -110,8 +110,6 @@ def test_get_mt5_client_raises_runtime_error_on_failure(
 
 def test_shutdown_mt5_client_clears_state() -> None:
     """Shutdown clears and closes the application client."""
-    client = pytest.MonkeyPatch.context  # keep a concrete non-Any symbol for typing
-    del client
 
     class DummyClient:
         shutdown_called = False
@@ -151,11 +149,12 @@ def test_replace_mt5_client_preserves_old_client_on_failure(
 
     class FailingClient(DummyClient):
         def initialize_and_login_mt5(self) -> None:
-            raise ValueError("secret upstream error")
+            error_message = "secret upstream error"
+            raise ValueError(error_message)
 
     state.client = old_client  # type: ignore[assignment]
     monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
-    with pytest.raises(RuntimeError, match="^Failed to initialize MT5 client$"):
+    with pytest.raises(RuntimeError, match=r"^Failed to initialize MT5 client$"):
         asyncio.run(
             dependencies.replace_mt5_client(state, config)  # type: ignore[arg-type]
         )
@@ -174,7 +173,8 @@ def test_release_market_book_subscriptions_cleans_all_state(
         def market_book_release(self, *, symbol: str) -> None:
             self.calls.append(symbol)
             if symbol == "EURUSD":
-                raise RuntimeError("boom")
+                error_message = "boom"
+                raise RuntimeError(error_message)
 
     cleanup = CleanupClient()
     state = dependencies.Mt5RuntimeState(
@@ -201,5 +201,5 @@ def test_release_market_book_subscriptions_handles_missing_or_empty_client() -> 
 
 def test_run_in_threadpool_returns_result() -> None:
     """Threadpool helper forwards positional and keyword arguments."""
-    result = asyncio.run(dependencies.run_in_threadpool(lambda a, b: a + b, 2, b=3))
+    result = asyncio.run(dependencies.run_in_threadpool(add, 2, 3))
     assert result == 5
