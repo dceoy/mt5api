@@ -21,6 +21,8 @@ from tests.mt5_constants import Mt5BookType, Mt5OrderType, install_mt5_constants
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    from pdmt5.dataframe import Mt5DataClient
+
     from mt5api.dependencies import Mt5RuntimeState
 
 if "MetaTrader5" not in sys.modules:
@@ -194,27 +196,24 @@ def mock_mt5_client() -> Mock:
 @pytest.fixture
 def client(
     mock_mt5_client: Mock,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[TestClient, None, None]:
     """Create FastAPI test client with mocked MT5 client.
 
     Args:
         mock_mt5_client: Mocked Mt5DataClient fixture.
-        monkeypatch: Pytest monkeypatch fixture for patching.
 
     Yields:
         FastAPI test client.
     """
     from mt5api import dependencies  # noqa: PLC0415
     from mt5api.main import app  # noqa: PLC0415
-    from mt5api.routers import health  # noqa: PLC0415
 
-    monkeypatch.setattr(health, "get_mt5_client", lambda _request: mock_mt5_client)
     app.dependency_overrides.clear()
     app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client
 
     with TestClient(app) as test_client:
         state = cast("Mt5RuntimeState", getattr(app.state, MT5_RUNTIME_STATE_KEY))
+        state.client = cast("Mt5DataClient", mock_mt5_client)
         state.market_book_subscriptions.clear()
         state.market_book_cleanup_client = None
         yield test_client
