@@ -37,7 +37,11 @@ async def post_connection_login(
     app_request: Request,
     request: LoginRequest,
 ) -> LoginResponse:
-    """Reconnect the application-scoped MT5 client with new credentials."""
+    """Reconnect the application-scoped MT5 client with new credentials.
+
+    Returns:
+        Connection metadata for the newly established session.
+    """
     config = Mt5Config(
         login=request.login,
         password=request.password.get_secret_value(),
@@ -45,11 +49,9 @@ async def post_connection_login(
         timeout=request.timeout,
     )
     state = get_mt5_runtime_state(app_request)
-
     async with state.client_lock:
         await replace_mt5_client(state, config)
         await release_market_book_subscriptions(state)
-
     logger.info(
         "MT5 client reconnected (login=%d, server=%s)",
         request.login,
