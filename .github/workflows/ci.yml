@@ -50,6 +50,26 @@ jobs:
     with:
       package-path: .
       runs-on: windows-latest
+  python-314-test:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint-and-test')
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+      - name: Sync Python 3.14 environment
+        run: uv sync --python 3.14 --all-groups --locked
+      - name: Run tests on Python 3.14
+        run: uv run --python 3.14 pytest
   python-docs-deploy:
     if: >
       github.event_name == 'push'
@@ -81,6 +101,7 @@ jobs:
     needs:
       - python-lint-and-scan
       - python-test
+      - python-314-test
     uses: dceoy/gha-for-devops/.github/workflows/dependabot-auto-merge.yml@main  # zizmor: ignore[unpinned-uses]
     permissions:
       contents: write
