@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 def test_api_version_uses_package_metadata() -> None:
     """Test API version has one authoritative package-metadata source."""
-    assert API_VERSION == version("mt5api")
+    assert version("mt5api") == API_VERSION
 
 
 def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
