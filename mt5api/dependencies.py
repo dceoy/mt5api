@@ -16,11 +16,9 @@ from .models import ResponseFormat
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
     from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
-
 T = TypeVar("T")
 
 
@@ -47,7 +45,7 @@ def initialize_mt5_runtime_state(
         max_market_book_subscriptions: Optional explicit subscription limit.
 
     Returns:
-        The newly installed runtime state.
+        Newly installed runtime state.
     """
     state = Mt5RuntimeState(
         max_market_book_subscriptions=(
@@ -63,9 +61,8 @@ def initialize_mt5_runtime_state(
 def get_mt5_runtime_state(request: Request) -> Mt5RuntimeState:
     """Return the request application's MT5 runtime state.
 
-    A state object is installed lazily for direct ASGI/test usage that bypasses
-    the application's lifespan hook; normal application startup installs it
-    explicitly.
+    Returns:
+        Existing state or a lazily installed state for direct ASGI usage.
     """
     state = getattr(request.app.state, MT5_RUNTIME_STATE_KEY, None)
     if isinstance(state, Mt5RuntimeState):
@@ -74,7 +71,11 @@ def get_mt5_runtime_state(request: Request) -> Mt5RuntimeState:
 
 
 def get_mt5_client_lock(request: Request) -> asyncio.Lock:
-    """Return the application-scoped lock guarding MT5 client replacement."""
+    """Return the application-scoped MT5 replacement lock.
+
+    Returns:
+        Lock guarding client replacement and subscription cleanup.
+    """
     return get_mt5_runtime_state(request).client_lock
 
 
@@ -115,24 +116,16 @@ async def replace_mt5_client(
     state: Mt5RuntimeState,
     config: Mt5Config,
 ) -> Mt5DataClient:
-    """Replace the application's MT5 client with a newly initialized connection.
+    """Replace the application's client after successful initialization.
 
-    The replacement is initialized before ``state.client`` is changed. The
-    MetaTrader5 Python module has process-global connection state, so the
-    previous wrapper must not be shut down after a successful reconnect: doing
-    so would close the newly opened process-global connection. Callers must
-    hold ``state.client_lock`` while replacing the client and clearing
-    subscription state.
-
-    Args:
-        state: Application-scoped runtime state to update.
-        config: Configuration for the new MT5 connection.
+    MetaTrader5 connection state is process-global, so the previous wrapper is
+    not shut down after success because doing so could close the new session.
 
     Returns:
-        The newly initialized MT5 data client.
+        Newly initialized and installed client.
 
     Raises:
-        RuntimeError: If the new client cannot be constructed or initialized.
+        RuntimeError: If the replacement cannot be initialized.
     """
     try:
         new_client = Mt5DataClient(config=config)
@@ -141,7 +134,6 @@ async def replace_mt5_client(
         logger.exception("Failed to initialize MT5 client")
         error_message = "Failed to initialize MT5 client"
         raise RuntimeError(error_message) from exc
-
     state.client = new_client
     return new_client
 
@@ -152,7 +144,6 @@ async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
     if not subscriptions:
         state.market_book_cleanup_client = None
         return
-
     cleanup_client = state.market_book_cleanup_client
     if cleanup_client is None:
         logger.warning("Active market-book subscriptions found without cleanup client")
@@ -176,7 +167,11 @@ async def run_in_threadpool(
     *args: Any,  # noqa: ANN401
     **kwargs: Any,  # noqa: ANN401
 ) -> T:
-    """Run a synchronous MT5 function without blocking the event loop."""
+    """Run a synchronous MT5 function without blocking the event loop.
+
+    Returns:
+        Result returned by ``func``.
+    """
     return await asyncio.to_thread(func, *args, **kwargs)
 
 
@@ -184,22 +179,28 @@ def get_response_format(
     accept: Annotated[str | None, Header()] = None,
     format_param: Annotated[ResponseFormat | None, Query(alias="format")] = None,
 ) -> ResponseFormat:
-    """Determine response format from query parameter or Accept header."""
+    """Determine response format from query parameter or Accept header.
+
+    Returns:
+        Selected response format, defaulting to JSON.
+    """
     if format_param is not None:
         return format_param
-
     if accept:
         accept_lower = accept.lower()
         if "application/parquet" in accept_lower:
             return ResponseFormat.PARQUET
         if "application/json" in accept_lower:
             return ResponseFormat.JSON
-
     return ResponseFormat.JSON
 
 
 def get_request_info(request: Request) -> dict[str, Any]:
-    """Extract request information for logging."""
+    """Extract request information for logging.
+
+    Returns:
+        Request method, URL, client address, and user agent.
+    """
     return {
         "method": request.method,
         "url": str(request.url),
