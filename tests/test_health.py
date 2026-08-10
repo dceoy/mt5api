@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from importlib.metadata import version
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
+from fastapi import FastAPI, Request
 
 from mt5api.constants import API_VERSION
 
@@ -13,6 +14,33 @@ if TYPE_CHECKING:
     from unittest.mock import Mock
 
     from fastapi.testclient import TestClient
+    from pdmt5.dataframe import Mt5DataClient
+    from starlette.types import Scope
+
+
+def _request(app: FastAPI | None = None) -> Request:
+    """Build a minimal request for direct health-handler tests.
+
+    Returns:
+        Request bound to the supplied or a fresh FastAPI application.
+    """
+    return Request(
+        cast(
+            "Scope",
+            {
+                "type": "http",
+                "app": FastAPI() if app is None else app,
+                "method": "GET",
+                "path": "/health",
+                "headers": [],
+                "scheme": "http",
+                "server": ("testserver", 80),
+                "client": ("testclient", 50000),
+                "root_path": "",
+                "query_string": b"",
+            },
+        )
+    )
 
 
 def test_api_version_uses_package_metadata() -> None:
@@ -118,19 +146,42 @@ def test_last_error_returns_parquet(
 
 
 @pytest.mark.asyncio
+async def test_get_health_uses_request_scoped_runtime_client(
+    mock_mt5_client: Mock,
+) -> None:
+    """Health probing uses the production request-scoped client accessor."""
+    from mt5api import dependencies  # noqa: PLC0415
+    from mt5api.routers import health  # noqa: PLC0415
+
+    app = FastAPI()
+    state = dependencies.initialize_mt5_runtime_state(
+        app,
+        max_market_book_subscriptions=1,
+    )
+    state.client = cast("Mt5DataClient", mock_mt5_client)
+
+    response = await health.get_health(_request(app))
+
+    assert response.status == "healthy"
+    assert response.mt5_connected is True
+    assert response.mt5_version == "5.0.4321"
+    mock_mt5_client.version_as_dict.assert_called_once_with()
+
+
+@pytest.mark.asyncio
 async def test_get_health_handles_runtime_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health handles MT5 runtime errors gracefully."""
     from mt5api.routers import health  # noqa: PLC0415
 
-    def raise_runtime_error() -> None:
+    def raise_runtime_error(_request: Request) -> None:
         error_message = "MT5 unavailable"
         raise RuntimeError(error_message)
 
     monkeypatch.setattr(health, "get_mt5_client", raise_runtime_error)
 
-    response = await health.get_health()
+    response = await health.get_health(_request())
 
     assert response.mt5_connected is False
     assert response.status == "unhealthy"
@@ -148,12 +199,12 @@ async def test_get_health_handles_version_probe_failure(
             error_message = "MT5 disconnected"
             raise TypeError(error_message)
 
-    def get_client() -> DummyClient:
+    def get_client(_request: Request) -> DummyClient:
         return DummyClient()
 
     monkeypatch.setattr(health, "get_mt5_client", get_client)
 
-    response = await health.get_health()
+    response = await health.get_health(_request())
 
     assert response.mt5_connected is False
     assert response.status == "unhealthy"
@@ -172,12 +223,12 @@ async def test_get_health_handles_unexpected_probe_failure(
             error_message = "IPC failure"
             raise OSError(error_message)
 
-    def get_client() -> DummyClient:
+    def get_client(_request: Request) -> DummyClient:
         return DummyClient()
 
     monkeypatch.setattr(health, "get_mt5_client", get_client)
 
-    response = await health.get_health()
+    response = await health.get_health(_request())
 
     assert response.mt5_connected is False
     assert response.status == "unhealthy"
@@ -195,11 +246,11 @@ async def test_get_health_handles_empty_version_dict(
         def version_as_dict(self) -> dict[str, str]:
             return {}
 
-    def get_client() -> DummyClient:
+    def get_client(_request: Request) -> DummyClient:
         return DummyClient()
 
     monkeypatch.setattr(health, "get_mt5_client", get_client)
 
-    response = await health.get_health()
+    response = await health.get_health(_request())
 
     assert response.mt5_version is None
