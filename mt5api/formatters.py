@@ -73,9 +73,7 @@ def format_dataframe_to_parquet(dataframe: pd.DataFrame) -> Response:
     return Response(
         content=buffer.getvalue(),
         media_type="application/parquet",
-        headers={
-            "Content-Disposition": "attachment; filename=data.parquet",
-        },
+        headers={"Content-Disposition": "attachment; filename=data.parquet"},
     )
 
 
