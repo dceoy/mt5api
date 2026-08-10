@@ -1,0 +1,51 @@
+name: Bump patch version
+
+on:
+  push:
+    branches:
+      - agent/cleanup-and-python-314
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: agent/cleanup-and-python-314
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+      - name: Bump patch version and refresh lockfile
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("pyproject.toml")
+          text = path.read_text(encoding="utf-8")
+          old = 'version = "1.0.2"'
+          new = 'version = "1.0.3"'
+          assert text.count(old) == 1, text.count(old)
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
+          uv lock
+          uv lock --check
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          lock = tomllib.loads(Path("uv.lock").read_text(encoding="utf-8"))
+          assert project["project"]["version"] == "1.0.3"
+          versions = [p["version"] for p in lock["package"] if p["name"] == "mt5api"]
+          assert versions == ["1.0.3"], versions
+          PY
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/bump-patch-version.yml
+          git add pyproject.toml uv.lock
+          git commit -m "Bump version to 1.0.3"
+          git push origin HEAD:agent/cleanup-and-python-314
