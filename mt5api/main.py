@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -18,7 +17,6 @@ from .config import (
     get_configured_python_log_level,
 )
 from .constants import (
-    ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
     API_DESCRIPTION,
     API_DOCS_URL,
     API_KEY_SECURITY_SCHEME_NAME,
@@ -26,10 +24,12 @@ from .constants import (
     API_REDOC_URL,
     API_TITLE,
     API_VERSION,
-    MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY,
-    MAX_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
 )
-from .dependencies import release_market_book_subscriptions, shutdown_mt5_client
+from .dependencies import (
+    initialize_mt5_runtime_state,
+    release_market_book_subscriptions,
+    shutdown_mt5_client,
+)
 from .middleware import add_middleware
 from .models import ErrorResponse
 from .routers import (
@@ -82,12 +82,19 @@ def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
     openapi_schema.pop("security", None)
 
     components = openapi_schema.get("components", {})
-    security_schemes = components.get("securitySchemes", {})
-    security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
-    if not security_schemes:
-        components.pop("securitySchemes", None)
+    if isinstance(components, dict):
+        security_schemes = components.get("securitySchemes", {})
+        if isinstance(security_schemes, dict):
+            security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
+            if not security_schemes:
+                components.pop("securitySchemes", None)
 
-    for methods in openapi_schema.get("paths", {}).values():
+    paths = openapi_schema.get("paths", {})
+    if not isinstance(paths, dict):
+        return
+    for methods in paths.values():
+        if not isinstance(methods, dict):
+            continue
         for operation in methods.values():
             if isinstance(operation, dict):
                 operation.pop("security", None)
@@ -112,18 +119,56 @@ def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
         },
     }
 
-    for methods in openapi_schema.get("paths", {}).values():
+    paths = openapi_schema.get("paths", {})
+    if not isinstance(paths, dict):
+        return
+    for methods in paths.values():
+        if not isinstance(methods, dict):
+            continue
         for operation in methods.values():
-            if isinstance(operation, dict) and "422" in operation.get("responses", {}):
-                operation["responses"]["422"] = error_response
+            if not isinstance(operation, dict):
+                continue
+            responses = operation.get("responses")
+            if isinstance(responses, dict) and "422" in responses:
+                responses["422"] = error_response
+
+
+def _patch_parquet_success_responses(openapi_schema: dict[str, Any]) -> None:
+    """Advertise Parquet for operations using the shared format dependency."""
+    paths = openapi_schema.get("paths", {})
+    if not isinstance(paths, dict):
+        return
+    parquet_schema = {"schema": {"type": "string", "format": "binary"}}
+    for methods in paths.values():
+        if not isinstance(methods, dict):
+            continue
+        for operation in methods.values():
+            if not isinstance(operation, dict):
+                continue
+            parameters = operation.get("parameters", [])
+            if not isinstance(parameters, list):
+                continue
+            supports_format = any(
+                isinstance(parameter, dict)
+                and parameter.get("in") == "query"
+                and parameter.get("name") == "format"
+                for parameter in parameters
+            )
+            if not supports_format:
+                continue
+            responses = operation.get("responses")
+            if not isinstance(responses, dict):
+                continue
+            success = responses.get("200")
+            if not isinstance(success, dict):
+                continue
+            content = success.setdefault("content", {})
+            if isinstance(content, dict):
+                content.setdefault("application/parquet", parquet_schema)
 
 
 def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
-    """Build OpenAPI schema for the current authentication mode.
-
-    Returns:
-        OpenAPI schema for the current auth configuration.
-    """
+    """Build OpenAPI schema for the current authentication mode."""
     if app.openapi_schema:
         return app.openapi_schema
 
@@ -136,17 +181,14 @@ def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
     if not is_auth_enabled():
         _strip_auth_from_openapi(openapi_schema)
     _patch_validation_error_responses(openapi_schema)
+    _patch_parquet_success_responses(openapi_schema)
 
     app.openapi_schema = openapi_schema
     return openapi_schema
 
 
 def _custom_openapi() -> dict[str, Any]:
-    """Build OpenAPI schema for the current application instance.
-
-    Returns:
-        OpenAPI schema for the application.
-    """
+    """Build OpenAPI schema for the current application instance."""
     return _build_openapi_schema(app)
 
 
@@ -156,40 +198,23 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Manage application lifespan (startup and shutdown).
-
-    Args:
-        app: FastAPI application instance (unused but required by FastAPI).
-
-    Yields:
-        None
-    """
-    # Startup
+    """Manage application startup and shutdown."""
     logger.info("Starting MT5 REST API...")
-    setattr(app.state, ACTIVE_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY, set())
-    setattr(app.state, MARKET_BOOK_CLEANUP_CLIENT_STATE_KEY, None)
-    setattr(
-        app.state,
-        MAX_MARKET_BOOK_SUBSCRIPTIONS_STATE_KEY,
-        get_configured_max_market_book_subscriptions(),
+    state = initialize_mt5_runtime_state(
+        app,
+        max_market_book_subscriptions=get_configured_max_market_book_subscriptions(),
     )
-
-    # Note: MT5 client is initialized lazily on first request via dependency
-    # This avoids blocking startup if MT5 is not available
-    await asyncio.sleep(0)  # Make function truly async
 
     yield
 
-    # Shutdown
     logger.info("Shutting down MT5 REST API...")
     try:
-        await release_market_book_subscriptions(app)
+        await release_market_book_subscriptions(state)
     finally:
-        shutdown_mt5_client()
+        shutdown_mt5_client(state)
     logger.info("MT5 connection closed")
 
 
-# Create FastAPI application
 app = FastAPI(
     title=API_TITLE,
     description=API_DESCRIPTION,
@@ -201,10 +226,8 @@ app = FastAPI(
 )
 app.openapi = _custom_openapi
 
-# Add middleware
 add_middleware(app)
 
-# Include routers
 router_prefix = get_configured_api_router_prefix()
 app.include_router(health.router, prefix=router_prefix)
 app.include_router(symbols.router, prefix=router_prefix)
