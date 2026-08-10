@@ -1,0 +1,44 @@
+name: Refresh pdmt5 lock
+
+on:
+  push:
+    branches:
+      - agent/cleanup-and-python-314
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: agent/cleanup-and-python-314
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+      - name: Upgrade pdmt5 in lockfile
+        shell: pwsh
+        run: |
+          uv lock --upgrade-package pdmt5
+          uv lock --check
+          @'
+          import tomllib
+          from pathlib import Path
+
+          lock = tomllib.loads(Path("uv.lock").read_text(encoding="utf-8"))
+          versions = [p["version"] for p in lock["package"] if p["name"] == "pdmt5"]
+          assert versions == ["1.2.1"], versions
+          '@ | uv run python -
+      - name: Commit lockfile and remove helper workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/refresh-pdmt5-lock.yml
+          git add uv.lock
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "Update pdmt5 lock to 1.2.1"
+            git push origin HEAD:agent/cleanup-and-python-314
+          }
