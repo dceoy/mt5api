@@ -150,6 +150,7 @@ async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
     """Release and clear all market-book subscriptions owned by ``state``."""
     subscriptions = state.market_book_subscriptions
     if not subscriptions:
+        state.market_book_cleanup_client = None
         return
 
     cleanup_client = state.market_book_cleanup_client
