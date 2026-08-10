@@ -4,24 +4,25 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from mt5api.constants import API_KEY_HEADER_NAME, ENV_MT5API_SECRET_KEY
-from tests.mt5_constants import (
-    Mt5BookType,
-    Mt5OrderType,
-    install_mt5_constants,
+from mt5api.constants import (
+    API_KEY_HEADER_NAME,
+    ENV_MT5API_SECRET_KEY,
+    MT5_RUNTIME_STATE_KEY,
 )
+from tests.mt5_constants import Mt5BookType, Mt5OrderType, install_mt5_constants
 
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-# Mock MetaTrader5 module before any imports.
+    from mt5api.dependencies import Mt5RuntimeState
+
 if "MetaTrader5" not in sys.modules:
     mock_mt5_module = Mock()
     mock_mt5_module.__name__ = "MetaTrader5"
@@ -213,7 +214,7 @@ def client(
     app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client
 
     with TestClient(app) as test_client:
-        state = dependencies.get_mt5_runtime_state(test_client.request("GET", "/").request)
+        state = cast("Mt5RuntimeState", getattr(app.state, MT5_RUNTIME_STATE_KEY))
         state.market_book_subscriptions.clear()
         state.market_book_cleanup_client = None
         yield test_client
