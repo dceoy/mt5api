@@ -30,21 +30,8 @@ from mt5api.models import (
 if TYPE_CHECKING:
     from fastapi.responses import Response
 
-router = APIRouter(
-    tags=["trading"],
-    dependencies=[Depends(verify_api_key)],
-)
+router = APIRouter(tags=["trading"], dependencies=[Depends(verify_api_key)])
 logger = logging.getLogger(__name__)
-
-
-def _get_active_market_book_subscriptions(app_request: Request) -> set[str]:
-    """Return the application's active market-book subscription set."""
-    return get_mt5_runtime_state(app_request).market_book_subscriptions
-
-
-def _get_max_market_book_subscriptions(app_request: Request) -> int:
-    """Return the application's configured market-book subscription limit."""
-    return get_mt5_runtime_state(app_request).max_market_book_subscriptions
 
 
 def _build_market_book_subscription_limit_response(
@@ -52,7 +39,11 @@ def _build_market_book_subscription_limit_response(
     *,
     limit: int,
 ) -> JSONResponse:
-    """Create a problem-details response for subscription exhaustion."""
+    """Create a problem-details response for subscription exhaustion.
+
+    Returns:
+        HTTP 429 problem-details response.
+    """
     error = ErrorResponse(
         type="/errors/subscription-limit",
         title="Subscription Limit Exceeded",
@@ -81,7 +72,11 @@ async def post_order_check(
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: OrderCheckRequest,
 ) -> DataResponse | Response:
-    """Check funds sufficiency for a trading operation."""
+    """Check funds sufficiency for a trading operation.
+
+    Returns:
+        JSON or Parquet representation of the order-check result.
+    """
     result: dict[str, Any] = await run_in_threadpool(
         mt5_client.order_check_as_dict,
         request=request.request.model_dump(mode="python", exclude_none=True),
@@ -93,16 +88,18 @@ async def post_order_check(
     "/symbols/{symbol}/select",
     response_model=DataResponse,
     summary="Select symbol",
-    description=(
-        "Select a symbol in the MarketWatch window or remove it from the window"
-    ),
+    description="Select a symbol in the MarketWatch window or remove it from the window",
 )
 async def post_symbol_select(
     mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: Annotated[SymbolSelectRequest, Depends()],
 ) -> DataResponse | Response:
-    """Select or deselect a symbol in the MarketWatch window."""
+    """Select or deselect a symbol in the MarketWatch window.
+
+    Returns:
+        JSON or Parquet representation of the selection result.
+    """
     success = await run_in_threadpool(
         mt5_client.symbol_select,
         symbol=request.symbol,
@@ -126,27 +123,26 @@ async def post_market_book_subscribe(
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: Annotated[MarketBookSubscriptionRequest, Depends()],
 ) -> DataResponse | Response:
-    """Subscribe to market depth for a symbol."""
+    """Subscribe to market depth for a symbol.
+
+    Returns:
+        Subscription result or an HTTP 429 problem response.
+    """
     state = get_mt5_runtime_state(app_request)
     subscriptions = state.market_book_subscriptions
     symbol = request.symbol
-    if symbol not in subscriptions:
-        max_subscriptions = state.max_market_book_subscriptions
-        if len(subscriptions) >= max_subscriptions:
-            logger.warning(
-                "Market-book subscription limit reached for %s (%d active)",
-                symbol,
-                len(subscriptions),
-            )
-            return _build_market_book_subscription_limit_response(
-                app_request,
-                limit=max_subscriptions,
-            )
+    if symbol not in subscriptions and len(subscriptions) >= state.max_market_book_subscriptions:
+        logger.warning(
+            "Market-book subscription limit reached for %s (%d active)",
+            symbol,
+            len(subscriptions),
+        )
+        return _build_market_book_subscription_limit_response(
+            app_request,
+            limit=state.max_market_book_subscriptions,
+        )
 
-    success = await run_in_threadpool(
-        mt5_client.market_book_add,
-        symbol=symbol,
-    )
+    success = await run_in_threadpool(mt5_client.market_book_add, symbol=symbol)
     if success:
         subscriptions.add(symbol)
         state.market_book_cleanup_client = mt5_client
@@ -168,12 +164,13 @@ async def post_market_book_unsubscribe(
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: Annotated[MarketBookSubscriptionRequest, Depends()],
 ) -> DataResponse | Response:
-    """Unsubscribe from market depth for a symbol."""
+    """Unsubscribe from market depth for a symbol.
+
+    Returns:
+        JSON or Parquet representation of the unsubscribe result.
+    """
     symbol = request.symbol
-    success = await run_in_threadpool(
-        mt5_client.market_book_release,
-        symbol=symbol,
-    )
+    success = await run_in_threadpool(mt5_client.market_book_release, symbol=symbol)
     if success:
         state = get_mt5_runtime_state(app_request)
         state.market_book_subscriptions.discard(symbol)
