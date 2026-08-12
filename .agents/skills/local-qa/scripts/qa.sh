@@ -21,10 +21,10 @@ npx -y prettier --write './**/*.md'
 # GitHub Actions
 case "${OSTYPE}" in
   darwin* | linux* )
-    zizmor --fix=safe .github/workflows
+    uvx zizmor --fix=safe .github/workflows
     git ls-files -z -- '.github/workflows/*.yml' | xargs -0 -t actionlint
-    git ls-files -z -- '.github/workflows/*.yml' | xargs -0 -t yamllint -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
-    checkov --framework=all --output=github_failed_only --directory=.
+    git ls-files -z -- '.github/workflows/*.yml' | xargs -0 -t uvx yamllint -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
+    uvx checkov --framework=all --output=github_failed_only --directory=.
     ;;
   * )
     echo "GitHub Actions linting is only supported on Linux and macOS."
