@@ -1,4 +1,4 @@
-"""Tests for response formatters and format negotiation."""
+"""Tests for response formatters."""
 
 from __future__ import annotations
 
@@ -119,64 +119,3 @@ def test_format_response_rejects_invalid_format() -> None:
 
     with pytest.raises(ValueError, match="Unsupported response format"):
         format_response({"symbol": "EURUSD"}, invalid_format)
-
-
-def test_get_response_format_from_query_parameter() -> None:
-    """Test format negotiation via query parameter."""
-    from mt5api.dependencies import get_response_format  # noqa: PLC0415
-
-    # Query parameter takes priority
-    result = get_response_format(
-        accept="application/json",
-        format_param=ResponseFormat.PARQUET,
-    )
-
-    assert result == ResponseFormat.PARQUET
-
-
-def test_get_response_format_from_accept_header() -> None:
-    """Test format negotiation via Accept header."""
-    from mt5api.dependencies import get_response_format  # noqa: PLC0415
-
-    result = get_response_format(accept="application/parquet", format_param=None)
-
-    assert result == ResponseFormat.PARQUET
-
-
-def test_get_response_format_defaults_to_json() -> None:
-    """Test format negotiation defaults to JSON."""
-    from mt5api.dependencies import get_response_format  # noqa: PLC0415
-
-    result = get_response_format(accept=None, format_param=None)
-
-    assert result == ResponseFormat.JSON
-
-
-def test_get_response_format_from_accept_header_json() -> None:
-    """Test format negotiation via JSON Accept header."""
-    from mt5api.dependencies import get_response_format  # noqa: PLC0415
-
-    result = get_response_format(accept="application/json", format_param=None)
-
-    assert result == ResponseFormat.JSON
-
-
-def test_get_response_format_from_unrecognized_accept_header() -> None:
-    """Test format negotiation defaults to JSON for unknown Accept header."""
-    from mt5api.dependencies import get_response_format  # noqa: PLC0415
-
-    result = get_response_format(accept="text/plain", format_param=None)
-
-    assert result == ResponseFormat.JSON
-
-
-def test_get_response_format_handles_complex_accept_header() -> None:
-    """Test format negotiation with complex Accept header."""
-    from mt5api.dependencies import get_response_format  # noqa: PLC0415
-
-    result = get_response_format(
-        accept="text/html, application/parquet;q=0.9, */*;q=0.8",
-        format_param=None,
-    )
-
-    assert result == ResponseFormat.PARQUET

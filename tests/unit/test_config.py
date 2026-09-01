@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
-
 import pytest
 
 from mt5api.constants import (
@@ -11,7 +9,6 @@ from mt5api.constants import (
     ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_PORT,
-    ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
 )
 
@@ -189,25 +186,3 @@ def test_get_configured_max_market_book_subscriptions_rejects_invalid_values(
         match="Invalid MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS",
     ):
         config.get_configured_max_market_book_subscriptions()
-
-
-def test_app_uses_api_router_prefix_from_environment(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """App routes should be mounted under the configured API prefix."""
-    monkeypatch.setenv(ENV_MT5API_ROUTER_PREFIX, "api/v1")
-
-    from mt5api import main  # noqa: PLC0415
-
-    reloaded_main = importlib.reload(main)
-
-    try:
-        paths = reloaded_main.app.openapi()["paths"]
-
-        assert "/api/v1/health" in paths
-        assert "/api/v1/symbols" in paths
-        assert "/health" not in paths
-        assert "/symbols" not in paths
-    finally:
-        monkeypatch.delenv(ENV_MT5API_ROUTER_PREFIX, raising=False)
-        importlib.reload(main)

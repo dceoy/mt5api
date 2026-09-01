@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import asyncio
 from operator import add
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from fastapi import FastAPI
 from starlette.requests import Request
 
 from mt5api import dependencies
+from mt5api.models import ResponseFormat
+
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
 
 
 def _request(app: FastAPI) -> Request:
@@ -203,3 +207,145 @@ def test_run_in_threadpool_returns_result() -> None:
     """Threadpool helper forwards positional and keyword arguments."""
     result = asyncio.run(dependencies.run_in_threadpool(add, 2, 3))
     assert result == 5
+
+
+def test_get_response_format_from_query_parameter() -> None:
+    """Query format takes priority during response negotiation."""
+    result = dependencies.get_response_format(
+        accept="application/json",
+        format_param=ResponseFormat.PARQUET,
+    )
+
+    assert result == ResponseFormat.PARQUET
+
+
+def test_get_response_format_from_accept_header() -> None:
+    """Parquet Accept headers select Parquet responses."""
+    result = dependencies.get_response_format(
+        accept="application/parquet",
+        format_param=None,
+    )
+
+    assert result == ResponseFormat.PARQUET
+
+
+def test_get_response_format_defaults_to_json() -> None:
+    """Response negotiation defaults to JSON without a format hint."""
+    result = dependencies.get_response_format(accept=None, format_param=None)
+
+    assert result == ResponseFormat.JSON
+
+
+def test_get_response_format_from_accept_header_json() -> None:
+    """JSON Accept headers select JSON responses."""
+    result = dependencies.get_response_format(
+        accept="application/json",
+        format_param=None,
+    )
+
+    assert result == ResponseFormat.JSON
+
+
+def test_get_response_format_from_unrecognized_accept_header() -> None:
+    """Unrecognized Accept headers fall back to JSON."""
+    result = dependencies.get_response_format(accept="text/plain", format_param=None)
+
+    assert result == ResponseFormat.JSON
+
+
+def test_get_response_format_handles_complex_accept_header() -> None:
+    """Response negotiation finds Parquet in a weighted Accept header."""
+    result = dependencies.get_response_format(
+        accept="text/html, application/parquet;q=0.9, */*;q=0.8",
+        format_param=None,
+    )
+
+    assert result == ResponseFormat.PARQUET
+
+
+def test_release_market_book_subscriptions_clears_runtime_state(
+    mocker: MockerFixture,
+) -> None:
+    """Shutdown cleanup releases tracked subscriptions and ownership."""
+    cleanup_client = mocker.Mock()
+    state = dependencies.Mt5RuntimeState(
+        market_book_subscriptions={"GBPUSD", "EURUSD"},
+        market_book_cleanup_client=cleanup_client,
+    )
+    asyncio.run(dependencies.release_market_book_subscriptions(state))
+    cleanup_client.market_book_release.assert_any_call(symbol="EURUSD")
+    cleanup_client.market_book_release.assert_any_call(symbol="GBPUSD")
+    assert cleanup_client.market_book_release.call_count == 2
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
+
+
+def test_release_market_book_subscriptions_handles_missing_client() -> None:
+    """Cleanup clears tracking when no release client is available."""
+    state = dependencies.Mt5RuntimeState(market_book_subscriptions={"EURUSD"})
+    asyncio.run(dependencies.release_market_book_subscriptions(state))
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
+
+
+def test_release_market_book_subscriptions_skips_empty_state(
+    mocker: MockerFixture,
+) -> None:
+    """Cleanup does not call a client when no subscriptions are active."""
+    cleanup_client = mocker.Mock()
+    state = dependencies.Mt5RuntimeState(market_book_cleanup_client=cleanup_client)
+    asyncio.run(dependencies.release_market_book_subscriptions(state))
+    cleanup_client.market_book_release.assert_not_called()
+    assert state.market_book_cleanup_client is None
+
+
+def test_release_market_book_subscriptions_continues_after_failure(
+    caplog: pytest.LogCaptureFixture,
+    mocker: MockerFixture,
+) -> None:
+    """Cleanup continues after a release failure."""
+    cleanup_client = mocker.Mock()
+    cleanup_client.market_book_release.side_effect = [RuntimeError("boom"), None]
+    state = dependencies.Mt5RuntimeState(
+        market_book_subscriptions={"GBPUSD", "EURUSD"},
+        market_book_cleanup_client=cleanup_client,
+    )
+    with caplog.at_level("ERROR"):
+        asyncio.run(dependencies.release_market_book_subscriptions(state))
+    assert cleanup_client.market_book_release.call_count == 2
+    assert "Failed to release market book for" in caplog.text
+    assert state.market_book_subscriptions == set()
+    assert state.market_book_cleanup_client is None
+
+
+def test_replace_mt5_client_installs_only_after_success(
+    mocker: MockerFixture,
+) -> None:
+    """Replacement preserves the old client on failure and swaps on success."""
+
+    class DummyClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            return None
+
+    old_client = mocker.Mock(name="old_client")
+    state = dependencies.Mt5RuntimeState(client=old_client)
+    mocker.patch.object(dependencies, "Mt5DataClient", DummyClient)
+    config = mocker.Mock(name="config")
+    new_client = asyncio.run(dependencies.replace_mt5_client(state, config))
+    assert state.client is new_client
+    assert new_client.config is config
+    old_client.shutdown.assert_not_called()
+
+    class FailingClient(DummyClient):
+        def initialize_and_login_mt5(self) -> None:
+            error_message = "refused"
+            raise ValueError(error_message)
+
+    state.client = old_client
+    mocker.patch.object(dependencies, "Mt5DataClient", FailingClient)
+    with pytest.raises(RuntimeError, match=r"^Failed to initialize MT5 client$"):
+        asyncio.run(dependencies.replace_mt5_client(state, config))
+    assert state.client is old_client

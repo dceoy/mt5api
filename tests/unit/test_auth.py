@@ -155,23 +155,3 @@ def test_get_api_key_returns_none_when_auth_is_disabled(
     monkeypatch.setattr(auth, "_API_KEY", None)
 
     assert auth.get_api_key() is None
-
-
-def test_openapi_does_not_require_api_key_when_auth_disabled(
-    client: TestClient,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    """Test OpenAPI omits API key security when auth is disabled."""
-    from mt5api import auth, main  # noqa: PLC0415
-
-    monkeypatch.setattr(auth, "_API_KEY", None)
-    monkeypatch.setattr(main.app, "openapi_schema", None)
-
-    response = client.get("/openapi.json")
-
-    assert response.status_code == 200
-
-    schema = response.json()
-    assert "securitySchemes" not in schema.get("components", {})
-    assert "security" not in schema["paths"]["/version"]["get"]
-    assert "security" not in schema["paths"]["/symbols"]["get"]

@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING, Any
 
+from fastapi.testclient import TestClient
+
 from mt5api.constants import API_KEY_SECURITY_SCHEME_NAME
-from mt5api.dependencies import Mt5RuntimeState, release_market_book_subscriptions
 
 if TYPE_CHECKING:
     import pytest
-    from pytest_mock import MockerFixture
 
 
 def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
@@ -160,56 +159,21 @@ def test_openapi_helpers_ignore_malformed_dynamic_values() -> None:
     )
 
 
-def test_release_market_book_subscriptions_clears_runtime_state(
-    mocker: MockerFixture,
+def test_lifespan_calls_shutdown_on_exit(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Shutdown cleanup releases tracked subscriptions and ownership."""
-    cleanup_client = mocker.Mock()
-    state = Mt5RuntimeState(
-        market_book_subscriptions={"GBPUSD", "EURUSD"},
-        market_book_cleanup_client=cleanup_client,
-    )
-    asyncio.run(release_market_book_subscriptions(state))
-    cleanup_client.market_book_release.assert_any_call(symbol="EURUSD")
-    cleanup_client.market_book_release.assert_any_call(symbol="GBPUSD")
-    assert cleanup_client.market_book_release.call_count == 2
-    assert state.market_book_subscriptions == set()
-    assert state.market_book_cleanup_client is None
+    """The application shutdown hook runs when TestClient context exits."""
+    from mt5api import main  # noqa: PLC0415
 
+    shutdown_called = {"value": False}
 
-def test_release_market_book_subscriptions_handles_missing_client() -> None:
-    """Cleanup clears tracking even when no release client is available."""
-    state = Mt5RuntimeState(market_book_subscriptions={"EURUSD"})
-    asyncio.run(release_market_book_subscriptions(state))
-    assert state.market_book_subscriptions == set()
-    assert state.market_book_cleanup_client is None
+    def fake_shutdown(_state: object) -> None:
+        shutdown_called["value"] = True
 
+    monkeypatch.setattr(main, "shutdown_mt5_client", fake_shutdown)
 
-def test_release_market_book_subscriptions_skips_empty_state(
-    mocker: MockerFixture,
-) -> None:
-    """Cleanup does not call a client when no subscriptions are active."""
-    cleanup_client = mocker.Mock()
-    state = Mt5RuntimeState(market_book_cleanup_client=cleanup_client)
-    asyncio.run(release_market_book_subscriptions(state))
-    cleanup_client.market_book_release.assert_not_called()
-    assert state.market_book_cleanup_client is None
+    with TestClient(main.app) as client:
+        response = client.get("/health")
+        status_code = response.status_code
 
-
-def test_release_market_book_subscriptions_continues_after_failure(
-    caplog: pytest.LogCaptureFixture,
-    mocker: MockerFixture,
-) -> None:
-    """Cleanup continues after a release failure."""
-    cleanup_client = mocker.Mock()
-    cleanup_client.market_book_release.side_effect = [RuntimeError("boom"), None]
-    state = Mt5RuntimeState(
-        market_book_subscriptions={"GBPUSD", "EURUSD"},
-        market_book_cleanup_client=cleanup_client,
-    )
-    with caplog.at_level("ERROR"):
-        asyncio.run(release_market_book_subscriptions(state))
-    assert cleanup_client.market_book_release.call_count == 2
-    assert "Failed to release market book for" in caplog.text
-    assert state.market_book_subscriptions == set()
-    assert state.market_book_cleanup_client is None
+    assert (status_code, shutdown_called["value"]) == (200, True)
