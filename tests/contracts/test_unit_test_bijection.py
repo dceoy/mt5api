@@ -62,7 +62,8 @@ def _unit_test_paths_on_disk() -> set[Path]:
 
 def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
     """Check whether pytest selected the complete configured test tree."""
-    if request.config.getoption("-k"):
+    collection_filters = ("-k", "--ignore", "--ignore-glob", "--deselect", "--lf")
+    if any(request.config.getoption(option) for option in collection_filters):
         return False
     selected_paths = {Path(argument).resolve() for argument in request.config.args}
     if not selected_paths:
