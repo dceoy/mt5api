@@ -91,6 +91,8 @@ def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
         return False
     if request.config.getoption("--last-failed-no-failures", default="all") != "all":
         return False
+    if any("::" in argument for argument in request.config.args):
+        return False
     selected_paths = {
         _resolve_collection_argument(
             argument,
@@ -144,6 +146,16 @@ def test_actual_unit_test_paths_only_includes_collected_modules(
             True,
             True,
             id="all-test-packages",
+        ),
+        pytest.param(
+            [
+                "tests.unit.test_auth::test_version_endpoint_requires_authentication",
+                "tests.contracts.test_openapi::test_docs_and_openapi_available",
+                "tests.integration.test_cli::test_main_uses_defaults",
+            ],
+            True,
+            False,
+            id="selected-test-packages",
         ),
     ],
 )
