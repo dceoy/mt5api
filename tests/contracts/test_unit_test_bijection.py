@@ -5,8 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pytest
+
 if TYPE_CHECKING:
-    import pytest
     from pytest_mock import MockerFixture
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -62,8 +63,22 @@ def _unit_test_paths_on_disk() -> set[Path]:
 
 def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
     """Check whether pytest selected the complete configured test tree."""
-    collection_filters = ("-k", "--ignore", "--ignore-glob", "--deselect", "--lf")
-    if any(request.config.getoption(option) for option in collection_filters):
+    collection_filters = (
+        "-k",
+        "-m",
+        "--ignore",
+        "--ignore-glob",
+        "--deselect",
+        "--lf",
+        "--stepwise",
+        "--stepwise-skip",
+        "--stepwise-reset",
+    )
+    if any(
+        request.config.getoption(option, default=False) for option in collection_filters
+    ):
+        return False
+    if request.config.getoption("--last-failed-no-failures", default="all") != "all":
         return False
     selected_paths = {Path(argument).resolve() for argument in request.config.args}
     if not selected_paths:
@@ -85,6 +100,66 @@ def test_actual_unit_test_paths_only_includes_collected_modules(
 
     assert actual == {Path("test_collected.py")}
     assert Path("test_empty.py") not in actual
+
+
+@pytest.mark.parametrize(
+    "filter_option",
+    [
+        "-k",
+        "-m",
+        "--ignore",
+        "--ignore-glob",
+        "--deselect",
+        "--lf",
+        "--stepwise",
+        "--stepwise-skip",
+        "--stepwise-reset",
+    ],
+)
+def test_collection_filters_use_on_disk_unit_paths(
+    mocker: MockerFixture,
+    filter_option: str,
+) -> None:
+    """Collection filters must not make the contract inspect partial items."""
+    request = mocker.Mock()
+    request.config.args = []
+
+    def get_option(option: str, default: object = False) -> object:
+        return filter_option if option == filter_option else default
+
+    request.config.getoption.side_effect = get_option
+
+    assert not _is_full_test_suite(request)
+
+
+def test_last_failed_no_failures_filter_uses_on_disk_unit_paths(
+    mocker: MockerFixture,
+) -> None:
+    """A no-failures policy can deselect the collected test items."""
+    request = mocker.Mock()
+    request.config.args = []
+
+    def get_option(option: str, default: object = False) -> object:
+        return "none" if option == "--last-failed-no-failures" else default
+
+    request.config.getoption.side_effect = get_option
+
+    assert not _is_full_test_suite(request)
+
+
+def test_unregistered_collection_options_use_safe_defaults(
+    mocker: MockerFixture,
+) -> None:
+    """Optional pytest plugins may not register every collection option."""
+    request = mocker.Mock()
+    request.config.args = []
+
+    def get_option(_option: str, default: object = False) -> object:
+        return default
+
+    request.config.getoption.side_effect = get_option
+
+    assert _is_full_test_suite(request)
 
 
 def test_unit_tests_mirror_production_modules(
