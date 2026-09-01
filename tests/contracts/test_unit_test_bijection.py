@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -52,6 +53,24 @@ def _actual_unit_test_paths(request: pytest.FixtureRequest) -> set[Path]:
     return actual
 
 
+def _resolve_collection_argument(argument: str, *, pyargs: bool) -> Path:
+    """Resolve a pytest collection argument to its filesystem path."""
+    if not pyargs:
+        return Path(argument).resolve()
+    module_name = argument.split("::", maxsplit=1)[0]
+    try:
+        spec = importlib.util.find_spec(module_name)
+    except (AttributeError, ImportError, ValueError):
+        return Path(argument).resolve()
+    if spec is None:
+        return Path(argument).resolve()
+    if spec.submodule_search_locations:
+        return Path(spec.submodule_search_locations[0]).resolve()
+    if spec.origin:
+        return Path(spec.origin).resolve()
+    return Path(argument).resolve()
+
+
 def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
     """Check whether pytest selected the complete configured test tree."""
     collection_filters = (
@@ -72,7 +91,13 @@ def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
         return False
     if request.config.getoption("--last-failed-no-failures", default="all") != "all":
         return False
-    selected_paths = {Path(argument).resolve() for argument in request.config.args}
+    selected_paths = {
+        _resolve_collection_argument(
+            argument,
+            pyargs=request.config.getoption("--pyargs", default=False),
+        )
+        for argument in request.config.args
+    }
     if not selected_paths:
         return True
     test_root = _TEST_ROOT.resolve()
@@ -105,27 +130,35 @@ def test_actual_unit_test_paths_only_includes_collected_modules(
 
 
 @pytest.mark.parametrize(
-    ("arguments", "expected"),
+    ("arguments", "pyargs", "expected"),
     [
         pytest.param(
             [_UNIT_ROOT, _TEST_ROOT / "contracts", _TEST_ROOT / "integration"],
+            False,
             True,
             id="all-test-directories",
         ),
-        pytest.param([_UNIT_ROOT], False, id="unit-only"),
+        pytest.param([_UNIT_ROOT], False, False, id="unit-only"),
+        pytest.param(
+            ["tests.unit", "tests.contracts", "tests.integration"],
+            True,
+            True,
+            id="all-test-packages",
+        ),
     ],
 )
 def test_positional_paths_detect_complete_test_tree(
     mocker: MockerFixture,
-    arguments: list[Path],
+    arguments: list[str | Path],
+    pyargs: bool,
     expected: bool,
 ) -> None:
     """Complete positional test paths still run the full bijection check."""
     request = mocker.Mock()
     request.config.args = [str(argument) for argument in arguments]
 
-    def get_option(_option: str, default: object = False) -> object:
-        return default
+    def get_option(option: str, default: object = False) -> object:
+        return pyargs if option == "--pyargs" else default
 
     request.config.getoption.side_effect = get_option
 
