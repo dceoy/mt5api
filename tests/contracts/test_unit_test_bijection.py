@@ -51,6 +51,26 @@ def _actual_unit_test_paths(request: pytest.FixtureRequest) -> set[Path]:
     return actual
 
 
+def _unit_test_paths_on_disk() -> set[Path]:
+    """Find pytest-named Python modules beneath the unit tree."""
+    return {
+        path.relative_to(_UNIT_ROOT)
+        for path in _UNIT_ROOT.rglob("*.py")
+        if _is_pytest_test_module(path)
+    }
+
+
+def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
+    """Check whether pytest selected the complete configured test tree."""
+    if request.config.getoption("-k"):
+        return False
+    selected_paths = {Path(argument).resolve() for argument in request.config.args}
+    if not selected_paths:
+        return True
+    test_root = _TEST_ROOT.resolve()
+    return any(test_root.is_relative_to(path) for path in selected_paths)
+
+
 def test_actual_unit_test_paths_only_includes_collected_modules(
     mocker: MockerFixture,
 ) -> None:
@@ -71,7 +91,11 @@ def test_unit_tests_mirror_production_modules(
 ) -> None:
     """Every eligible production module has exactly one aligned unit module."""
     expected = _expected_unit_paths()
-    actual = _actual_unit_test_paths(request)
+    actual = (
+        _actual_unit_test_paths(request)
+        if _is_full_test_suite(request)
+        else _unit_test_paths_on_disk()
+    )
     missing = sorted(expected - actual)
     unexpected = sorted(actual - expected)
 
