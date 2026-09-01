@@ -76,7 +76,17 @@ def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
     if not selected_paths:
         return True
     test_root = _TEST_ROOT.resolve()
-    return any(test_root.is_relative_to(path) for path in selected_paths)
+    if any(test_root.is_relative_to(path) for path in selected_paths):
+        return True
+    test_modules = {
+        path.resolve()
+        for path in test_root.rglob("*.py")
+        if _is_pytest_test_module(path)
+    }
+    return bool(test_modules) and all(
+        any(test_module.is_relative_to(path) for path in selected_paths)
+        for test_module in test_modules
+    )
 
 
 def test_actual_unit_test_paths_only_includes_collected_modules(
@@ -92,6 +102,34 @@ def test_actual_unit_test_paths_only_includes_collected_modules(
 
     assert actual == {Path("test_collected.py")}
     assert Path("test_empty.py") not in actual
+
+
+@pytest.mark.parametrize(
+    ("arguments", "expected"),
+    [
+        pytest.param(
+            [_UNIT_ROOT, _TEST_ROOT / "contracts", _TEST_ROOT / "integration"],
+            True,
+            id="all-test-directories",
+        ),
+        pytest.param([_UNIT_ROOT], False, id="unit-only"),
+    ],
+)
+def test_positional_paths_detect_complete_test_tree(
+    mocker: MockerFixture,
+    arguments: list[Path],
+    expected: bool,
+) -> None:
+    """Complete positional test paths still run the full bijection check."""
+    request = mocker.Mock()
+    request.config.args = [str(argument) for argument in arguments]
+
+    def get_option(_option: str, default: object = False) -> object:
+        return default
+
+    request.config.getoption.side_effect = get_option
+
+    assert _is_full_test_suite(request) is expected
 
 
 @pytest.mark.parametrize(
