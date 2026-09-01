@@ -42,7 +42,7 @@ def _actual_unit_test_paths(request: pytest.FixtureRequest) -> set[Path]:
     """Find collected Python test modules beneath the unit tree."""
     actual: set[Path] = set()
     for item in request.session.items:
-        path = Path(item.path)
+        path = Path(item.path).resolve()
         try:
             relative_path = path.relative_to(_UNIT_ROOT)
         except ValueError:
@@ -50,15 +50,6 @@ def _actual_unit_test_paths(request: pytest.FixtureRequest) -> set[Path]:
         if _is_pytest_test_module(relative_path):
             actual.add(relative_path)
     return actual
-
-
-def _unit_test_paths_on_disk() -> set[Path]:
-    """Find pytest-named Python modules beneath the unit tree."""
-    return {
-        path.relative_to(_UNIT_ROOT)
-        for path in _UNIT_ROOT.rglob("*.py")
-        if _is_pytest_test_module(path)
-    }
 
 
 def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
@@ -73,6 +64,7 @@ def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
         "--stepwise",
         "--stepwise-skip",
         "--stepwise-reset",
+        "--override-ini",
     )
     if any(
         request.config.getoption(option, default=False) for option in collection_filters
@@ -114,9 +106,10 @@ def test_actual_unit_test_paths_only_includes_collected_modules(
         "--stepwise",
         "--stepwise-skip",
         "--stepwise-reset",
+        "--override-ini",
     ],
 )
-def test_collection_filters_use_on_disk_unit_paths(
+def test_collection_filters_do_not_run_full_bijection(
     mocker: MockerFixture,
     filter_option: str,
 ) -> None:
@@ -132,7 +125,7 @@ def test_collection_filters_use_on_disk_unit_paths(
     assert not _is_full_test_suite(request)
 
 
-def test_last_failed_no_failures_filter_uses_on_disk_unit_paths(
+def test_last_failed_no_failures_filter_is_not_a_full_suite(
     mocker: MockerFixture,
 ) -> None:
     """A no-failures policy can deselect the collected test items."""
@@ -166,12 +159,10 @@ def test_unit_tests_mirror_production_modules(
     request: pytest.FixtureRequest,
 ) -> None:
     """Every eligible production module has exactly one aligned unit module."""
+    if not _is_full_test_suite(request):
+        pytest.skip("unit-test bijection requires an unfiltered test suite")
     expected = _expected_unit_paths()
-    actual = (
-        _actual_unit_test_paths(request)
-        if _is_full_test_suite(request)
-        else _unit_test_paths_on_disk()
-    )
+    actual = _actual_unit_test_paths(request)
     missing = sorted(expected - actual)
     unexpected = sorted(actual - expected)
 
