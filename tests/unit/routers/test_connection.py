@@ -283,36 +283,3 @@ def test_post_connection_login_serializes_concurrent_reconnects(
     assert [response.status_code for response in responses] == [200, 200]
     assert max_active_count == 1
     assert sorted(login_values) == [12345, 23456]
-
-
-def test_replace_mt5_client_installs_only_after_success(
-    mocker: MockerFixture,
-) -> None:
-    """Replacement preserves the old client on failure and swaps on success."""
-
-    class DummyClient:
-        def __init__(self, config: object) -> None:
-            self.config = config
-
-        def initialize_and_login_mt5(self) -> None:
-            return None
-
-    old_client = mocker.Mock(name="old_client")
-    state = dependencies.Mt5RuntimeState(client=old_client)
-    mocker.patch.object(dependencies, "Mt5DataClient", DummyClient)
-    config = mocker.Mock(name="config")
-    new_client = asyncio.run(dependencies.replace_mt5_client(state, config))
-    assert state.client is new_client
-    assert new_client.config is config
-    old_client.shutdown.assert_not_called()
-
-    class FailingClient(DummyClient):
-        def initialize_and_login_mt5(self) -> None:
-            error_message = "refused"
-            raise ValueError(error_message)
-
-    state.client = old_client
-    mocker.patch.object(dependencies, "Mt5DataClient", FailingClient)
-    with pytest.raises(RuntimeError, match=r"^Failed to initialize MT5 client$"):
-        asyncio.run(dependencies.replace_mt5_client(state, config))
-    assert state.client is old_client

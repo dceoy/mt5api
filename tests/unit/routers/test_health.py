@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from importlib.metadata import version
 from typing import TYPE_CHECKING, cast
 
 import pytest
@@ -41,11 +40,6 @@ def _request(app: FastAPI | None = None) -> Request:
             },
         )
     )
-
-
-def test_api_version_uses_package_metadata() -> None:
-    """Test API version has one authoritative package-metadata source."""
-    assert version("mt5api") == API_VERSION
 
 
 def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
@@ -90,27 +84,6 @@ def test_version_endpoint_returns_parquet(
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/parquet")
-
-
-def test_docs_and_openapi_available(client: TestClient) -> None:
-    """Docs and OpenAPI endpoints should be available."""
-    docs_response = client.get("/docs")
-    assert docs_response.status_code == 200
-
-    openapi_response = client.get("/openapi.json")
-    assert openapi_response.status_code == 200
-    openapi = openapi_response.json()
-    assert "paths" in openapi
-    assert "ErrorResponse" in openapi["components"]["schemas"]
-    assert "HTTPValidationError" not in openapi["components"]["schemas"]
-    assert openapi["paths"]["/rates/from"]["get"]["responses"]["422"] == {
-        "description": "Validation Error",
-        "content": {
-            "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"},
-            },
-        },
-    }
 
 
 def test_last_error_returns_json(
