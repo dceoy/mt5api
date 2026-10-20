@@ -16,7 +16,7 @@ uv run pyright .
 uv run pytest
 
 # Markdown
-pnpm dlx prettier --write './**/*.md'
+pnpm dlx oxfmt --write './**/*.md'
 
 # GitHub Actions
 case "${OSTYPE}" in
