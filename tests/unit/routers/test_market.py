@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import ANY
 
+import pytest
+
 from mt5api.models import (
     get_mt5_copy_ticks_example_names,
     get_mt5_copy_ticks_names,
@@ -51,7 +53,7 @@ def test_get_rates_from_returns_json(
     assert response.status_code == 200
     payload = response.json()
     assert payload["count"] == 2
-    assert payload["data"][0]["open"] == 1.08500
+    assert payload["data"][0]["open"] == pytest.approx(1.08500)
 
     mock_mt5_client.copy_rates_from_as_df.assert_called_with(
         symbol="EURUSD",
@@ -312,7 +314,7 @@ def test_get_ticks_from_returns_json(
     assert response.status_code == 200
     payload = response.json()
     assert payload["count"] == 1
-    assert payload["data"][0]["bid"] == 1.08500
+    assert payload["data"][0]["bid"] == pytest.approx(1.08500)
 
     mock_mt5_client.copy_ticks_from_as_df.assert_called_with(
         symbol="EURUSD",
@@ -471,7 +473,7 @@ def test_get_market_book_returns_json(
     assert response.status_code == 200
     payload = response.json()
     assert payload["count"] == 2
-    assert payload["data"][0]["price"] == 1.08500
+    assert payload["data"][0]["price"] == pytest.approx(1.08500)
 
     mock_mt5_client.market_book_get_as_df.assert_called_with(symbol="EURUSD")
 

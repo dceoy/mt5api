@@ -205,8 +205,8 @@ def client(
     Yields:
         FastAPI test client.
     """
-    from mt5api import dependencies  # noqa: PLC0415
-    from mt5api.main import app  # noqa: PLC0415
+    from mt5api import dependencies  # ruff: ignore[import-outside-top-level]
+    from mt5api.main import app  # ruff: ignore[import-outside-top-level]
 
     app.dependency_overrides.clear()
     app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client

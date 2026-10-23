@@ -37,7 +37,7 @@ def test_get_calc_margin_returns_json(
 
     payload = response.json()
     assert payload["count"] == 1
-    assert payload["data"]["margin"] == 108.50
+    assert payload["data"]["margin"] == pytest.approx(108.50)
 
     mock_mt5_client.order_calc_margin.assert_called_with(
         action=int(Mt5OrderType.ORDER_TYPE_BUY),
@@ -125,7 +125,7 @@ def test_get_calc_profit_returns_json(
 
     payload = response.json()
     assert payload["count"] == 1
-    assert payload["data"]["profit"] == 50.0
+    assert payload["data"]["profit"] == pytest.approx(50.0)
 
     mock_mt5_client.order_calc_profit.assert_called_with(
         action=int(Mt5OrderType.ORDER_TYPE_BUY),
@@ -139,7 +139,7 @@ def test_get_calc_profit_returns_json(
 def test_get_calc_profit_returns_parquet(
     client: TestClient,
     api_headers: dict[str, str],
-    mock_mt5_client: Mock,  # noqa: ARG001
+    mock_mt5_client: Mock,  # ruff: ignore[unused-function-argument]
 ) -> None:
     """GET /calc/profit supports Parquet output."""
     response = client.get(

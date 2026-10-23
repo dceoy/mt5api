@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
-from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
+from pdmt5.dataframe import Mt5DataClient  # ruff: ignore[typing-only-third-party-import]
 
 from mt5api.auth import verify_api_key
 from mt5api.constants import ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS

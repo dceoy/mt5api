@@ -17,7 +17,7 @@ def test_app_uses_api_router_prefix_from_environment(
     """App routes should be mounted under the configured API prefix."""
     monkeypatch.setenv(ENV_MT5API_ROUTER_PREFIX, "api/v1")
 
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
 
     reloaded_main = importlib.reload(main)
 

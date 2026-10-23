@@ -226,13 +226,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app,
         max_market_book_subscriptions=get_configured_max_market_book_subscriptions(),
     )
-    yield
-    logger.info("Shutting down MT5 REST API...")
     try:
-        await release_market_book_subscriptions(state)
+        yield
     finally:
-        shutdown_mt5_client(state)
-    logger.info("MT5 connection closed")
+        logger.info("Shutting down MT5 REST API...")
+        try:
+            await release_market_book_subscriptions(state)
+        finally:
+            shutdown_mt5_client(state)
+        logger.info("MT5 connection closed")
 
 
 app = FastAPI(

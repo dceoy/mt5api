@@ -96,7 +96,7 @@ def _is_full_test_suite(request: pytest.FixtureRequest) -> bool:
     selected_paths = {
         _resolve_collection_argument(
             argument,
-            pyargs=request.config.getoption("--pyargs", default=False),
+            pyargs=request.config.getoption("--pyargs", default=False) is True,
         )
         for argument in request.config.args
     }

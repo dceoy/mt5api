@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+from unittest.mock import AsyncMock
 
+import pytest
 from fastapi.testclient import TestClient
 
 from mt5api.constants import API_KEY_SECURITY_SCHEME_NAME
 
 if TYPE_CHECKING:
-    import pytest
+    from fastapi import FastAPI
+
+from mt5api.dependencies import Mt5RuntimeState
 
 
 def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
     """OpenAPI auth stripping keeps unrelated security schemes."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
 
     openapi_schema: dict[str, Any] = {
         "components": {
@@ -34,7 +38,7 @@ def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
 
 def test_patch_validation_error_responses_updates_422_schema() -> None:
     """OpenAPI validation responses advertise RFC 7807 Problem Details."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
 
     openapi_schema: dict[str, Any] = {
         "components": {
@@ -64,7 +68,7 @@ def test_patch_validation_error_responses_updates_422_schema() -> None:
 
 def test_patch_parquet_success_responses_only_updates_formatted_operations() -> None:
     """OpenAPI advertises Parquet only for operations with the format query."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
 
     openapi_schema: dict[str, Any] = {
         "paths": {
@@ -106,7 +110,7 @@ def test_patch_parquet_success_responses_only_updates_formatted_operations() -> 
 
 def test_openapi_helpers_ignore_malformed_dynamic_values() -> None:
     """OpenAPI patchers skip values with unexpected runtime shapes."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
 
     main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
         {"components": [], "paths": []}
@@ -163,7 +167,7 @@ def test_lifespan_calls_shutdown_on_exit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The application shutdown hook runs when TestClient context exits."""
-    from mt5api import main  # noqa: PLC0415
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
 
     shutdown_called = {"value": False}
 
@@ -177,3 +181,39 @@ def test_lifespan_calls_shutdown_on_exit(
         status_code = response.status_code
 
     assert (status_code, shutdown_called["value"]) == (200, True)
+
+
+@pytest.mark.asyncio
+async def test_lifespan_calls_shutdown_when_exception_is_raised(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The application shutdown hook runs when its lifespan exits by error."""
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
+
+    state = Mt5RuntimeState()
+    shutdown_states: list[Mt5RuntimeState] = []
+
+    def fake_initialize(
+        _app: FastAPI,
+        *,
+        max_market_book_subscriptions: int | None = None,
+    ) -> Mt5RuntimeState:
+        _ = max_market_book_subscriptions
+        return state
+
+    def fake_shutdown(runtime_state: Mt5RuntimeState) -> None:
+        shutdown_states.append(runtime_state)
+
+    monkeypatch.setattr(main, "initialize_mt5_runtime_state", fake_initialize)
+    release = AsyncMock()
+    monkeypatch.setattr(main, "release_market_book_subscriptions", release)
+    monkeypatch.setattr(main, "shutdown_mt5_client", fake_shutdown)
+
+    message = "body failed"
+    with pytest.raises(RuntimeError, match=message):
+        async with main.lifespan(main.app):
+            raise RuntimeError(message)
+
+    release_call = release.await_args
+    assert release_call is not None
+    assert shutdown_states == [release_call.args[0]]

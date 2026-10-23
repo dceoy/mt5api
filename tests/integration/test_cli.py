@@ -31,7 +31,7 @@ def test_main_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
         captured_args = _args
         captured_kwargs = kwargs
 
-    from mt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
@@ -56,7 +56,7 @@ def test_main_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
         nonlocal captured_kwargs
         captured_kwargs = kwargs
 
-    from mt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
@@ -82,7 +82,7 @@ def test_main_rejects_invalid_port(
     """main() should fail fast on invalid port values."""
     monkeypatch.setenv(ENV_MT5API_PORT, raw_port)
 
-    from mt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # ruff: ignore[import-outside-top-level]
 
     with pytest.raises(ValueError, match="Invalid MT5API_PORT"):
         api_main.main()
@@ -98,7 +98,7 @@ def test_main_accepts_trace_log_level(monkeypatch: pytest.MonkeyPatch) -> None:
         nonlocal captured_kwargs
         captured_kwargs = kwargs
 
-    from mt5api import __main__ as api_main  # noqa: PLC0415
+    from mt5api import __main__ as api_main  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(api_main.uvicorn, "run", fake_run)
 
