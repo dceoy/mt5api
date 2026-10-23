@@ -32,7 +32,7 @@ Repository = "https://github.com/dceoy/mt5api.git"
 
 [tool.uv]
 required-environments = ["platform_system == 'Windows'"]
-exclude-newer = "1 week"
+exclude-newer = "1 day"
 exclude-newer-package = { pdmt5 = false }
 
 [dependency-groups]
