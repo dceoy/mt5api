@@ -209,7 +209,7 @@ def test_post_connection_login_failure_does_not_leak_password(
     mocker: MockerFixture,
 ) -> None:
     """Upstream exceptions containing credentials are not reflected to clients."""
-    password = "very-secret-pa55word-XYZ"  # noqa: S105
+    password = "very-secret-pa55word-XYZ"  # ruff: ignore[hardcoded-password-string]
 
     class LeakyClient:
         def __init__(self, config: object) -> None:

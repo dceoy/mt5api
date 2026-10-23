@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 if TYPE_CHECKING:
     from unittest.mock import Mock
 
@@ -109,7 +111,7 @@ def test_get_symbol_tick_returns_json(
 
     payload = response.json()
     assert payload["count"] == 1
-    assert payload["data"][0]["bid"] == 1.08500
+    assert payload["data"][0]["bid"] == pytest.approx(1.08500)
 
     mock_mt5_client.symbol_info_tick_as_df.assert_called_with(symbol="EURUSD")
 

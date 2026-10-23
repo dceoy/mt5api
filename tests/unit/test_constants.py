@@ -65,7 +65,7 @@ def test_configuration_constants_match_environment_contract() -> None:
         "MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS",
         "MT5API_SECRET_KEY",
     )
-    assert DEFAULT_API_HOST == "0.0.0.0"  # noqa: S104
+    assert DEFAULT_API_HOST == "0.0.0.0"  # ruff: ignore[hardcoded-bind-all-interfaces]
     assert (
         DEFAULT_API_PORT,
         DEFAULT_API_LOG_LEVEL,

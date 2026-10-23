@@ -35,7 +35,7 @@ def test_openapi_does_not_require_api_key_when_auth_disabled(
     monkeypatch: MonkeyPatch,
 ) -> None:
     """OpenAPI omits API-key security when authentication is disabled."""
-    from mt5api import auth, main  # noqa: PLC0415
+    from mt5api import auth, main  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(auth, "_API_KEY", None)
     monkeypatch.setattr(main.app, "openapi_schema", None)

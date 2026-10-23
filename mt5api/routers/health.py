@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, Request
-from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
+from pdmt5.dataframe import Mt5DataClient  # ruff: ignore[typing-only-third-party-import]
 
 from mt5api.auth import verify_api_key
 from mt5api.constants import API_VERSION
@@ -54,7 +54,7 @@ async def get_health(request: Request) -> HealthResponse:
         if version_dict:
             mt5_version = f"{version_dict.get('mt5_terminal_version', 'unknown')}"
         mt5_connected = True
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # ruff: ignore[blind-except]
         logger.debug("MT5 not available for health check: %s", e)
 
     return HealthResponse(

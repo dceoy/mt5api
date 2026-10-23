@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime  # noqa: TC003
+from datetime import datetime  # ruff: ignore[typing-only-standard-library-import]
 from enum import StrEnum
 from typing import Annotated, Any, Self, TypeAlias
 

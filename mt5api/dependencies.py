@@ -165,8 +165,8 @@ async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
 
 async def run_in_threadpool(
     func: Callable[..., T],
-    *args: Any,  # noqa: ANN401
-    **kwargs: Any,  # noqa: ANN401
+    *args: Any,  # ruff: ignore[any-type]
+    **kwargs: Any,  # ruff: ignore[any-type]
 ) -> T:
     """Run a synchronous MT5 function without blocking the event loop.
 

@@ -31,7 +31,7 @@ def test_normalize_api_router_prefix(
     expected_prefix: str,
 ) -> None:
     """Router prefix should be normalized for FastAPI mounting."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     assert config.normalize_api_router_prefix(raw_prefix) == expected_prefix
 
@@ -41,7 +41,7 @@ def test_normalize_api_router_prefix(
 )
 def test_normalize_api_router_prefix_rejects_invalid_values(raw_prefix: str) -> None:
     """Router prefix should reject malformed or unsafe path values."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     with pytest.raises(ValueError, match="Invalid MT5API_ROUTER_PREFIX"):
         config.normalize_api_router_prefix(raw_prefix)
@@ -61,7 +61,7 @@ def test_get_configured_mt5api_secret_key(
     expected_secret_key: str | None,
 ) -> None:
     """MT5 API secret key config should treat empty strings as disabled auth."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     if raw_secret_key is None:
         monkeypatch.delenv(ENV_MT5API_SECRET_KEY, raising=False)
@@ -85,7 +85,7 @@ def test_get_configured_api_port(
     expected_port: int,
 ) -> None:
     """API port config should read a valid TCP port."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     if raw_port is None:
         monkeypatch.delenv(ENV_MT5API_PORT, raising=False)
@@ -101,7 +101,7 @@ def test_get_configured_api_port_rejects_invalid_values(
     raw_port: str,
 ) -> None:
     """API port config should reject invalid values."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setenv(ENV_MT5API_PORT, raw_port)
 
@@ -124,7 +124,7 @@ def test_get_configured_api_log_level(
     expected_python_log_level: str,
 ) -> None:
     """API log-level config should support uvicorn levels."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     if raw_log_level is None:
         monkeypatch.delenv(ENV_MT5API_LOG_LEVEL, raising=False)
@@ -139,7 +139,7 @@ def test_get_configured_api_log_level_rejects_invalid_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """API log-level config should reject unsupported values."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setenv(ENV_MT5API_LOG_LEVEL, "verbose")
 
@@ -161,7 +161,7 @@ def test_get_configured_max_market_book_subscriptions(
     expected_limit: int,
 ) -> None:
     """Market-book subscription limit should read a positive configured integer."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     if raw_limit is None:
         monkeypatch.delenv(ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS, raising=False)
@@ -177,7 +177,7 @@ def test_get_configured_max_market_book_subscriptions_rejects_invalid_values(
     raw_limit: str,
 ) -> None:
     """Market-book subscription limit should reject invalid values."""
-    from mt5api import config  # noqa: PLC0415
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setenv(ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS, raw_limit)
 

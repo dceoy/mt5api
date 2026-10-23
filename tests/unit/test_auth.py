@@ -121,7 +121,7 @@ def test_version_endpoint_allows_requests_when_auth_disabled(
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Test protected endpoints work without API key when auth is disabled."""
-    from mt5api import auth  # noqa: PLC0415
+    from mt5api import auth  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 
@@ -136,7 +136,7 @@ def test_symbols_endpoint_allows_requests_when_auth_disabled(
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Test router-level protected endpoints work without API key."""
-    from mt5api import auth  # noqa: PLC0415
+    from mt5api import auth  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 
@@ -150,7 +150,7 @@ def test_get_api_key_returns_none_when_auth_is_disabled(
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Test get_api_key returns None when authentication is disabled."""
-    from mt5api import auth  # noqa: PLC0415
+    from mt5api import auth  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends
-from pdmt5.dataframe import Mt5DataClient  # noqa: TC002
+from pdmt5.dataframe import Mt5DataClient  # ruff: ignore[typing-only-third-party-import]
 
 from mt5api.auth import verify_api_key
 from mt5api.dependencies import (

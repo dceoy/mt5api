@@ -123,8 +123,8 @@ async def test_get_health_uses_request_scoped_runtime_client(
     mock_mt5_client: Mock,
 ) -> None:
     """Health probing uses the production request-scoped client accessor."""
-    from mt5api import dependencies  # noqa: PLC0415
-    from mt5api.routers import health  # noqa: PLC0415
+    from mt5api import dependencies  # ruff: ignore[import-outside-top-level]
+    from mt5api.routers import health  # ruff: ignore[import-outside-top-level]
 
     app = FastAPI()
     state = dependencies.initialize_mt5_runtime_state(
@@ -146,7 +146,7 @@ async def test_get_health_handles_runtime_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health handles MT5 runtime errors gracefully."""
-    from mt5api.routers import health  # noqa: PLC0415
+    from mt5api.routers import health  # ruff: ignore[import-outside-top-level]
 
     def raise_runtime_error(_request: Request) -> None:
         error_message = "MT5 unavailable"
@@ -165,7 +165,7 @@ async def test_get_health_handles_version_probe_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health reports unhealthy when MT5 version probing fails."""
-    from mt5api.routers import health  # noqa: PLC0415
+    from mt5api.routers import health  # ruff: ignore[import-outside-top-level]
 
     class DummyClient:
         def version_as_dict(self) -> dict[str, str]:
@@ -189,7 +189,7 @@ async def test_get_health_handles_unexpected_probe_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health reports unhealthy for unexpected MT5 probe failures."""
-    from mt5api.routers import health  # noqa: PLC0415
+    from mt5api.routers import health  # ruff: ignore[import-outside-top-level]
 
     class DummyClient:
         def version_as_dict(self) -> dict[str, str]:
@@ -213,7 +213,7 @@ async def test_get_health_handles_empty_version_dict(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test get_health handles empty version info."""
-    from mt5api.routers import health  # noqa: PLC0415
+    from mt5api.routers import health  # ruff: ignore[import-outside-top-level]
 
     class DummyClient:
         def version_as_dict(self) -> dict[str, str]:
