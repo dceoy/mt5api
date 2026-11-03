@@ -1,24 +1,28 @@
 ---
 name: mt5api
 description: >-
-  Query the MT5 API for account info, terminal status, health checks, symbol
-  data, market data (OHLCV rates, ticks, market depth), open positions, pending
-  orders, trade history, and reconnecting the MT5 terminal with new
+  Query the MT5 API for account info, terminal status, health checks, last
+  error, symbol data, market data (OHLCV rates, ticks, market depth), open
+  positions, pending orders, trade history, record counts, margin/profit
+  calculations, order checks, and reconnecting the MT5 terminal with new
   credentials. Use when the user wants to interact with any mt5api endpoint.
 allowed-tools: Bash
 ---
 
 # MT5 API
 
-Query all mt5api endpoints: health, version, account, terminal, symbols, market
-data, positions, orders, and trade history.
+Query all mt5api endpoints: health, version, last error, account, terminal,
+symbols, market data, positions, orders, trade history, record totals,
+margin/profit calculations, order checks, and market-depth subscriptions.
 
 ## Configuration
 
 The API base URL defaults to `http://localhost:8000`. Set `MT5API_URL` to
-override. When the server is configured with `MT5API_SECRET_KEY`, send the same value
-in the `X-API-Key` header. When server-side auth is disabled, omit the header
-instead of sending an empty `X-API-Key`.
+override. When the server mounts routes under `MT5API_ROUTER_PREFIX`, include
+that prefix in `MT5API_URL` (e.g., `http://localhost:8000/mt5`). When the server
+is configured with `MT5API_SECRET_KEY`, send the same value in the `X-API-Key`
+header. When server-side auth is disabled, omit the header instead of sending
+an empty `X-API-Key`.
 
 Use these shell helpers in examples:
 
@@ -56,9 +60,18 @@ All endpoints (except `/health`) return JSON by default. Request Parquet with
   `/history/deals` are valid results.
 - `/connection/login` reconnects the shared MT5 client to a different account.
   It shuts down the current connection and releases any active market-book
-  subscriptions before logging in. Never echo the password back to the user
-  and do not log it; the response only confirms `login`, `server`, `timeout`,
-  and `connected`.
+  subscriptions before logging in. Confirm the target `login`/`server` with the
+  user before sending it. The password must not appear in any reply or log
+  because it grants access to a trading account; the response only confirms
+  `login`, `server`, `timeout`, and `connected`.
+- State-changing calls are `POST` endpoints: `/connection/login`,
+  `/symbols/{symbol}/select`, and `/market-book/{symbol}/subscribe|unsubscribe`.
+  Everything else is read-only (`/order/check` only validates a request and
+  never places an order). The API exposes no order-placement endpoint.
+- Historical queries need either `(date_from AND date_to)` or
+  `(ticket OR position)`.
+- If `/health` reports `unhealthy`, the MT5 terminal may not be running or
+  reachable.
 
 ---
 
@@ -89,6 +102,15 @@ curl -s "${AUTH_HEADER[@]}" \
 | Parameter | Type   | Required | Description              |
 | --------- | ------ | -------- | ------------------------ |
 | format    | string | no       | Response format override |
+
+### Last MT5 Error
+
+```bash
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/last-error" | python -m json.tool
+```
+
+Useful for diagnosing a failed call or an `unhealthy` terminal.
 
 ---
 
@@ -189,6 +211,28 @@ curl -s "${AUTH_HEADER[@]}" \
 | --------- | ------ | -------- | --------------------------------------------- |
 | group     | string | no       | Symbol group filter (e.g., `*USD*`, `Forex*`) |
 | format    | string | no       | Response format override                      |
+
+### Count Symbols
+
+```bash
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/symbols/total" | python -m json.tool
+```
+
+Returns `{"total": N}`.
+
+### Select Symbol in MarketWatch
+
+State-changing. Adds a symbol to the MarketWatch window or removes it.
+
+```bash
+curl -s -X POST "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/symbols/EURUSD/select?enable=true" | python -m json.tool
+```
+
+| Parameter | Type | Required | Default | Description                            |
+| --------- | ---- | -------- | ------- | -------------------------------------- |
+| enable    | bool | no       | `true`  | `true` to show, `false` to hide symbol |
 
 ### Get Symbol Info
 
@@ -301,6 +345,21 @@ curl -s "${AUTH_HEADER[@]}" \
 If this returns `503`, explain that MT5 did not provide DOM data for the
 requested symbol and include the server's error text.
 
+### Subscribe / Unsubscribe Market Depth (experimental)
+
+State-changing. Subscribe before reading `/market-book/{symbol}` when DOM data
+is needed, and unsubscribe when done.
+
+```bash
+curl -s -X POST "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/market-book/EURUSD/subscribe" | python -m json.tool
+curl -s -X POST "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/market-book/EURUSD/unsubscribe" | python -m json.tool
+```
+
+Active subscriptions are capped by the server; exceeding the cap returns `429`
+with a problem-details body. Unsubscribe from another symbol and retry.
+
 ---
 
 ## Positions, Orders & History
@@ -373,24 +432,74 @@ curl -s "${AUTH_HEADER[@]}" \
 
 Either `(date_from AND date_to)` or `(ticket OR position)` must be provided.
 
+### Record Totals
+
+Return `{"total": N}` without transferring the records.
+
+```bash
+curl -s "${AUTH_HEADER[@]}" "${MT5API_URL}/positions/total" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" "${MT5API_URL}/orders/total" | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/history/orders/total?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+  | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/history/deals/total?date_from=2024-01-01T00:00:00Z&date_to=2024-01-31T23:59:59Z" \
+  | python -m json.tool
+```
+
+The history totals take `date_from` and `date_to` (ISO 8601).
+
+---
+
+## Calculations & Order Checks
+
+### Margin and Profit
+
+```bash
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/calc/margin?action=ORDER_TYPE_BUY&symbol=EURUSD&volume=0.1&price=1.085" \
+  | python -m json.tool
+curl -s "${AUTH_HEADER[@]}" \
+  "${MT5API_URL}/calc/profit?action=ORDER_TYPE_BUY&symbol=EURUSD&volume=0.1&price_open=1.085&price_close=1.09" \
+  | python -m json.tool
+```
+
+| Parameter   | Type    | Required | Endpoint | Description                                                         |
+| ----------- | ------- | -------- | -------- | ------------------------------------------------------------------- |
+| action      | str/int | yes      | both     | MT5 order type: `ORDER_TYPE_BUY`, alias `BUY`, or the integer value |
+| symbol      | string  | yes      | both     | Symbol name                                                         |
+| volume      | float   | yes      | both     | Trade volume in lots (`> 0`)                                        |
+| price       | float   | yes      | margin   | Open price (`> 0`)                                                  |
+| price_open  | float   | yes      | profit   | Open price (`> 0`)                                                  |
+| price_close | float   | yes      | profit   | Close price (`> 0`)                                                 |
+
+Returns `{"margin": ...}` or `{"profit": ...}` in the account currency.
+
+### Check Order
+
+Validates funds sufficiency for a trade request without placing an order.
+The body is `{"request": {...}}`; `action`, `symbol`, `volume`, `type`, and
+`price` are required, and optional fields include `sl`, `tp`, `deviation`,
+`magic`, `comment`, `type_filling`, `type_time`, and `expiration`. Unknown
+fields are rejected. See `/openapi.json` for the full schema.
+
+```bash
+curl -s -X POST "${AUTH_HEADER[@]}" \
+  -H 'Content-Type: application/json' \
+  -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": "ORDER_TYPE_BUY", "price": 1.085}}' \
+  "${MT5API_URL}/order/check" | python -m json.tool
+```
+
 ---
 
 ## Procedure
 
-1. Identify which endpoint(s) the user needs from the sections above.
-2. Gather required parameters (symbol, timeframe, dates, count, filters).
-3. Decide whether the caller needs JSON or Parquet output.
-4. Build `AUTH_HEADER` only when `MT5API_SECRET_KEY` is set, then construct and run
-   the appropriate `curl` command(s).
-5. For `ticks/range`, start with a narrow interval and widen only if needed.
-6. Parse the JSON response and summarize the results, or note when the API
-   returned Parquet data.
-7. If `/market-book/{symbol}` returns `503`, explain that MT5 did not provide
-   DOM data for that symbol and include the error text.
-8. If the health status is `unhealthy`, note that the MT5 terminal may not be
-   running or reachable.
-9. For historical queries, remind the user that either a date range or a
-   ticket/position filter is required.
-10. For `/connection/login`, always send the password in the POST body and
-    never repeat it in any reply or log message. If the user asks you to
-    reconnect, confirm the target `login`/`server` before sending the request.
+1. Pick the endpoint(s) that answer the request, and collect any missing
+   required parameters (symbol, timeframe, dates, count, filters).
+2. Choose JSON or Parquet output. Build `AUTH_HEADER` only when
+   `MT5API_SECRET_KEY` is set, then run the `curl` command(s).
+3. Summarize the parsed JSON, or note that Parquet data was returned. Quote
+   MT5 error text from `503` responses and suggest `/last-error` for more
+   detail.
+4. Before any state-changing `POST` (see Operational Notes), confirm the
+   target with the user.
