@@ -753,6 +753,9 @@ class TradeRequest(BaseModel):
         Returns:
             The validated request for checking or sending to MT5.
 
+        SLTP and MODIFY replace the whole MT5 trade state, so omitted levels are
+        rejected instead of risking a reset to zero/GTC (use ``0`` to clear).
+
         Raises:
             ValueError: If the action is unknown or required fields are missing.
         """
@@ -760,7 +763,7 @@ class TradeRequest(BaseModel):
             1: ("symbol", "volume", "type"),  # TRADE_ACTION_DEAL
             5: ("symbol", "volume", "type", "price"),  # PENDING
             6: (),  # SLTP: netting symbol or hedging position
-            7: ("order", "price"),  # MODIFY
+            7: ("order", "price", "sl", "tp", "type_time"),  # MODIFY (full state)
             8: ("order",),  # REMOVE
             10: ("position", "position_by"),  # CLOSE_BY
         }.get(self.action)
@@ -779,8 +782,13 @@ class TradeRequest(BaseModel):
         if self.action == 6:  # ruff: ignore[magic-value-comparison]
             if not (self.position or self.symbol):
                 missing.append("position or symbol")
-            if self.sl is None and self.tp is None:
-                missing.append("sl or tp")
+            missing.extend(name for name in ("sl", "tp") if getattr(self, name) is None)
+        if (
+            self.action == 7  # ruff: ignore[magic-value-comparison]
+            and self.type_time in {2, 3}  # ORDER_TIME_SPECIFIED(_DAY)
+            and self.expiration is None
+        ):
+            missing.append("expiration")
         if missing:
             message = f"Missing required trade fields: {', '.join(missing)}"
             raise ValueError(message)

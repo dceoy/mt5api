@@ -379,12 +379,26 @@ def test_post_order_send_rejects_missing_api_key(
             {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01},
         ),
         (
-            {"action": 6, "position": 123456, "sl": 0.0},
-            {"action": 6, "position": 123456, "sl": 0.0},
+            {"action": 6, "position": 123456, "sl": 0.0, "tp": 0.0},
+            {"action": 6, "position": 123456, "sl": 0.0, "tp": 0.0},
         ),
         (
-            {"action": 7, "order": 123456, "price": 1.02},
-            {"action": 7, "order": 123456, "price": 1.02},
+            {
+                "action": 7,
+                "order": 123456,
+                "price": 1.02,
+                "sl": 1.0,
+                "tp": 1.1,
+                "type_time": 0,
+            },
+            {
+                "action": 7,
+                "order": 123456,
+                "price": 1.02,
+                "sl": 1.0,
+                "tp": 1.1,
+                "type_time": 0,
+            },
         ),
         ({"action": 8, "order": 123456}, {"action": 8, "order": 123456}),
         (

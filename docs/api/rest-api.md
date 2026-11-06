@@ -168,8 +168,10 @@ endpoint submits a **live order** and is deliberately disabled by default.
 
 The trade request accepts all `MqlTradeRequest` fields. Required fields depend
 on `action`: `DEAL=1` needs symbol/volume/type (price depends on execution
-mode); `PENDING=5` adds price; `SLTP=6` needs position or symbol and SL/TP;
-`MODIFY=7` needs order and price; `REMOVE=8` needs order; and
+mode); `PENDING=5` adds price; `SLTP=6` needs position or symbol and both SL and TP (`0` clears a level; an
+omitted side is rejected because MT5 has no partial-update semantics);
+`MODIFY=7` needs order, price, SL, TP and `type_time` (plus `expiration` for
+SPECIFIED/SPECIFIED_DAY), as it replaces the full order state; `REMOVE=8` needs order; and
 `CLOSE_BY=10` needs position and position_by. Additional broker-specific
 requirements are enforced by MetaTrader 5. The `expiration` field requires an
 explicit UTC offset in ISO 8601 input and is forwarded as a Unix timestamp. The server automatically manages
