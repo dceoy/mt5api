@@ -485,14 +485,14 @@ Returns `{"margin": ...}` or `{"profit": ...}` in the account currency.
 Validates a trade request without placing an order. The body is
 `{"request": {...}}`; required fields depend on the MT5 `action`:
 
-| `action` | Operation | Required trade fields |
-| -------- | --------- | --------------------- |
-| `1` | DEAL | `symbol`, `volume`, `type` |
-| `5` | PENDING | `symbol`, `volume`, `type`, `price` |
-| `6` | SLTP | `position` or `symbol`, plus `sl` and `tp` |
-| `7` | MODIFY | `order`, `price`, `sl`, `tp`, `type_time`; also `expiration` for `type_time` 2 or 3 |
-| `8` | REMOVE | `order` |
-| `10` | CLOSE_BY | `position`, `position_by` |
+| `action` | Operation | Required trade fields                                                               |
+| -------- | --------- | ----------------------------------------------------------------------------------- |
+| `1`      | DEAL      | `symbol`, `volume`, `type`                                                          |
+| `5`      | PENDING   | `symbol`, `volume`, `type`, `price`                                                 |
+| `6`      | SLTP      | `position` or `symbol`, plus `sl` and `tp`                                          |
+| `7`      | MODIFY    | `order`, `price`, `sl`, `tp`, `type_time`; also `expiration` for `type_time` 2 or 3 |
+| `8`      | REMOVE    | `order`                                                                             |
+| `10`     | CLOSE_BY  | `position`, `position_by`                                                           |
 
 Other supported fields include `stoplimit`, `deviation`, `magic`, `comment`,
 `type_filling`, `type_time`, and `expiration`. `price` is optional for
