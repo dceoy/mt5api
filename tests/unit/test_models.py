@@ -335,6 +335,7 @@ def test_trade_request_rejects_missing_action_fields(
     with pytest.raises(ValidationError):
         TradeRequest.model_validate(payload)
 
+
 def test_trade_request_serializes_expiration_as_utc_epoch() -> None:
     """Timed pending orders need MT5 Unix timestamps, not Python datetime."""
     request = TradeRequest.model_validate({

@@ -438,6 +438,7 @@ def test_post_order_send_rejects_invalid_trade_payload(
     assert response.status_code == 422
     mock_mt5_client.order_send_as_dict.assert_not_called()
 
+
 def test_post_order_send_normalizes_timed_expiration(
     client: TestClient,
     api_headers: dict[str, str],

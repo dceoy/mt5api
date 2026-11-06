@@ -765,21 +765,28 @@ class TradeRequest(BaseModel):
             10: ("position", "position_by"),  # CLOSE_BY
         }.get(self.action)
         if required is None:
-            raise ValueError("Unsupported MetaTrader5 trade action")
+            message = "Unsupported MetaTrader5 trade action"
+            raise ValueError(message)
         missing = [
-            name for name in required
+            name
+            for name in required
             if getattr(self, name) is None
-            or (name in {"order", "position", "position_by"} and getattr(self, name) == 0)
+            or (
+                name in {"order", "position", "position_by"}
+                and getattr(self, name) == 0
+            )
         ]
-        if self.action == 6:
+        if self.action == 6:  # ruff: ignore[magic-value-comparison]
             if not (self.position or self.symbol):
                 missing.append("position or symbol")
             if self.sl is None and self.tp is None:
                 missing.append("sl or tp")
         if missing:
-            raise ValueError(f"Missing required trade fields: {', '.join(missing)}")
+            message = f"Missing required trade fields: {', '.join(missing)}"
+            raise ValueError(message)
         if self.expiration is not None and self.expiration.utcoffset() is None:
-            raise ValueError("expiration must include a UTC offset")
+            message = "expiration must include a UTC offset"
+            raise ValueError(message)
         return self
 
     def to_mt5_dict(self) -> dict[str, Any]:
@@ -788,9 +795,7 @@ class TradeRequest(BaseModel):
         Returns:
             Trade request dictionary suitable for the MetaTrader5 Python module.
         """
-        payload: dict[str, Any] = self.model_dump(
-            mode="python", exclude_none=True
-        )
+        payload: dict[str, Any] = self.model_dump(mode="python", exclude_none=True)
         if self.expiration is not None:
             payload["expiration"] = int(self.expiration.timestamp())
         return payload
@@ -801,7 +806,9 @@ class OrderSendRequest(BaseModel):
 
     request: TradeRequest = Field(
         ...,
-        description="MT5 MqlTradeRequest (order_send), including action-specific fields",
+        description=(
+            "MT5 MqlTradeRequest (order_send), including action-specific fields"
+        ),
     )
 
 

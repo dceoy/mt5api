@@ -19,6 +19,7 @@ from mt5api.constants import (
     DEFAULT_API_PORT,
     DEFAULT_API_ROUTER_PREFIX,
     DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+    ENV_MT5API_ENABLE_ORDER_SEND,
     ENV_MT5API_HOST,
     ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
@@ -34,9 +35,9 @@ def test_api_metadata_constants_match_package_contract() -> None:
     """API metadata constants expose the package's public contract."""
     assert API_TITLE == "MT5 REST API"
     assert API_DESCRIPTION == (
-        "REST API for MetaTrader 5 data access and non-executing terminal utilities. "
-        "Provides market data, account information, trading history, calculations, "
-        "and safe operational endpoints via HTTP."
+        "REST API for MetaTrader 5 market data, account information, trading history, "
+        "calculations, and terminal utilities. Live order submission is disabled "
+        "by default and requires explicit opt-in and API-key authentication."
     )
     assert version("mt5api") == API_VERSION
     assert API_DOCS_URL == "/docs"
@@ -51,6 +52,7 @@ def test_api_metadata_constants_match_package_contract() -> None:
 def test_configuration_constants_match_environment_contract() -> None:
     """Configuration constants expose stable environment names and defaults."""
     assert (
+        ENV_MT5API_ENABLE_ORDER_SEND,
         ENV_MT5API_HOST,
         ENV_MT5API_PORT,
         ENV_MT5API_LOG_LEVEL,
@@ -58,6 +60,7 @@ def test_configuration_constants_match_environment_contract() -> None:
         ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
         ENV_MT5API_SECRET_KEY,
     ) == (
+        "MT5API_ENABLE_ORDER_SEND",
         "MT5API_HOST",
         "MT5API_PORT",
         "MT5API_LOG_LEVEL",
