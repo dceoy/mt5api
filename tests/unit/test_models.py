@@ -334,3 +334,30 @@ def test_trade_request_rejects_missing_action_fields(
     """Reject unsupported actions and incomplete action-specific requests."""
     with pytest.raises(ValidationError):
         TradeRequest.model_validate(payload)
+
+def test_trade_request_serializes_expiration_as_utc_epoch() -> None:
+    """Timed pending orders need MT5 Unix timestamps, not Python datetime."""
+    request = TradeRequest.model_validate({
+        "action": 5,
+        "symbol": "EURUSD",
+        "volume": 0.1,
+        "type": 2,
+        "price": 1.05,
+        "expiration": "2024-01-01T09:00:00+09:00",
+    })
+    payload = request.to_mt5_dict()
+    assert payload["expiration"] == 1704067200
+    assert payload["action"] == 5
+
+
+def test_trade_request_rejects_naive_expiration() -> None:
+    """Ambiguous naive datetimes are rejected instead of being localized."""
+    with pytest.raises(ValidationError, match="expiration must include a UTC offset"):
+        TradeRequest.model_validate({
+            "action": 5,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 2,
+            "price": 1.05,
+            "expiration": "2024-01-01T09:00:00",
+        })

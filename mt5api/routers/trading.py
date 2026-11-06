@@ -104,7 +104,7 @@ async def post_order_send(
     Returns:
         MT5 order-send result, including retcode, in JSON or Parquet format.
     """
-    payload = request.request.model_dump(mode="python", exclude_none=True)
+    payload = request.request.to_mt5_dict()
     result: dict[str, Any] = await run_in_threadpool(
         mt5_client.order_send_as_dict,
         request=payload,
@@ -130,7 +130,7 @@ async def post_order_check(
     """
     result: dict[str, Any] = await run_in_threadpool(
         mt5_client.order_check_as_dict,
-        request=request.request.model_dump(mode="python", exclude_none=True),
+        request=request.request.to_mt5_dict(),
     )
     return format_response(result, response_format)
 

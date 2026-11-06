@@ -437,3 +437,31 @@ def test_post_order_send_rejects_invalid_trade_payload(
     )
     assert response.status_code == 422
     mock_mt5_client.order_send_as_dict.assert_not_called()
+
+def test_post_order_send_normalizes_timed_expiration(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MT5 receives absolute Unix time for timed pending orders."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    mock_mt5_client.order_send_as_dict.return_value = {"retcode": 10009}
+    response = client.post(
+        "/order/send",
+        json={
+            "request": {
+                "action": 5,
+                "symbol": "EURUSD",
+                "volume": 0.1,
+                "type": 2,
+                "price": 1.05,
+                "expiration": "2024-01-01T00:00:00Z",
+            }
+        },
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    assert mock_mt5_client.order_send_as_dict.call_args.kwargs["request"][
+        "expiration"
+    ] == 1704067200

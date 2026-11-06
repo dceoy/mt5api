@@ -168,7 +168,8 @@ on `action`: `DEAL=1` needs symbol/volume/type (price depends on execution
 mode); `PENDING=5` adds price; `SLTP=6` needs position or symbol and SL/TP;
 `MODIFY=7` needs order and price; `REMOVE=8` needs order; and
 `CLOSE_BY=10` needs position and position_by. Additional broker-specific
-requirements are enforced by MetaTrader 5. The server automatically manages
+requirements are enforced by MetaTrader 5. The `expiration` field requires an
+explicit UTC offset in ISO 8601 input and is forwarded as a Unix timestamp. The server automatically manages
 `initialize` and `shutdown` over its process lifecycle rather than exposing
 remote terminal-disconnect actions.
 

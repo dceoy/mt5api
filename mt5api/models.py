@@ -778,7 +778,22 @@ class TradeRequest(BaseModel):
                 missing.append("sl or tp")
         if missing:
             raise ValueError(f"Missing required trade fields: {', '.join(missing)}")
+        if self.expiration is not None and self.expiration.utcoffset() is None:
+            raise ValueError("expiration must include a UTC offset")
         return self
+
+    def to_mt5_dict(self) -> dict[str, Any]:
+        """Serialize MT5 fields, converting aware expiration to Unix seconds.
+
+        Returns:
+            Trade request dictionary suitable for the MetaTrader5 Python module.
+        """
+        payload: dict[str, Any] = self.model_dump(
+            mode="python", exclude_none=True
+        )
+        if self.expiration is not None:
+            payload["expiration"] = int(self.expiration.timestamp())
+        return payload
 
 
 class OrderSendRequest(BaseModel):
