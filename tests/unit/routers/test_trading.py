@@ -537,7 +537,6 @@ def test_post_order_send_cancellation_keeps_lock_until_send_finishes() -> None:
         task = asyncio.ensure_future(
             post_order_send(
                 cast("Request", SimpleNamespace(app=app)),
-                cast("Mt5DataClient", Mock()),
                 ResponseFormat.JSON,
                 request,
             )
@@ -552,3 +551,32 @@ def test_post_order_send_cancellation_keeps_lock_until_send_finishes() -> None:
         return locked_while_running, state.client_lock.locked()
 
     assert asyncio.run(scenario()) == (True, False)
+
+
+def test_post_order_send_initializes_default_client_under_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """First send initializes the default client while holding the lock."""
+    app = FastAPI()
+    state = initialize_mt5_runtime_state(app, max_market_book_subscriptions=1)
+    observed: dict[str, bool] = {}
+
+    class LazyClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            observed["init_locked"] = state.client_lock.locked()
+
+        def order_send_as_dict(self, request: dict[str, object]) -> dict[str, object]:
+            return {"retcode": 10009, "request": request}
+
+    monkeypatch.setattr("mt5api.dependencies.Mt5DataClient", LazyClient)
+    request = OrderSendRequest.model_validate({"request": {"action": 8, "order": 1}})
+    asyncio.run(
+        post_order_send(
+            cast("Request", SimpleNamespace(app=app)), ResponseFormat.JSON, request
+        )
+    )
+    assert observed == {"init_locked": True}
+    assert isinstance(state.client, LazyClient)

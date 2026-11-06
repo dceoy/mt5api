@@ -17,6 +17,7 @@ from mt5api.constants import (
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
 )
 from mt5api.dependencies import (
+    ensure_mt5_client,
     get_mt5_client,
     get_mt5_runtime_state,
     get_response_format,
@@ -97,16 +98,15 @@ def require_order_send_access() -> None:
 )
 async def post_order_send(
     app_request: Request,
-    mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: OrderSendRequest,
 ) -> DataResponse | Response:
     """Send a validated order and preserve the MT5 execution result.
 
     The send holds the application's client lock so it cannot interleave with
-    ``/connection/login``. The active client is re-selected under the lock, and
-    the lock is retained until the native call finishes, even if the request is
-    cancelled.
+    ``/connection/login``. The active client is resolved (and lazily
+    initialized) under the lock, and the lock is retained until the native call
+    finishes, even if the request is cancelled.
 
     Returns:
         MT5 order-send result, including retcode, in JSON or Parquet format.
@@ -117,7 +117,7 @@ async def post_order_send(
     payload = request.request.to_mt5_dict()
     state = get_mt5_runtime_state(app_request)
     async with state.client_lock:
-        active_client = state.client or mt5_client
+        active_client = await ensure_mt5_client(state)
         send_task = asyncio.ensure_future(
             run_in_threadpool(active_client.order_send_as_dict, request=payload)
         )

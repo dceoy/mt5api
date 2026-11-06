@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from operator import add
 from typing import TYPE_CHECKING, Any
 
@@ -163,6 +164,99 @@ def test_replace_mt5_client_preserves_old_client_on_failure(
             dependencies.replace_mt5_client(state, config)  # type: ignore[arg-type]
         )
     assert state.client is old_client
+
+
+def test_replace_mt5_client_cancellation_waits_and_installs_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cancelled reconnect finishes natively and leaves the state consistent."""
+    started = threading.Event()
+    release = threading.Event()
+
+    class SlowClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            started.set()
+            release.wait(timeout=5)
+
+    old_client = object()
+    state = dependencies.Mt5RuntimeState(client=old_client)  # type: ignore[arg-type]
+    monkeypatch.setattr(dependencies, "Mt5DataClient", SlowClient)
+
+    async def scenario() -> tuple[bool, bool]:
+        async def login() -> None:
+            async with state.client_lock:
+                await dependencies.replace_mt5_client(state, object())  # type: ignore[arg-type]
+
+        task = asyncio.ensure_future(login())
+        await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        await asyncio.sleep(0.05)
+        locked_while_running = state.client_lock.locked()
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        return locked_while_running, state.client_lock.locked()
+
+    assert asyncio.run(scenario()) == (True, False)
+    assert isinstance(state.client, SlowClient)
+
+
+def test_replace_mt5_client_cancellation_keeps_client_when_init_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cancelled reconnect that fails natively keeps the previous client."""
+    started = threading.Event()
+    release = threading.Event()
+
+    class FailingSlowClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            started.set()
+            release.wait(timeout=5)
+            error_message = "boom"
+            raise ValueError(error_message)
+
+    old_client = object()
+    state = dependencies.Mt5RuntimeState(client=old_client)  # type: ignore[arg-type]
+    monkeypatch.setattr(dependencies, "Mt5DataClient", FailingSlowClient)
+
+    async def scenario() -> None:
+        task = asyncio.ensure_future(
+            dependencies.replace_mt5_client(state, object())  # type: ignore[arg-type]
+        )
+        await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    asyncio.run(scenario())
+    assert state.client is old_client
+
+
+def test_ensure_mt5_client_reports_initialization_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lazy initialization failures are wrapped and leave no client installed."""
+
+    class FailingClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            error_message = "boom"
+            raise ValueError(error_message)
+
+    state = dependencies.Mt5RuntimeState()
+    monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
+    with pytest.raises(RuntimeError, match="Failed to initialize MT5 client"):
+        asyncio.run(dependencies.ensure_mt5_client(state))
+    assert state.client is None
 
 
 def test_release_market_book_subscriptions_cleans_all_state(
