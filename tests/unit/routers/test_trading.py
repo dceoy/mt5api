@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+import asyncio
+import threading
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
+from unittest.mock import Mock
 
 import pytest
+from fastapi import FastAPI
 
 from mt5api.constants import MT5_RUNTIME_STATE_KEY
+from mt5api.dependencies import initialize_mt5_runtime_state
+from mt5api.models import OrderSendRequest, ResponseFormat
+from mt5api.routers.trading import post_order_send
 from tests.openapi_mt5_constants import assert_openapi_mt5_order_type_schema
 
 if TYPE_CHECKING:
-    from unittest.mock import Mock
-
-    from fastapi import FastAPI
+    from fastapi import Request
     from fastapi.testclient import TestClient
+    from pdmt5.dataframe import Mt5DataClient
 
     from mt5api.dependencies import Mt5RuntimeState
 
@@ -477,3 +484,71 @@ def test_post_order_send_normalizes_timed_expiration(
         mock_mt5_client.order_send_as_dict.call_args.kwargs["request"]["expiration"]
         == 1704067200
     )
+
+
+def test_post_order_send_holds_client_lock_and_uses_active_client(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Order submission runs under the client lock using the current client."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    state = _runtime_state(client)
+    active_client = Mock()
+    observed: dict[str, bool] = {}
+
+    def send(request: dict[str, object]) -> dict[str, object]:
+        observed["locked"] = state.client_lock.locked()
+        observed["request"] = bool(request)
+        return {"retcode": 10009}
+
+    active_client.order_send_as_dict.side_effect = send
+    state.client = cast("Mt5DataClient", active_client)
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 123456}},
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    assert observed == {"locked": True, "request": True}
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+    assert not state.client_lock.locked()
+
+
+def test_post_order_send_cancellation_keeps_lock_until_send_finishes() -> None:
+    """A cancelled request keeps the lock until the native send returns."""
+    app = FastAPI()
+    state = initialize_mt5_runtime_state(app, max_market_book_subscriptions=1)
+    started = threading.Event()
+    release = threading.Event()
+    sdk = Mock()
+
+    def send(request: dict[str, object]) -> dict[str, object]:
+        started.set()
+        release.wait(timeout=5)
+        return {"retcode": 10009, "request": request}
+
+    sdk.order_send_as_dict.side_effect = send
+    state.client = cast("Mt5DataClient", sdk)
+    request = OrderSendRequest.model_validate({"request": {"action": 8, "order": 1}})
+
+    async def scenario() -> tuple[bool, bool]:
+        task = asyncio.ensure_future(
+            post_order_send(
+                cast("Request", SimpleNamespace(app=app)),
+                cast("Mt5DataClient", Mock()),
+                ResponseFormat.JSON,
+                request,
+            )
+        )
+        await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        await asyncio.sleep(0.05)
+        locked_while_running = state.client_lock.locked()
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        return locked_while_running, state.client_lock.locked()
+
+    assert asyncio.run(scenario()) == (True, False)

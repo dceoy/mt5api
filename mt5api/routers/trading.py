@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING, Annotated, Any
@@ -95,20 +96,38 @@ def require_order_send_access() -> None:
     dependencies=[Depends(require_order_send_access)],
 )
 async def post_order_send(
+    app_request: Request,
     mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: OrderSendRequest,
 ) -> DataResponse | Response:
     """Send a validated order and preserve the MT5 execution result.
 
+    The send holds the application's client lock so it cannot interleave with
+    ``/connection/login``. The active client is re-selected under the lock, and
+    the lock is retained until the native call finishes, even if the request is
+    cancelled.
+
     Returns:
         MT5 order-send result, including retcode, in JSON or Parquet format.
+
+    Raises:
+        asyncio.CancelledError: If the request is cancelled after the send ends.
     """
     payload = request.request.to_mt5_dict()
-    result: dict[str, Any] = await run_in_threadpool(
-        mt5_client.order_send_as_dict,
-        request=payload,
-    )
+    state = get_mt5_runtime_state(app_request)
+    async with state.client_lock:
+        active_client = state.client or mt5_client
+        send_task = asyncio.ensure_future(
+            run_in_threadpool(active_client.order_send_as_dict, request=payload)
+        )
+        try:
+            result: dict[str, Any] = await asyncio.shield(send_task)
+        except asyncio.CancelledError:
+            while not send_task.done():
+                await asyncio.wait({send_task})
+            send_task.exception()
+            raise
     return format_response(result, response_format)
 
 
