@@ -482,11 +482,22 @@ Returns `{"margin": ...}` or `{"profit": ...}` in the account currency.
 
 ### Check Order
 
-Validates funds sufficiency for a trade request without placing an order.
-The body is `{"request": {...}}`; `action`, `symbol`, `volume`, `type`, and
-`price` are required, and optional fields include `sl`, `tp`, `deviation`,
-`magic`, `comment`, `type_filling`, `type_time`, and `expiration`. Unknown
-fields are rejected. See `/openapi.json` for the full schema.
+Validates a trade request without placing an order. The body is
+`{"request": {...}}`; required fields depend on the MT5 `action`:
+
+| `action` | Operation | Required trade fields |
+| -------- | --------- | --------------------- |
+| `1` | DEAL | `symbol`, `volume`, `type` |
+| `5` | PENDING | `symbol`, `volume`, `type`, `price` |
+| `6` | SLTP | `position` or `symbol`, plus `sl` and `tp` |
+| `7` | MODIFY | `order`, `price`, `sl`, `tp`, `type_time`; also `expiration` for `type_time` 2 or 3 |
+| `8` | REMOVE | `order` |
+| `10` | CLOSE_BY | `position`, `position_by` |
+
+Other supported fields include `stoplimit`, `deviation`, `magic`, `comment`,
+`type_filling`, `type_time`, and `expiration`. `price` is optional for
+DEAL (market execution). Unknown fields are rejected. `/order/send` uses the
+same trade-request schema; see `/openapi.json` for full field definitions.
 
 ```bash
 curl -s -X POST "${AUTH_HEADER[@]}" \
@@ -519,6 +530,12 @@ The server returns `409` and sends nothing when the connected account differs
 from `expected_login` (or `expected_server`). It does not call `order_check` or
 retry. HTTP `200` does not mean the order filled: always read the returned MT5
 `retcode` and report it.
+
+Do not automatically retry after a timeout, disconnection, cancellation, or
+unparseable response: MT5 may have accepted the order even if no result was
+received. First reconcile the outcome against `/positions`, `/orders`, and
+`/history/deals` or `/history/orders`. If execution remains uncertain, stop
+and obtain explicit user confirmation before considering another submission.
 
 ---
 
