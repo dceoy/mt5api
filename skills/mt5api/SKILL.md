@@ -4,8 +4,8 @@ description: >-
   Query the MT5 API for account info, terminal status, health checks, last
   error, symbol data, market data (OHLCV rates, ticks, market depth), open
   positions, pending orders, trade history, record counts, margin/profit
-  calculations, order checks, and reconnecting the MT5 terminal with new
-  credentials. Use when the user wants to interact with any mt5api endpoint.
+  calculations, order checks, live order submission, and reconnecting the MT5
+  terminal with new credentials. Use when the user wants to interact with any mt5api endpoint.
 allowed-tools: Bash
 ---
 
@@ -13,7 +13,8 @@ allowed-tools: Bash
 
 Query all mt5api endpoints: health, version, last error, account, terminal,
 symbols, market data, positions, orders, trade history, record totals,
-margin/profit calculations, order checks, and market-depth subscriptions.
+margin/profit calculations, order checks, live order submission (opt-in), and
+market-depth subscriptions.
 
 ## Configuration
 
@@ -65,9 +66,13 @@ All endpoints (except `/health`) return JSON by default. Request Parquet with
   because it grants access to a trading account; the response only confirms
   `login`, `server`, `timeout`, and `connected`.
 - State-changing calls are `POST` endpoints: `/connection/login`,
-  `/symbols/{symbol}/select`, and `/market-book/{symbol}/subscribe|unsubscribe`.
-  Everything else is read-only (`/order/check` only validates a request and
-  never places an order). The API exposes no order-placement endpoint.
+  `/symbols/{symbol}/select`, `/market-book/{symbol}/subscribe|unsubscribe`, and
+  `/order/send`. Everything else is read-only (`/order/check` only validates a
+  request and never places an order).
+- `/order/send` submits a live order on the connected account and is disabled
+  unless the server sets `MT5API_ENABLE_ORDER_SEND=true` and
+  `MT5API_SECRET_KEY`; otherwise it returns `403`. Use it only when the user
+  explicitly asks to place an order, and confirm the full request first.
 - Historical queries need either `(date_from AND date_to)` or
   `(ticket OR position)`.
 - If `/health` reports `unhealthy`, the MT5 terminal may not be running or
@@ -90,7 +95,7 @@ Returns:
 | status        | string  | `healthy` or `unhealthy`       |
 | mt5_connected | bool    | MT5 terminal connection status |
 | mt5_version   | string? | MT5 terminal version string    |
-| api_version   | string  | API version (e.g., `1.0.0`)    |
+| api_version   | string  | API version                    |
 
 ### MT5 Version
 
@@ -477,11 +482,22 @@ Returns `{"margin": ...}` or `{"profit": ...}` in the account currency.
 
 ### Check Order
 
-Validates funds sufficiency for a trade request without placing an order.
-The body is `{"request": {...}}`; `action`, `symbol`, `volume`, `type`, and
-`price` are required, and optional fields include `sl`, `tp`, `deviation`,
-`magic`, `comment`, `type_filling`, `type_time`, and `expiration`. Unknown
-fields are rejected. See `/openapi.json` for the full schema.
+Validates a trade request without placing an order. The body is
+`{"request": {...}}`; required fields depend on the MT5 `action`:
+
+| `action` | Operation | Required trade fields                                                               |
+| -------- | --------- | ----------------------------------------------------------------------------------- |
+| `1`      | DEAL      | `symbol`, `volume`, `type`                                                          |
+| `5`      | PENDING   | `symbol`, `volume`, `type`, `price`                                                 |
+| `6`      | SLTP      | `position` or `symbol`, plus `sl` and `tp`                                          |
+| `7`      | MODIFY    | `order`, `price`, `sl`, `tp`, `type_time`; also `expiration` for `type_time` 2 or 3 |
+| `8`      | REMOVE    | `order`                                                                             |
+| `10`     | CLOSE_BY  | `position`, `position_by`                                                           |
+
+Other supported fields include `stoplimit`, `deviation`, `magic`, `comment`,
+`type_filling`, `type_time`, and `expiration`. `price` is optional for
+DEAL (market execution). Unknown fields are rejected. `/order/send` uses the
+same trade-request schema; see `/openapi.json` for full field definitions.
 
 ```bash
 curl -s -X POST "${AUTH_HEADER[@]}" \
@@ -489,6 +505,37 @@ curl -s -X POST "${AUTH_HEADER[@]}" \
   -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": "ORDER_TYPE_BUY", "price": 1.085}}' \
   "${MT5API_URL}/order/check" | python -m json.tool
 ```
+
+### Send Order (live trading, opt-in)
+
+Submits a real order through MT5 `order_send`. Run it only after the user has
+confirmed the exact request, `expected_login`, and `expected_server`, because it
+can open or close positions with real money. Authentication must be enabled
+(`AUTH_HEADER` set); an invalid key returns `401`.
+
+```bash
+curl -s -X POST "${AUTH_HEADER[@]}" \
+  -H 'Content-Type: application/json' \
+  -d '{"request": {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": "ORDER_TYPE_BUY", "price": 1.085}, "expected_login": 12345678, "expected_server": "Broker-Demo"}' \
+  "${MT5API_URL}/order/send" | python -m json.tool
+```
+
+| Field           | Type   | Required | Description                                          |
+| --------------- | ------ | -------- | ---------------------------------------------------- |
+| request         | object | yes      | MT5 trade request (same shape as `/order/check`)     |
+| expected_login  | int    | yes      | Account the order is intended for (`> 0`)            |
+| expected_server | string | no       | Trade server the order is intended for (exact match) |
+
+The server returns `409` and sends nothing when the connected account differs
+from `expected_login` (or `expected_server`). It does not call `order_check` or
+retry. HTTP `200` does not mean the order filled: always read the returned MT5
+`retcode` and report it.
+
+Do not automatically retry after a timeout, disconnection, cancellation, or
+unparseable response: MT5 may have accepted the order even if no result was
+received. First reconcile the outcome against `/positions`, `/orders`, and
+`/history/deals` or `/history/orders`. If execution remains uncertain, stop
+and obtain explicit user confirmation before considering another submission.
 
 ---
 
