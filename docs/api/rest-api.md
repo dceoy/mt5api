@@ -156,8 +156,11 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 The check endpoint validates a trade request without executing it. The send
 endpoint submits a **live order** and is deliberately disabled by default.
 
-- `POST /order/send` (body: `{"request": {...}}`) — Execute a trade through
-  `pdmt5.order_send_as_dict`. Requires `MT5API_ENABLE_ORDER_SEND=true` and
+- `POST /order/send` (body: `{"request": {...}, "expected_login": <int>,
+  "expected_server": "<optional>"}`) — Execute a trade through
+  `pdmt5.order_send_as_dict`. The order is rejected with 409 unless the
+  connected account matches `expected_login` (and `expected_server`, if given),
+  checked under the account lock immediately before sending. Requires `MT5API_ENABLE_ORDER_SEND=true` and
   `MT5API_SECRET_KEY` on the server; otherwise responds with 403. An invalid or
   missing API key returns 401 while authentication is enabled. Use a private
   network and TLS; the endpoint makes no automatic retries or trade approvals.

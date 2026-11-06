@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from mt5api.constants import MT5_RUNTIME_STATE_KEY
 from mt5api.dependencies import initialize_mt5_runtime_state
@@ -327,7 +327,7 @@ def test_post_order_send_disabled_by_default(
     monkeypatch.delenv("MT5API_ENABLE_ORDER_SEND", raising=False)
     response = client.post(
         "/order/send",
-        json={"request": {"action": 8, "order": 123456}},
+        json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
         headers=api_headers,
     )
     assert response.status_code == 403
@@ -346,7 +346,7 @@ def test_post_order_send_denied_without_configured_auth(
     monkeypatch.setattr(auth, "_API_KEY", None)
     response = client.post(
         "/order/send",
-        json={"request": {"action": 8, "order": 123456}},
+        json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
     )
     assert response.status_code == 403
     mock_mt5_client.order_send_as_dict.assert_not_called()
@@ -361,7 +361,7 @@ def test_post_order_send_rejects_missing_api_key(
     monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
     response = client.post(
         "/order/send",
-        json={"request": {"action": 8, "order": 123456}},
+        json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
     )
     assert response.status_code == 401
     mock_mt5_client.order_send_as_dict.assert_not_called()
@@ -409,7 +409,7 @@ def test_post_order_send_forwards_action_specific_fields(
     }
     response = client.post(
         "/order/send",
-        json={"request": trade_request},
+        json={"request": trade_request, "expected_login": 12345},
         headers=api_headers,
     )
     assert response.status_code == 200
@@ -431,7 +431,7 @@ def test_post_order_send_preserves_broker_rejection(
     }
     response = client.post(
         "/order/send?format=parquet",
-        json={"request": {"action": 8, "order": 123456}},
+        json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
         headers=api_headers,
     )
     assert response.status_code == 200
@@ -449,7 +449,7 @@ def test_post_order_send_rejects_invalid_trade_payload(
     monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
     response = client.post(
         "/order/send",
-        json={"request": {"action": 8, "order": 0}},
+        json={"request": {"action": 8, "order": 0}, "expected_login": 12345},
         headers=api_headers,
     )
     assert response.status_code == 422
@@ -475,7 +475,8 @@ def test_post_order_send_normalizes_timed_expiration(
                 "type": 2,
                 "price": 1.05,
                 "expiration": "2024-01-01T00:00:00Z",
-            }
+            },
+            "expected_login": 12345,
         },
         headers=api_headers,
     )
@@ -496,6 +497,7 @@ def test_post_order_send_holds_client_lock_and_uses_active_client(
     monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
     state = _runtime_state(client)
     active_client = Mock()
+    active_client.account_info_as_dict.return_value = {"login": 12345}
     observed: dict[str, bool] = {}
 
     def send(request: dict[str, object]) -> dict[str, object]:
@@ -507,7 +509,7 @@ def test_post_order_send_holds_client_lock_and_uses_active_client(
     state.client = cast("Mt5DataClient", active_client)
     response = client.post(
         "/order/send",
-        json={"request": {"action": 8, "order": 123456}},
+        json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
         headers=api_headers,
     )
     assert response.status_code == 200
@@ -523,6 +525,7 @@ def test_post_order_send_cancellation_keeps_lock_until_send_finishes() -> None:
     started = threading.Event()
     release = threading.Event()
     sdk = Mock()
+    sdk.account_info_as_dict.return_value = {"login": 1}
 
     def send(request: dict[str, object]) -> dict[str, object]:
         started.set()
@@ -531,7 +534,10 @@ def test_post_order_send_cancellation_keeps_lock_until_send_finishes() -> None:
 
     sdk.order_send_as_dict.side_effect = send
     state.client = cast("Mt5DataClient", sdk)
-    request = OrderSendRequest.model_validate({"request": {"action": 8, "order": 1}})
+    request = OrderSendRequest.model_validate({
+        "request": {"action": 8, "order": 1},
+        "expected_login": 1,
+    })
 
     async def scenario() -> tuple[bool, bool]:
         task = asyncio.ensure_future(
@@ -568,11 +574,17 @@ def test_post_order_send_initializes_default_client_under_lock(
         def initialize_and_login_mt5(self) -> None:
             observed["init_locked"] = state.client_lock.locked()
 
+        def account_info_as_dict(self) -> dict[str, object]:
+            return {"login": 1}
+
         def order_send_as_dict(self, request: dict[str, object]) -> dict[str, object]:
             return {"retcode": 10009, "request": request}
 
     monkeypatch.setattr("mt5api.dependencies.Mt5DataClient", LazyClient)
-    request = OrderSendRequest.model_validate({"request": {"action": 8, "order": 1}})
+    request = OrderSendRequest.model_validate({
+        "request": {"action": 8, "order": 1},
+        "expected_login": 1,
+    })
     asyncio.run(
         post_order_send(
             cast("Request", SimpleNamespace(app=app)), ResponseFormat.JSON, request
@@ -580,3 +592,103 @@ def test_post_order_send_initializes_default_client_under_lock(
     )
     assert observed == {"init_locked": True}
     assert isinstance(state.client, LazyClient)
+
+
+@pytest.mark.parametrize(
+    ("body_extra", "account"),
+    [
+        ({"expected_login": 999}, {"login": 12345, "server": "Demo"}),
+        (
+            {"expected_login": 12345, "expected_server": "Live"},
+            {"login": 12345, "server": "Demo"},
+        ),
+        ({"expected_login": 12345}, {"server": "Demo"}),
+    ],
+)
+def test_post_order_send_rejects_account_mismatch(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+    body_extra: dict[str, object],
+    account: dict[str, object],
+) -> None:
+    """A mismatched connected account fails closed before order_send."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    mock_mt5_client.account_info_as_dict.return_value = account
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 123456}, **body_extra},
+        headers=api_headers,
+    )
+    assert response.status_code == 409
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+
+
+def test_post_order_send_accepts_matching_server(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A matching login and server allows the send."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    mock_mt5_client.account_info_as_dict.return_value = {
+        "login": 12345,
+        "server": "Demo",
+    }
+    mock_mt5_client.order_send_as_dict.return_value = {"retcode": 10009}
+    response = client.post(
+        "/order/send",
+        json={
+            "request": {"action": 8, "order": 123456},
+            "expected_login": 12345,
+            "expected_server": "Demo",
+        },
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    mock_mt5_client.order_send_as_dict.assert_called_once()
+
+
+def test_post_order_send_requires_expected_login(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Omitting expected_login is a validation error."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 123456}},
+        headers=api_headers,
+    )
+    assert response.status_code == 422
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+
+
+def test_post_order_send_interleaved_account_switch_is_rejected() -> None:
+    """A: login A, B: login B, A: send(expect A) is rejected, not sent on B."""
+    app = FastAPI()
+    state = initialize_mt5_runtime_state(app, max_market_book_subscriptions=1)
+    sdk = Mock()
+    sdk.account_info_as_dict.return_value = {"login": 111}
+    state.client = cast("Mt5DataClient", sdk)
+    # Client B logs in afterwards, switching the process-global account.
+    sdk.account_info_as_dict.return_value = {"login": 222}
+    request = OrderSendRequest.model_validate({
+        "request": {"action": 8, "order": 1},
+        "expected_login": 111,
+    })
+    with pytest.raises(HTTPException) as excinfo:
+        asyncio.run(
+            post_order_send(
+                cast("Request", SimpleNamespace(app=app)),
+                ResponseFormat.JSON,
+                request,
+            )
+        )
+    assert excinfo.value.status_code == 409
+    sdk.order_send_as_dict.assert_not_called()
+    assert not state.client_lock.locked()

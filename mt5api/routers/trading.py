@@ -85,6 +85,38 @@ def require_order_send_access() -> None:
         )
 
 
+def _send_for_expected_account(
+    client: Mt5DataClient,
+    payload: dict[str, Any],
+    *,
+    expected_login: int,
+    expected_server: str | None,
+) -> dict[str, Any]:
+    """Send an order only if the connected account is the intended one.
+
+    The account check and the send run back to back in one worker thread, while
+    the caller holds ``client_lock``, so the account cannot change in between.
+
+    Returns:
+        MT5 order-send result.
+
+    Raises:
+        HTTPException: If the connected account differs from the expected one.
+    """
+    account = client.account_info_as_dict()
+    if account.get("login") != expected_login or (
+        expected_server is not None and account.get("server") != expected_server
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Connected MT5 account does not match expected_login/"
+                "expected_server; the order was not sent."
+            ),
+        )
+    return client.order_send_as_dict(request=payload)
+
+
 @router.post(
     "/order/send",
     response_model=DataResponse,
@@ -106,7 +138,9 @@ async def post_order_send(
     The send holds the application's client lock so it cannot interleave with
     ``/connection/login``. The active client is resolved (and lazily
     initialized) under the lock, and the lock is retained until the native call
-    finishes, even if the request is cancelled.
+    finishes, even if the request is cancelled. The connected account must match
+    ``expected_login`` (and ``expected_server`` when given); otherwise the order
+    is rejected with HTTP 409 before ``order_send`` is invoked.
 
     Returns:
         MT5 order-send result, including retcode, in JSON or Parquet format.
@@ -119,7 +153,13 @@ async def post_order_send(
     async with state.client_lock:
         active_client = await ensure_mt5_client(state)
         send_task = asyncio.ensure_future(
-            run_in_threadpool(active_client.order_send_as_dict, request=payload)
+            run_in_threadpool(
+                _send_for_expected_account,
+                active_client,
+                payload,
+                expected_login=request.expected_login,
+                expected_server=request.expected_server,
+            )
         )
         try:
             result: dict[str, Any] = await asyncio.shield(send_task)

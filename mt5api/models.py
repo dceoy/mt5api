@@ -810,6 +810,22 @@ class OrderSendRequest(BaseModel):
             "MT5 MqlTradeRequest (order_send), including action-specific fields"
         ),
     )
+    expected_login: int = Field(
+        ...,
+        gt=0,
+        description=(
+            "MT5 account login the order is intended for. The order is rejected "
+            "(HTTP 409) unless the connected account matches."
+        ),
+    )
+    expected_server: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Optional MT5 trade server the order is intended for. When set, the "
+            "connected account's server must match exactly."
+        ),
+    )
 
 
 class OrderCheckRequest(BaseModel):
