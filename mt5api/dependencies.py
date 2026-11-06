@@ -80,30 +80,6 @@ def get_mt5_client_lock(request: Request) -> asyncio.Lock:
     return get_mt5_runtime_state(request).client_lock
 
 
-def get_mt5_client(request: Request) -> Mt5DataClient:
-    """Get or create the application-scoped MT5 client instance.
-
-    Args:
-        request: Request whose application owns the MT5 runtime state.
-
-    Returns:
-        Shared initialized MT5 data client.
-
-    Raises:
-        RuntimeError: If MT5 client initialization fails.
-    """
-    state = get_mt5_runtime_state(request)
-    if state.client is None:
-        client = Mt5DataClient(config=Mt5Config())
-        try:
-            client.initialize_and_login_mt5()
-        except Exception as exc:
-            error_message = f"Failed to initialize MT5 client: {exc!s}"
-            raise RuntimeError(error_message) from exc
-        state.client = client
-    return state.client
-
-
 def shutdown_mt5_client(state: Mt5RuntimeState) -> None:
     """Shutdown and clear the application-scoped MT5 client."""
     client = state.client
@@ -111,6 +87,78 @@ def shutdown_mt5_client(state: Mt5RuntimeState) -> None:
         return
     state.client = None
     client.shutdown()
+
+
+async def _initialize_and_install_client(
+    state: Mt5RuntimeState,
+    client: Mt5DataClient,
+) -> None:
+    """Initialize ``client`` in a thread and install it as the active client.
+
+    The native initialization cannot be interrupted and changes MetaTrader5's
+    process-global connection. If the caller is cancelled, this waits for the
+    thread to finish and installs the client when it succeeded, so
+    ``state.client`` always matches the terminal's connected account before the
+    caller releases ``state.client_lock``.
+
+    Raises:
+        asyncio.CancelledError: If cancelled, after the thread has finished.
+    """
+    init_task = asyncio.ensure_future(
+        asyncio.to_thread(client.initialize_and_login_mt5)
+    )
+    try:
+        await asyncio.shield(init_task)
+    except asyncio.CancelledError:
+        while not init_task.done():
+            await asyncio.wait({init_task})
+        if init_task.exception() is None:
+            state.client = client
+        raise
+    state.client = client
+
+
+async def ensure_mt5_client(state: Mt5RuntimeState) -> Mt5DataClient:
+    """Return the active client, initializing the default one if needed.
+
+    Callers must hold ``state.client_lock`` so initialization cannot overlap an
+    account change.
+
+    Returns:
+        Active initialized MT5 data client.
+
+    Raises:
+        RuntimeError: If MT5 client initialization fails.
+    """
+    if state.client is not None:
+        return state.client
+    client = Mt5DataClient(config=Mt5Config())
+    try:
+        await _initialize_and_install_client(state, client)
+    except Exception as exc:
+        error_message = f"Failed to initialize MT5 client: {exc!s}"
+        raise RuntimeError(error_message) from exc
+    return client
+
+
+async def get_mt5_client(request: Request) -> Mt5DataClient:
+    """Get or lazily create the application-scoped MT5 client instance.
+
+    Initialization is serialized with account changes and live order submission
+    by ``state.client_lock``. When a client already exists no native
+    initialization can occur, so the lock is not taken.
+
+    Args:
+        request: Request whose application owns the MT5 runtime state.
+
+    Returns:
+        Shared initialized MT5 data client.
+    """
+    state = get_mt5_runtime_state(request)
+    if state.client is not None:
+        return state.client
+    async with state.client_lock:
+        return await ensure_mt5_client(state)
 
 
 async def replace_mt5_client(
@@ -121,6 +169,8 @@ async def replace_mt5_client(
 
     MetaTrader5 connection state is process-global, so the previous wrapper is
     not shut down after success because doing so could close the new session.
+    If the caller is cancelled mid-initialization, the call waits for the native
+    thread and keeps ``state.client`` consistent with the connected account.
 
     Returns:
         Newly initialized and installed client.
@@ -128,14 +178,13 @@ async def replace_mt5_client(
     Raises:
         RuntimeError: If the replacement cannot be initialized.
     """
+    new_client = Mt5DataClient(config=config)
     try:
-        new_client = Mt5DataClient(config=config)
-        await asyncio.to_thread(new_client.initialize_and_login_mt5)
+        await _initialize_and_install_client(state, new_client)
     except Exception as exc:
         logger.exception("Failed to initialize MT5 client")
         error_message = "Failed to initialize MT5 client"
         raise RuntimeError(error_message) from exc
-    state.client = new_client
     return new_client
 
 

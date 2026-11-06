@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pdmt5.dataframe import Mt5DataClient  # ruff: ignore[typing-only-third-party-import]
 
-from mt5api.auth import verify_api_key
-from mt5api.constants import ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS
+from mt5api.auth import is_auth_enabled, verify_api_key
+from mt5api.constants import (
+    ENV_MT5API_ENABLE_ORDER_SEND,
+    ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+)
 from mt5api.dependencies import (
+    ensure_mt5_client,
     get_mt5_client,
     get_mt5_runtime_state,
     get_response_format,
@@ -23,6 +29,7 @@ from mt5api.models import (
     ErrorResponse,
     MarketBookSubscriptionRequest,
     OrderCheckRequest,
+    OrderSendRequest,
     ResponseFormat,
     SymbolSelectRequest,
 )
@@ -61,6 +68,109 @@ def _build_market_book_subscription_limit_response(
     )
 
 
+def require_order_send_access() -> None:
+    """Reject live trading unless explicitly enabled with API-key authentication.
+
+    Raises:
+        HTTPException: If the endpoint is disabled or authentication is unconfigured.
+    """
+    enabled = os.getenv(ENV_MT5API_ENABLE_ORDER_SEND, "").strip().lower()
+    if enabled not in {"1", "true"} or not is_auth_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Live trading is disabled. Set MT5API_ENABLE_ORDER_SEND=true "
+                "and configure MT5API_SECRET_KEY to allow order submission."
+            ),
+        )
+
+
+def _send_for_expected_account(
+    client: Mt5DataClient,
+    payload: dict[str, Any],
+    *,
+    expected_login: int,
+    expected_server: str | None,
+) -> dict[str, Any]:
+    """Send an order only if the connected account is the intended one.
+
+    The account check and the send run back to back in one worker thread, while
+    the caller holds ``client_lock``, so the account cannot change in between.
+
+    Returns:
+        MT5 order-send result.
+
+    Raises:
+        HTTPException: If the connected account differs from the expected one.
+    """
+    account = client.account_info_as_dict()
+    if account.get("login") != expected_login or (
+        expected_server is not None and account.get("server") != expected_server
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Connected MT5 account does not match expected_login/"
+                "expected_server; the order was not sent."
+            ),
+        )
+    return client.order_send_as_dict(request=payload)
+
+
+@router.post(
+    "/order/send",
+    response_model=DataResponse,
+    summary="Send live trading order (opt-in)",
+    description=(
+        "Submit a live MetaTrader5 order. Disabled unless MT5API_ENABLE_ORDER_SEND "
+        "is true and API-key authentication is configured. Check the returned "
+        "MT5 retcode: HTTP 200 does not imply the order was filled."
+    ),
+    dependencies=[Depends(require_order_send_access)],
+)
+async def post_order_send(
+    app_request: Request,
+    response_format: Annotated[ResponseFormat, Depends(get_response_format)],
+    request: OrderSendRequest,
+) -> DataResponse | Response:
+    """Send a validated order and preserve the MT5 execution result.
+
+    The send holds the application's client lock so it cannot interleave with
+    ``/connection/login``. The active client is resolved (and lazily
+    initialized) under the lock, and the lock is retained until the native call
+    finishes, even if the request is cancelled. The connected account must match
+    ``expected_login`` (and ``expected_server`` when given); otherwise the order
+    is rejected with HTTP 409 before ``order_send`` is invoked.
+
+    Returns:
+        MT5 order-send result, including retcode, in JSON or Parquet format.
+
+    Raises:
+        asyncio.CancelledError: If the request is cancelled after the send ends.
+    """
+    payload = request.request.to_mt5_dict()
+    state = get_mt5_runtime_state(app_request)
+    async with state.client_lock:
+        active_client = await ensure_mt5_client(state)
+        send_task = asyncio.ensure_future(
+            run_in_threadpool(
+                _send_for_expected_account,
+                active_client,
+                payload,
+                expected_login=request.expected_login,
+                expected_server=request.expected_server,
+            )
+        )
+        try:
+            result: dict[str, Any] = await asyncio.shield(send_task)
+        except asyncio.CancelledError:
+            while not send_task.done():
+                await asyncio.wait({send_task})
+            send_task.exception()
+            raise
+    return format_response(result, response_format)
+
+
 @router.post(
     "/order/check",
     response_model=DataResponse,
@@ -79,7 +189,7 @@ async def post_order_check(
     """
     result: dict[str, Any] = await run_in_threadpool(
         mt5_client.order_check_as_dict,
-        request=request.request.model_dump(mode="python", exclude_none=True),
+        request=request.request.to_mt5_dict(),
     )
     return format_response(result, response_format)
 

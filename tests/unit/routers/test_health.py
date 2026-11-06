@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI, Request
@@ -148,11 +149,11 @@ async def test_get_health_handles_runtime_error(
     """Test get_health handles MT5 runtime errors gracefully."""
     from mt5api.routers import health  # ruff: ignore[import-outside-top-level]
 
-    def raise_runtime_error(_request: Request) -> None:
-        error_message = "MT5 unavailable"
-        raise RuntimeError(error_message)
-
-    monkeypatch.setattr(health, "get_mt5_client", raise_runtime_error)
+    monkeypatch.setattr(
+        health,
+        "get_mt5_client",
+        AsyncMock(side_effect=RuntimeError("MT5 unavailable")),
+    )
 
     response = await health.get_health(_request())
 
@@ -172,10 +173,7 @@ async def test_get_health_handles_version_probe_failure(
             error_message = "MT5 disconnected"
             raise TypeError(error_message)
 
-    def get_client(_request: Request) -> DummyClient:
-        return DummyClient()
-
-    monkeypatch.setattr(health, "get_mt5_client", get_client)
+    monkeypatch.setattr(health, "get_mt5_client", AsyncMock(return_value=DummyClient()))
 
     response = await health.get_health(_request())
 
@@ -196,10 +194,7 @@ async def test_get_health_handles_unexpected_probe_failure(
             error_message = "IPC failure"
             raise OSError(error_message)
 
-    def get_client(_request: Request) -> DummyClient:
-        return DummyClient()
-
-    monkeypatch.setattr(health, "get_mt5_client", get_client)
+    monkeypatch.setattr(health, "get_mt5_client", AsyncMock(return_value=DummyClient()))
 
     response = await health.get_health(_request())
 
@@ -219,10 +214,7 @@ async def test_get_health_handles_empty_version_dict(
         def version_as_dict(self) -> dict[str, str]:
             return {}
 
-    def get_client(_request: Request) -> DummyClient:
-        return DummyClient()
-
-    monkeypatch.setattr(health, "get_mt5_client", get_client)
+    monkeypatch.setattr(health, "get_mt5_client", AsyncMock(return_value=DummyClient()))
 
     response = await health.get_health(_request())
 

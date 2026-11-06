@@ -293,3 +293,100 @@ def test_trade_request_rejects_unsupported_order_type() -> None:
             "type": 99,
             "price": 1.085,
         })
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0},
+        {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.05},
+        {"action": 6, "symbol": "EURUSD", "sl": 1.0, "tp": 0.0},
+        {"action": 6, "position": 1234, "sl": 0.0, "tp": 0.0},
+        {
+            "action": 7,
+            "order": 1234,
+            "price": 1.05,
+            "sl": 1.0,
+            "tp": 1.2,
+            "type_time": 0,
+        },
+        {
+            "action": 7,
+            "order": 1234,
+            "price": 1.05,
+            "sl": 1.0,
+            "tp": 1.2,
+            "type_time": 2,
+            "expiration": "2024-01-02T00:00:00Z",
+        },
+        {"action": 8, "order": 1234},
+        {"action": 10, "position": 1234, "position_by": 5678},
+    ],
+)
+def test_trade_request_supports_all_trade_actions(
+    payload: dict[str, object],
+) -> None:
+    """Trade requests support MT5 action-specific fields, including zero-valued SL."""
+    request = TradeRequest.model_validate(payload)
+    assert request.action == payload["action"]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"action": 0},
+        {"action": 1, "symbol": "EURUSD", "volume": 0.1},
+        {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2},
+        {"action": 6, "sl": 1.0, "tp": 1.2},
+        {"action": 6, "position": 1234},
+        {"action": 6, "position": 1234, "sl": 1.0},
+        {"action": 6, "position": 1234, "tp": 1.2},
+        {"action": 7, "order": 1234},
+        {"action": 7, "order": 1234, "price": 1.05},
+        {"action": 7, "order": 1234, "price": 1.05, "sl": 1.0, "tp": 1.2},
+        {
+            "action": 7,
+            "order": 1234,
+            "price": 1.05,
+            "sl": 1.0,
+            "tp": 1.2,
+            "type_time": 3,
+        },
+        {"action": 8, "order": 0},
+        {"action": 10, "position": 1234},
+    ],
+)
+def test_trade_request_rejects_missing_action_fields(
+    payload: dict[str, object],
+) -> None:
+    """Reject unsupported actions and incomplete action-specific requests."""
+    with pytest.raises(ValidationError):
+        TradeRequest.model_validate(payload)
+
+
+def test_trade_request_serializes_expiration_as_utc_epoch() -> None:
+    """Timed pending orders need MT5 Unix timestamps, not Python datetime."""
+    request = TradeRequest.model_validate({
+        "action": 5,
+        "symbol": "EURUSD",
+        "volume": 0.1,
+        "type": 2,
+        "price": 1.05,
+        "expiration": "2024-01-01T09:00:00+09:00",
+    })
+    payload = request.to_mt5_dict()
+    assert payload["expiration"] == 1704067200
+    assert payload["action"] == 5
+
+
+def test_trade_request_rejects_naive_expiration() -> None:
+    """Ambiguous naive datetimes are rejected instead of being localized."""
+    with pytest.raises(ValidationError, match="expiration must include a UTC offset"):
+        TradeRequest.model_validate({
+            "action": 5,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 2,
+            "price": 1.05,
+            "expiration": "2024-01-01T09:00:00",
+        })

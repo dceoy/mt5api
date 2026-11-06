@@ -651,26 +651,26 @@ class TradeRequest(BaseModel):
         ge=0,
         examples=[1],
     )
-    symbol: str = Field(
-        ...,
-        description="Symbol name",
+    symbol: str | None = Field(
+        default=None,
+        description="Trade symbol (not required for order removal/modification)",
         min_length=1,
         max_length=32,
         examples=["EURUSD"],
     )
-    volume: float = Field(
-        ...,
+    volume: float | None = Field(
+        default=None,
         description="Trade volume in lots",
         gt=0,
         examples=[0.1, 1.0],
     )
-    type: Mt5OrderType = Field(
-        ...,
+    type: Mt5OrderType | None = Field(
+        default=None,
         description=_ORDER_TYPE_DESCRIPTION,
     )
-    price: float = Field(
-        ...,
-        description="Requested price",
+    price: float | None = Field(
+        default=None,
+        description="Requested price (optional for market execution)",
         ge=0,
         examples=[1.08500],
     )
@@ -744,6 +744,95 @@ class TradeRequest(BaseModel):
         description="Opposite position ticket",
         ge=0,
         examples=[654321],
+    )
+
+    @model_validator(mode="after")
+    def validate_action_fields(self) -> Self:
+        """Require only fields relevant to the selected MT5 trade action.
+
+        Returns:
+            The validated request for checking or sending to MT5.
+
+        SLTP and MODIFY replace the whole MT5 trade state, so omitted levels are
+        rejected instead of risking a reset to zero/GTC (use ``0`` to clear).
+
+        Raises:
+            ValueError: If the action is unknown or required fields are missing.
+        """
+        required = {
+            1: ("symbol", "volume", "type"),  # TRADE_ACTION_DEAL
+            5: ("symbol", "volume", "type", "price"),  # PENDING
+            6: (),  # SLTP: netting symbol or hedging position
+            7: ("order", "price", "sl", "tp", "type_time"),  # MODIFY (full state)
+            8: ("order",),  # REMOVE
+            10: ("position", "position_by"),  # CLOSE_BY
+        }.get(self.action)
+        if required is None:
+            message = "Unsupported MetaTrader5 trade action"
+            raise ValueError(message)
+        missing = [
+            name
+            for name in required
+            if getattr(self, name) is None
+            or (
+                name in {"order", "position", "position_by"}
+                and getattr(self, name) == 0
+            )
+        ]
+        if self.action == 6:  # ruff: ignore[magic-value-comparison]
+            if not (self.position or self.symbol):
+                missing.append("position or symbol")
+            missing.extend(name for name in ("sl", "tp") if getattr(self, name) is None)
+        if (
+            self.action == 7  # ruff: ignore[magic-value-comparison]
+            and self.type_time in {2, 3}  # ORDER_TIME_SPECIFIED(_DAY)
+            and self.expiration is None
+        ):
+            missing.append("expiration")
+        if missing:
+            message = f"Missing required trade fields: {', '.join(missing)}"
+            raise ValueError(message)
+        if self.expiration is not None and self.expiration.utcoffset() is None:
+            message = "expiration must include a UTC offset"
+            raise ValueError(message)
+        return self
+
+    def to_mt5_dict(self) -> dict[str, Any]:
+        """Serialize MT5 fields, converting aware expiration to Unix seconds.
+
+        Returns:
+            Trade request dictionary suitable for the MetaTrader5 Python module.
+        """
+        payload: dict[str, Any] = self.model_dump(mode="python", exclude_none=True)
+        if self.expiration is not None:
+            payload["expiration"] = int(self.expiration.timestamp())
+        return payload
+
+
+class OrderSendRequest(BaseModel):
+    """Request body for an opt-in live trading operation."""
+
+    request: TradeRequest = Field(
+        ...,
+        description=(
+            "MT5 MqlTradeRequest (order_send), including action-specific fields"
+        ),
+    )
+    expected_login: int = Field(
+        ...,
+        gt=0,
+        description=(
+            "MT5 account login the order is intended for. The order is rejected "
+            "(HTTP 409) unless the connected account matches."
+        ),
+    )
+    expected_server: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Optional MT5 trade server the order is intended for. When set, the "
+            "connected account's server must match exactly."
+        ),
     )
 
 

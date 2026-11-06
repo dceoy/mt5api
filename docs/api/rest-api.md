@@ -27,7 +27,8 @@ pip install mt5api
 Set the optional API key and other limits via environment variables:
 
 ```powershell
-$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required for live order sends
+$env:MT5API_ENABLE_ORDER_SEND = "true"         # Optional: defaults to disabled
 $env:MT5API_LOG_LEVEL = "INFO"
 $env:MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS = "100"
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
@@ -150,7 +151,32 @@ If `MT5API_ROUTER_PREFIX` is configured, prepend it to each API route below.
 - `GET /history/deals/total` (`date_from`, `date_to`, `format`) — Count of
   historical deals in date range
 
-### Trade Validation
+### Trade Validation and Execution
+
+The check endpoint validates a trade request without executing it. The send
+endpoint submits a **live order** and is deliberately disabled by default.
+
+- `POST /order/send` (body: `{"request": {...}, "expected_login": <int>,
+  "expected_server": "<optional>"}`) — Execute a trade through
+  `pdmt5.order_send_as_dict`. The order is rejected with 409 unless the
+  connected account matches `expected_login` (and `expected_server`, if given),
+  checked under the account lock immediately before sending. Requires `MT5API_ENABLE_ORDER_SEND=true` and
+  `MT5API_SECRET_KEY` on the server; otherwise responds with 403. An invalid or
+  missing API key returns 401 while authentication is enabled. Use a private
+  network and TLS; the endpoint makes no automatic retries or trade approvals.
+  Always inspect the returned MT5 `retcode`: HTTP 200 is not evidence of a fill.
+
+The trade request accepts all `MqlTradeRequest` fields. Required fields depend
+on `action`: `DEAL=1` needs symbol/volume/type (price depends on execution
+mode); `PENDING=5` adds price; `SLTP=6` needs position or symbol and both SL and TP (`0` clears a level; an
+omitted side is rejected because MT5 has no partial-update semantics);
+`MODIFY=7` needs order, price, SL, TP and `type_time` (plus `expiration` for
+SPECIFIED/SPECIFIED_DAY), as it replaces the full order state; `REMOVE=8` needs order; and
+`CLOSE_BY=10` needs position and position_by. Additional broker-specific
+requirements are enforced by MetaTrader 5. The `expiration` field requires an
+explicit UTC offset in ISO 8601 input and is forwarded as a Unix timestamp. The server automatically manages
+`initialize` and `shutdown` over its process lifecycle rather than exposing
+remote terminal-disconnect actions.
 
 This endpoint validates an MT5 trade request without executing it.
 
@@ -160,7 +186,7 @@ This endpoint validates an MT5 trade request without executing it.
 The `request` body follows the [MetaTrader 5 trade request
 structure](https://www.mql5.com/en/docs/constants/structures/mqltraderequest),
 with typed validation for core fields such as `action`, `symbol`, `volume`,
-`type`, and `price`.
+`type`, and `price`, using action-specific requirements.
 
 ### Connection
 

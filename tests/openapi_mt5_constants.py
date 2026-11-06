@@ -21,6 +21,10 @@ ORDER_TYPE_EXAMPLES = get_mt5_order_type_example_names()
 
 def assert_openapi_mt5_order_type_schema(schema: dict[str, Any]) -> None:
     """Assert an OpenAPI schema documents ORDER_TYPE names, values, and examples."""
+    # Optional MT5 order types wrap the canonical name/integer schema in
+    # an outer nullable union. Inspect the canonical schema in either case.
+    if "anyOf" in schema and any("anyOf" in member for member in schema["anyOf"]):
+        schema = next(member for member in schema["anyOf"] if "anyOf" in member)
     string_schema = next(
         member for member in schema["anyOf"] if member["type"] == "string"
     )
