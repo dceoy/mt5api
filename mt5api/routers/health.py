@@ -49,7 +49,7 @@ async def get_health(request: Request) -> HealthResponse:
     mt5_version = None
 
     try:
-        client = await run_in_threadpool(get_mt5_client, request)
+        client = await get_mt5_client(request)
         version_dict = await run_in_threadpool(client.version_as_dict)
         if version_dict:
             mt5_version = f"{version_dict.get('mt5_terminal_version', 'unknown')}"

@@ -80,30 +80,6 @@ def get_mt5_client_lock(request: Request) -> asyncio.Lock:
     return get_mt5_runtime_state(request).client_lock
 
 
-def get_mt5_client(request: Request) -> Mt5DataClient:
-    """Get or create the application-scoped MT5 client instance.
-
-    Args:
-        request: Request whose application owns the MT5 runtime state.
-
-    Returns:
-        Shared initialized MT5 data client.
-
-    Raises:
-        RuntimeError: If MT5 client initialization fails.
-    """
-    state = get_mt5_runtime_state(request)
-    if state.client is None:
-        client = Mt5DataClient(config=Mt5Config())
-        try:
-            client.initialize_and_login_mt5()
-        except Exception as exc:
-            error_message = f"Failed to initialize MT5 client: {exc!s}"
-            raise RuntimeError(error_message) from exc
-        state.client = client
-    return state.client
-
-
 def shutdown_mt5_client(state: Mt5RuntimeState) -> None:
     """Shutdown and clear the application-scoped MT5 client."""
     client = state.client
@@ -163,6 +139,26 @@ async def ensure_mt5_client(state: Mt5RuntimeState) -> Mt5DataClient:
         error_message = f"Failed to initialize MT5 client: {exc!s}"
         raise RuntimeError(error_message) from exc
     return client
+
+
+async def get_mt5_client(request: Request) -> Mt5DataClient:
+    """Get or lazily create the application-scoped MT5 client instance.
+
+    Initialization is serialized with account changes and live order submission
+    by ``state.client_lock``. When a client already exists no native
+    initialization can occur, so the lock is not taken.
+
+    Args:
+        request: Request whose application owns the MT5 runtime state.
+
+    Returns:
+        Shared initialized MT5 data client.
+    """
+    state = get_mt5_runtime_state(request)
+    if state.client is not None:
+        return state.client
+    async with state.client_lock:
+        return await ensure_mt5_client(state)
 
 
 async def replace_mt5_client(

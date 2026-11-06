@@ -86,10 +86,10 @@ def test_get_mt5_client_initializes_and_reuses_state_client(
     monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
     request = _request(FastAPI())
-    client = dependencies.get_mt5_client(request)
+    client = asyncio.run(dependencies.get_mt5_client(request))
     assert isinstance(client, DummyClient)
     assert client.initialized is True
-    assert dependencies.get_mt5_client(request) is client
+    assert asyncio.run(dependencies.get_mt5_client(request)) is client
 
 
 def test_get_mt5_client_raises_runtime_error_on_failure(
@@ -109,7 +109,7 @@ def test_get_mt5_client_raises_runtime_error_on_failure(
     monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
     request = _request(FastAPI())
     with pytest.raises(RuntimeError, match="Failed to initialize MT5 client"):
-        dependencies.get_mt5_client(request)
+        asyncio.run(dependencies.get_mt5_client(request))
     assert dependencies.get_mt5_runtime_state(request).client is None
 
 
@@ -443,3 +443,34 @@ def test_replace_mt5_client_installs_only_after_success(
     with pytest.raises(RuntimeError, match=r"^Failed to initialize MT5 client$"):
         asyncio.run(dependencies.replace_mt5_client(state, config))
     assert state.client is old_client
+
+
+def test_get_mt5_client_waits_for_client_lock_before_initializing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cold lazy initialization cannot overlap an account change in progress."""
+    started = threading.Event()
+
+    class DummyClient:
+        def __init__(self, config: str) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            started.set()
+
+    monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
+    monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+
+    async def scenario() -> None:
+        async with state.client_lock:
+            pending = asyncio.ensure_future(dependencies.get_mt5_client(request))
+            await asyncio.sleep(0.05)
+            assert not started.is_set()
+            assert state.client is None
+        client = await pending
+        assert started.is_set()
+        assert state.client is client
+
+    asyncio.run(scenario())
