@@ -4,9 +4,9 @@ from importlib.metadata import version
 
 API_TITLE = "MT5 REST API"
 API_DESCRIPTION = (
-    "REST API for MetaTrader 5 data access and non-executing terminal utilities. "
-    "Provides market data, account information, trading history, calculations, "
-    "and safe operational endpoints via HTTP."
+    "REST API for MetaTrader 5 market data, account information, trading history, "
+    "calculations, and terminal utilities. Live order submission is disabled "
+    "by default and requires explicit opt-in and API-key authentication."
 )
 API_VERSION = version("mt5api")
 API_DOCS_URL = "/docs"
@@ -22,6 +22,7 @@ ENV_MT5API_PORT = "MT5API_PORT"
 ENV_MT5API_LOG_LEVEL = "MT5API_LOG_LEVEL"
 ENV_MT5API_ROUTER_PREFIX = "MT5API_ROUTER_PREFIX"
 ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS = "MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS"
+ENV_MT5API_ENABLE_ORDER_SEND = "MT5API_ENABLE_ORDER_SEND"
 ENV_MT5API_SECRET_KEY = "MT5API_SECRET_KEY"  # ruff: ignore[hardcoded-password-string]
 
 DEFAULT_API_HOST = "0.0.0.0"  # ruff: ignore[hardcoded-bind-all-interfaces]

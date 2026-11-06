@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pdmt5.dataframe import Mt5DataClient  # ruff: ignore[typing-only-third-party-import]
 
-from mt5api.auth import verify_api_key
-from mt5api.constants import ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS
+from mt5api.auth import is_auth_enabled, verify_api_key
+from mt5api.constants import (
+    ENV_MT5API_ENABLE_ORDER_SEND,
+    ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+)
 from mt5api.dependencies import (
     get_mt5_client,
     get_mt5_runtime_state,
@@ -23,6 +27,7 @@ from mt5api.models import (
     ErrorResponse,
     MarketBookSubscriptionRequest,
     OrderCheckRequest,
+    OrderSendRequest,
     ResponseFormat,
     SymbolSelectRequest,
 )
@@ -59,6 +64,52 @@ def _build_market_book_subscription_limit_response(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         content=error.model_dump(),
     )
+
+
+def require_order_send_access() -> None:
+    """Reject live trading unless explicitly enabled with API-key authentication.
+
+    Raises:
+        HTTPException: If the endpoint is disabled or authentication is unconfigured.
+    """
+    enabled = os.getenv(ENV_MT5API_ENABLE_ORDER_SEND, "").strip().lower()
+    if enabled not in {"1", "true"} or not is_auth_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Live trading is disabled. Set MT5API_ENABLE_ORDER_SEND=true "
+                "and configure MT5API_SECRET_KEY to allow order submission."
+            ),
+        )
+
+
+@router.post(
+    "/order/send",
+    response_model=DataResponse,
+    summary="Send live trading order (opt-in)",
+    description=(
+        "Submit a live MetaTrader5 order. Disabled unless MT5API_ENABLE_ORDER_SEND "
+        "is true and API-key authentication is configured. Check the returned "
+        "MT5 retcode: HTTP 200 does not imply the order was filled."
+    ),
+    dependencies=[Depends(require_order_send_access)],
+)
+async def post_order_send(
+    mt5_client: Annotated[Mt5DataClient, Depends(get_mt5_client)],
+    response_format: Annotated[ResponseFormat, Depends(get_response_format)],
+    request: OrderSendRequest,
+) -> DataResponse | Response:
+    """Send a validated order and preserve the MT5 execution result.
+
+    Returns:
+        MT5 order-send result, including retcode, in JSON or Parquet format.
+    """
+    payload = request.request.model_dump(mode="python", exclude_none=True)
+    result: dict[str, Any] = await run_in_threadpool(
+        mt5_client.order_send_as_dict,
+        request=payload,
+    )
+    return format_response(result, response_format)
 
 
 @router.post(

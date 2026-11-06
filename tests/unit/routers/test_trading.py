@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+import pytest
+
 from mt5api.constants import MT5_RUNTIME_STATE_KEY
 from tests.openapi_mt5_constants import assert_openapi_mt5_order_type_schema
 
@@ -306,3 +308,132 @@ def test_trading_openapi_uses_mt5_order_type_schema(client: TestClient) -> None:
         "type"
     ]
     assert_openapi_mt5_order_type_schema(order_type_schema)
+
+
+def test_post_order_send_disabled_by_default(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Live trading must remain disabled unless explicitly enabled."""
+    monkeypatch.delenv("MT5API_ENABLE_ORDER_SEND", raising=False)
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 123456}},
+        headers=api_headers,
+    )
+    assert response.status_code == 403
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+
+
+def test_post_order_send_denied_without_configured_auth(
+    client: TestClient,
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Explicit live-trade opt-in cannot bypass missing API-key configuration."""
+    from mt5api import auth  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    monkeypatch.setattr(auth, "_API_KEY", None)
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 123456}},
+    )
+    assert response.status_code == 403
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+
+
+def test_post_order_send_rejects_missing_api_key(
+    client: TestClient,
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Live order sends still require the shared X-API-Key header."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 123456}},
+    )
+    assert response.status_code == 401
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("trade_request", "expected"),
+    [
+        ({"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0},
+         {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0}),
+        ({"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01},
+         {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01}),
+        ({"action": 6, "position": 123456, "sl": 0.0},
+         {"action": 6, "position": 123456, "sl": 0.0}),
+        ({"action": 7, "order": 123456, "price": 1.02},
+         {"action": 7, "order": 123456, "price": 1.02}),
+        ({"action": 8, "order": 123456}, {"action": 8, "order": 123456}),
+        ({"action": 10, "position": 123456, "position_by": 789012},
+         {"action": 10, "position": 123456, "position_by": 789012}),
+    ],
+)
+def test_post_order_send_forwards_action_specific_fields(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+    trade_request: dict[str, object],
+    expected: dict[str, object],
+) -> None:
+    """All six MT5 trade actions forward their exact validated fields."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    mock_mt5_client.order_send_as_dict.return_value = {
+        "retcode": 10009,
+        "order": 123456,
+    }
+    response = client.post(
+        "/order/send",
+        json={"request": trade_request},
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["retcode"] == 10009
+    mock_mt5_client.order_send_as_dict.assert_called_once_with(request=expected)
+
+
+def test_post_order_send_preserves_broker_rejection(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """HTTP success must not mask MT5 trade-server rejection retcodes."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "1")
+    mock_mt5_client.order_send_as_dict.return_value = {
+        "retcode": 10013,
+        "comment": "Invalid request",
+    }
+    response = client.post(
+        "/order/send?format=parquet",
+        json={"request": {"action": 8, "order": 123456}},
+        headers=api_headers,
+    )
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/parquet")
+    assert mock_mt5_client.order_send_as_dict.call_count == 1
+
+
+def test_post_order_send_rejects_invalid_trade_payload(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Validation failures must never reach the live trading primitive."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    response = client.post(
+        "/order/send",
+        json={"request": {"action": 8, "order": 0}},
+        headers=api_headers,
+    )
+    assert response.status_code == 422
+    mock_mt5_client.order_send_as_dict.assert_not_called()

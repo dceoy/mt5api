@@ -11,11 +11,11 @@ provides the core MT5 client, dataframe/order primitives, and canonical MT5
 constant parsing. mt5api adds optional API-key auth and JSON/Parquet response
 formatting.
 
-The exposed operational surface is deliberately narrow: mt5api validates trade
-requests, manages terminal-side subscriptions and MarketWatch visibility, and
-supports reconnecting the terminal to a different MT5 account via
-`POST /connection/login`, but it does not expose live order-send endpoints or
-implement strategy orchestration.
+The API supports all MetaTrader5 Python functions through REST operations or
+application-managed connection lifecycle. Live order submission
+(`POST /order/send`) is **disabled by default** and requires both
+`MT5API_ENABLE_ORDER_SEND=true` and `MT5API_SECRET_KEY`. The server does
+not implement strategy orchestration.
 
 The API server must run on Windows. pdmt5 connects through the MetaTrader 5
 Python API, which is supported only on Windows, so you must host `mt5api` on a
@@ -92,7 +92,7 @@ uv sync
 After installing from PyPI:
 
 ```powershell
-$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required for live order sends
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 python -m mt5api
 ```
@@ -119,6 +119,14 @@ the same.
 
 Set `MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS` to cap active market-book
 subscriptions. The default limit is `100`.
+
+To explicitly allow live order submission on a trusted Windows host, set
+`MT5API_ENABLE_ORDER_SEND=true` **and** `MT5API_SECRET_KEY` before launching
+the server. Never expose a trading-enabled instance directly to the public
+Internet; use HTTPS, network access controls, and a dedicated least-privilege
+trading account. With either setting missing, `POST /order/send` returns 403.
+The endpoint does not automatically call `order_check` or retry requests;
+clients must examine the MT5 `retcode` and avoid ambiguous duplicate orders.
 
 ## Example Requests with curl
 

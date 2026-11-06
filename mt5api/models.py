@@ -651,26 +651,26 @@ class TradeRequest(BaseModel):
         ge=0,
         examples=[1],
     )
-    symbol: str = Field(
-        ...,
-        description="Symbol name",
+    symbol: str | None = Field(
+        default=None,
+        description="Trade symbol (not required for order removal/modification)",
         min_length=1,
         max_length=32,
         examples=["EURUSD"],
     )
-    volume: float = Field(
-        ...,
+    volume: float | None = Field(
+        default=None,
         description="Trade volume in lots",
         gt=0,
         examples=[0.1, 1.0],
     )
-    type: Mt5OrderType = Field(
-        ...,
+    type: Mt5OrderType | None = Field(
+        default=None,
         description=_ORDER_TYPE_DESCRIPTION,
     )
-    price: float = Field(
-        ...,
-        description="Requested price",
+    price: float | None = Field(
+        default=None,
+        description="Requested price (optional for market execution)",
         ge=0,
         examples=[1.08500],
     )
@@ -744,6 +744,49 @@ class TradeRequest(BaseModel):
         description="Opposite position ticket",
         ge=0,
         examples=[654321],
+    )
+
+    @model_validator(mode="after")
+    def validate_action_fields(self) -> Self:
+        """Require only fields relevant to the selected MT5 trade action.
+
+        Returns:
+            The validated request for checking or sending to MT5.
+
+        Raises:
+            ValueError: If the action is unknown or required fields are missing.
+        """
+        required = {
+            1: ("symbol", "volume", "type"),  # TRADE_ACTION_DEAL
+            5: ("symbol", "volume", "type", "price"),  # PENDING
+            6: (),  # SLTP: netting symbol or hedging position
+            7: ("order", "price"),  # MODIFY
+            8: ("order",),  # REMOVE
+            10: ("position", "position_by"),  # CLOSE_BY
+        }.get(self.action)
+        if required is None:
+            raise ValueError("Unsupported MetaTrader5 trade action")
+        missing = [
+            name for name in required
+            if getattr(self, name) is None
+            or (name in {"order", "position", "position_by"} and getattr(self, name) == 0)
+        ]
+        if self.action == 6:
+            if not (self.position or self.symbol):
+                missing.append("position or symbol")
+            if self.sl is None and self.tp is None:
+                missing.append("sl or tp")
+        if missing:
+            raise ValueError(f"Missing required trade fields: {', '.join(missing)}")
+        return self
+
+
+class OrderSendRequest(BaseModel):
+    """Request body for an opt-in live trading operation."""
+
+    request: TradeRequest = Field(
+        ...,
+        description="MT5 MqlTradeRequest (order_send), including action-specific fields",
     )
 
 
