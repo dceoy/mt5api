@@ -9,7 +9,7 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">= 3.11, < 3.15"
 dependencies = [
-  "pdmt5 >= 1.2.0",
+  "pdmt5 >= 1.2.4",
   "fastapi >= 0.115.0",
   "uvicorn[standard] >= 0.32.0",
   "pandas >= 3.0.3",
