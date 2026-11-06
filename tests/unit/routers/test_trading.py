@@ -363,17 +363,27 @@ def test_post_order_send_rejects_missing_api_key(
 @pytest.mark.parametrize(
     ("trade_request", "expected"),
     [
-        ({"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0},
-         {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0}),
-        ({"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01},
-         {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01}),
-        ({"action": 6, "position": 123456, "sl": 0.0},
-         {"action": 6, "position": 123456, "sl": 0.0}),
-        ({"action": 7, "order": 123456, "price": 1.02},
-         {"action": 7, "order": 123456, "price": 1.02}),
+        (
+            {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0},
+            {"action": 1, "symbol": "EURUSD", "volume": 0.1, "type": 0},
+        ),
+        (
+            {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01},
+            {"action": 5, "symbol": "EURUSD", "volume": 0.1, "type": 2, "price": 1.01},
+        ),
+        (
+            {"action": 6, "position": 123456, "sl": 0.0},
+            {"action": 6, "position": 123456, "sl": 0.0},
+        ),
+        (
+            {"action": 7, "order": 123456, "price": 1.02},
+            {"action": 7, "order": 123456, "price": 1.02},
+        ),
         ({"action": 8, "order": 123456}, {"action": 8, "order": 123456}),
-        ({"action": 10, "position": 123456, "position_by": 789012},
-         {"action": 10, "position": 123456, "position_by": 789012}),
+        (
+            {"action": 10, "position": 123456, "position_by": 789012},
+            {"action": 10, "position": 123456, "position_by": 789012},
+        ),
     ],
 )
 def test_post_order_send_forwards_action_specific_fields(
@@ -463,6 +473,7 @@ def test_post_order_send_normalizes_timed_expiration(
         headers=api_headers,
     )
     assert response.status_code == 200
-    assert mock_mt5_client.order_send_as_dict.call_args.kwargs["request"][
-        "expiration"
-    ] == 1704067200
+    assert (
+        mock_mt5_client.order_send_as_dict.call_args.kwargs["request"]["expiration"]
+        == 1704067200
+    )
