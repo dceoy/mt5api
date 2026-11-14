@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@main  # zizmor: ignore[unpinned-uses]
+    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@9e394d7c18b3a00fb853cd3c693cc4eeb5f0c825  # v2.3.0
     with:
       package-path: .
       create-github-release: true
