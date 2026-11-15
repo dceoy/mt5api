@@ -1,20 +1,15 @@
 ---
 name: mt5api
 description: >-
-  Query the MT5 API for account info, terminal status, health checks, last
-  error, symbol data, market data (OHLCV rates, ticks, market depth), open
-  positions, pending orders, trade history, record counts, margin/profit
-  calculations, order checks, live order submission, and reconnecting the MT5
-  terminal with new credentials. Use when the user wants to interact with any mt5api endpoint.
+  Query and operate a running MT5 API server: health and terminal status,
+  account info, symbols, market data (rates, ticks, market depth), positions,
+  orders and trade history, margin/profit calculations, order checks, live
+  order submission, and reconnecting with new credentials. Use when the user
+  wants to interact with any mt5api endpoint.
 allowed-tools: Bash
 ---
 
 # MT5 API
-
-Query all mt5api endpoints: health, version, last error, account, terminal,
-symbols, market data, positions, orders, trade history, record totals,
-margin/profit calculations, order checks, live order submission (opt-in), and
-market-depth subscriptions.
 
 ## Configuration
 
@@ -539,14 +534,9 @@ and obtain explicit user confirmation before considering another submission.
 
 ---
 
-## Procedure
+## Before and after calls
 
-1. Pick the endpoint(s) that answer the request, and collect any missing
-   required parameters (symbol, timeframe, dates, count, filters).
-2. Choose JSON or Parquet output. Build `AUTH_HEADER` only when
-   `MT5API_SECRET_KEY` is set, then run the `curl` command(s).
-3. Summarize the parsed JSON, or note that Parquet data was returned. Quote
-   MT5 error text from `503` responses and suggest `/last-error` for more
-   detail.
-4. Before any state-changing `POST` (see Operational Notes), confirm the
-   target with the user.
+Confirm the target with the user before any state-changing `POST` (see
+Operational Notes). Afterwards, summarize parsed JSON, or note that Parquet data
+was returned. Quote MT5 error text from `503` responses and point to
+`/last-error` for more detail.
