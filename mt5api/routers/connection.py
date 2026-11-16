@@ -17,6 +17,12 @@ from mt5api.models import LoginRequest, LoginResponse
 
 logger = logging.getLogger(__name__)
 
+
+def _sanitize_for_log(value: object) -> str:
+    """Return a single-line representation safe for plain-text logs."""
+    return str(value).replace("\r", "").replace("\n", "")
+
+
 router = APIRouter(
     tags=["connection"],
     dependencies=[Depends(verify_api_key)],
@@ -52,10 +58,11 @@ async def post_connection_login(
     async with state.client_lock:
         await replace_mt5_client(state, config)
         await release_market_book_subscriptions(state)
+    safe_server = _sanitize_for_log(request.server)
     logger.info(
         "MT5 client reconnected (login=%d, server=%s)",
         request.login,
-        request.server,
+        safe_server,
     )
     return LoginResponse(
         login=request.login,
