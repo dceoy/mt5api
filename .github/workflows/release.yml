@@ -20,7 +20,7 @@ jobs:
       actions: read
       contents: write
       id-token: write
-    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@d0a72b0149b861e64866db78aa27ba158ab7c6a7  # v2.3.3
+    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@b7d9e0c64d9cd6d7198da715b11a4648373e9a23  # v2.3.4
     with:
       mode: prepare
       package-path: .
@@ -50,7 +50,7 @@ jobs:
     if: needs.prepare.outputs.release-tag != ''
     permissions:
       contents: write
-    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@d0a72b0149b861e64866db78aa27ba158ab7c6a7  # v2.3.3
+    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-on-pypi-and-github.yml@b7d9e0c64d9cd6d7198da715b11a4648373e9a23  # v2.3.4
     with:
       mode: finalize
       release-tag: ${{ needs.prepare.outputs.release-tag }}
