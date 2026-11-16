@@ -52,10 +52,11 @@ async def post_connection_login(
     async with state.client_lock:
         await replace_mt5_client(state, config)
         await release_market_book_subscriptions(state)
+    sanitized_login = str(request.login).replace("\r", "").replace("\n", "")
     sanitized_server = request.server.replace("\r", "").replace("\n", "")
     logger.info(
-        "MT5 client reconnected (login=%d, server=%s)",
-        request.login,
+        "MT5 client reconnected (login=%s, server=%s)",
+        sanitized_login,
         sanitized_server,
     )
     return LoginResponse(
