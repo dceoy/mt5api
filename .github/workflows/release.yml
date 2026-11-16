@@ -47,13 +47,8 @@ jobs:
       - prepare
       - publish-to-pypi
     if: needs.prepare.outputs.release-tag != ''
-    runs-on: ubuntu-latest
     permissions:
       contents: write
-    steps:
-      - name: Publish GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
-        run: |
-          gh release edit "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --draft=false
+    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-finalize.yml@185be844553d7ea4e1b746969d19870a3075d2cd
+    with:
+      release-tag: ${{ needs.prepare.outputs.release-tag }}
