@@ -219,3 +219,25 @@ def test_logging_middleware_adds_process_time_header() -> None:
     response = client.get("/boom")
 
     assert "X-Process-Time" in response.headers
+
+
+def test_unknown_route_returns_problem_details() -> None:
+    """Router-level 404/405 errors should also use the RFC 7807 shape."""
+    app = FastAPI()
+
+    @app.get("/known")
+    def known() -> dict[str, str]:  # pyright: ignore[reportUnusedFunction]
+        return {}
+
+    add_middleware(app)
+    client = TestClient(app)
+
+    not_found = client.get("/unknown")
+    not_allowed = client.post("/known")
+
+    assert not_found.status_code == 404
+    assert not_found.json()["type"] == "/errors/http-error"
+    assert not_found.json()["detail"] == "Not Found"
+    assert not_allowed.status_code == 405
+    assert not_allowed.json()["status"] == 405
+    assert not_allowed.headers["allow"] == "GET"

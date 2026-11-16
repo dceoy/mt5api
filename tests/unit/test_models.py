@@ -390,3 +390,15 @@ def test_trade_request_rejects_naive_expiration() -> None:
             "price": 1.05,
             "expiration": "2024-01-01T09:00:00",
         })
+
+
+@pytest.mark.parametrize("model", [HistoryOrdersRequest, HistoryTotalRequest])
+def test_history_requests_reject_mixed_naive_and_aware_dates(
+    model: type[HistoryOrdersRequest | HistoryTotalRequest],
+) -> None:
+    """Mixed naive/aware ranges are a validation error, not a TypeError."""
+    with pytest.raises(ValidationError, match="both include or both omit"):
+        model(
+            date_from=datetime(2024, 1, 1, tzinfo=UTC),
+            date_to=datetime(2024, 1, 2),  # ruff: ignore[call-datetime-without-tzinfo]
+        )

@@ -6,16 +6,17 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any, cast
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException
 
 from .models import ErrorResponse
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from fastapi import FastAPI
     from starlette.middleware.base import RequestResponseEndpoint
@@ -60,6 +61,7 @@ def _create_error_response(
     status_code: int,
     detail: str,
     instance: str,
+    headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     """Create a RFC 7807 Problem Details error response.
 
@@ -69,6 +71,7 @@ def _create_error_response(
         status_code: HTTP status code.
         detail: Detailed error explanation.
         instance: Request URI that caused the error.
+        headers: Optional response headers (e.g. ``Allow`` for 405).
 
     Returns:
         JSONResponse with error details.
@@ -80,7 +83,11 @@ def _create_error_response(
         detail=detail,
         instance=instance,
     )
-    return JSONResponse(status_code=status_code, content=error.model_dump())
+    return JSONResponse(
+        status_code=status_code,
+        content=error.model_dump(),
+        headers=headers,
+    )
 
 
 async def error_handler_middleware(
@@ -199,7 +206,10 @@ def http_exception_handler(
     request: Request,
     exc: HTTPException,
 ) -> JSONResponse:
-    """Convert FastAPI HTTP exceptions to flat RFC 7807 responses.
+    """Convert HTTP exceptions to flat RFC 7807 responses.
+
+    Registered for Starlette's base class so router-level errors (404, 405)
+    are covered as well as FastAPI ``HTTPException`` subclasses.
 
     Returns:
         Problem Details JSON response.
@@ -220,6 +230,7 @@ def http_exception_handler(
         exc.status_code,
         detail,
         str(request.url),
+        headers=exc.headers,
     )
 
 

@@ -491,6 +491,22 @@ class OrdersRequest(BaseModel):
     format: ResponseFormat | None = Field(default=None)
 
 
+def _validate_date_range(date_from: datetime, date_to: datetime) -> None:
+    """Ensure ``date_from`` precedes ``date_to``.
+
+    Raises:
+        ValueError: If the range is empty or mixes naive and aware datetimes.
+    """
+    try:
+        is_empty = date_from >= date_to
+    except TypeError as error:
+        message = "date_from and date_to must both include or both omit a UTC offset"
+        raise ValueError(message) from error
+    if is_empty:
+        range_error = "date_from must be before date_to"
+        raise ValueError(range_error)
+
+
 class HistoryRequestBase(BaseModel):
     """Shared fields and validation for history endpoints."""
 
@@ -525,13 +541,8 @@ class HistoryRequestBase(BaseModel):
             )
             raise ValueError(error_message)
 
-        if (
-            self.date_from is not None
-            and self.date_to is not None
-            and self.date_from >= self.date_to
-        ):
-            range_error = "date_from must be before date_to"
-            raise ValueError(range_error)
+        if self.date_from is not None and self.date_to is not None:
+            _validate_date_range(self.date_from, self.date_to)
 
         return self
 
@@ -572,13 +583,8 @@ class HistoryTotalRequest(BaseModel):
 
         Returns:
             The validated model instance.
-
-        Raises:
-            ValueError: If date_from is not before date_to.
         """
-        if self.date_from >= self.date_to:
-            range_error = "date_from must be before date_to"
-            raise ValueError(range_error)
+        _validate_date_range(self.date_from, self.date_to)
         return self
 
 
