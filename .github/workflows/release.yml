@@ -49,6 +49,6 @@ jobs:
     if: needs.prepare.outputs.release-tag != ''
     permissions:
       contents: write
-    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-finalize.yml@185be844553d7ea4e1b746969d19870a3075d2cd
+    uses: dceoy/gha-for-devops/.github/workflows/python-package-release-finalize.yml@09c4903e57a08b153fa604b14a1b10ddac7323c8
     with:
       release-tag: ${{ needs.prepare.outputs.release-tag }}
