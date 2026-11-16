@@ -16,7 +16,6 @@ jobs:
     if: >-
       github.repository == 'dceoy/mt5api'
       && github.ref == 'refs/heads/main'
-    # Release preparation signs artifacts and creates a draft release.
     permissions:
       actions: read
       contents: write
@@ -43,11 +42,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
         with:
           verbose: true
-  # Recovery: if publish-to-pypi succeeded but this job failed, a rerun fails closed at
-  # PyPI (duplicate version) and re-uploads draft assets via --clobber. Do not publish
-  # the draft by hand until wheel/sdist filenames and SHA-256 digests in
-  # https://pypi.org/pypi/mt5api/<version>/json match the draft's assets; then run
-  # gh release edit v<version> --draft=false.
   publish-release:
     needs:
       - prepare
