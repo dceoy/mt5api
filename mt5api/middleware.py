@@ -6,11 +6,12 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any, cast
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pdmt5.mt5 import Mt5RuntimeError
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException
 
 from .models import ErrorResponse
 
@@ -199,7 +200,10 @@ def http_exception_handler(
     request: Request,
     exc: HTTPException,
 ) -> JSONResponse:
-    """Convert FastAPI HTTP exceptions to flat RFC 7807 responses.
+    """Convert HTTP exceptions to flat RFC 7807 responses.
+
+    Registered for Starlette's base class so router-level errors (404, 405)
+    are covered as well as FastAPI ``HTTPException`` subclasses.
 
     Returns:
         Problem Details JSON response.
