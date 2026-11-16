@@ -240,3 +240,4 @@ def test_unknown_route_returns_problem_details() -> None:
     assert not_found.json()["detail"] == "Not Found"
     assert not_allowed.status_code == 405
     assert not_allowed.json()["status"] == 405
+    assert not_allowed.headers["allow"] == "GET"
