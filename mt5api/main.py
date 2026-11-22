@@ -7,19 +7,26 @@ import logging
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, cast
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .auth import is_auth_enabled
+from .auth import is_auth_enabled, verify_api_key
 from .config import (
     get_configured_api_router_prefix,
     get_configured_max_market_book_subscriptions,
     get_configured_python_log_level,
+    get_configured_trusted_hosts,
 )
 from .constants import (
     API_DESCRIPTION,
     API_DOCS_URL,
-    API_KEY_SECURITY_SCHEME_NAME,
     API_OPENAPI_URL,
     API_REDOC_URL,
     API_TITLE,
@@ -101,20 +108,6 @@ def _iter_openapi_operations(
                 yield operation
 
 
-def _strip_auth_from_openapi(openapi_schema: dict[str, Any]) -> None:
-    """Remove API key requirements from OpenAPI when auth is disabled."""
-    openapi_schema.pop("security", None)
-    components = _as_dict(openapi_schema.get("components", {}))
-    if components is not None:
-        security_schemes = _as_dict(components.get("securitySchemes", {}))
-        if security_schemes is not None:
-            security_schemes.pop(API_KEY_SECURITY_SCHEME_NAME, None)
-            if not security_schemes:
-                components.pop("securitySchemes", None)
-    for operation in _iter_openapi_operations(openapi_schema):
-        operation.pop("security", None)
-
-
 def _patch_validation_error_responses(openapi_schema: dict[str, Any]) -> None:
     """Advertise RFC 7807 Problem Details for request validation failures."""
     components = _as_dict(openapi_schema.setdefault("components", {}))
@@ -193,8 +186,6 @@ def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
         description=app.description,
         routes=app.routes,
     )
-    if not is_auth_enabled():
-        _strip_auth_from_openapi(openapi_schema)
     _patch_validation_error_responses(openapi_schema)
     _patch_parquet_success_responses(openapi_schema)
     app.openapi_schema = openapi_schema
@@ -220,7 +211,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     Yields:
         Control to FastAPI while the application is running.
+
+    Raises:
+        RuntimeError: If the API key is not configured.
     """
+    if not is_auth_enabled():
+        message = "MT5API_SECRET_KEY is required"
+        raise RuntimeError(message)
     logger.info("Starting MT5 REST API...")
     state = initialize_mt5_runtime_state(
         app,
@@ -237,17 +234,68 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("MT5 connection closed")
 
 
+if not is_auth_enabled():
+    message = "MT5API_SECRET_KEY is required"
+    raise RuntimeError(message)
+
 app = FastAPI(
     title=API_TITLE,
     description=API_DESCRIPTION,
     version=API_VERSION,
     lifespan=lifespan,
-    docs_url=API_DOCS_URL,
-    redoc_url=API_REDOC_URL,
-    openapi_url=API_OPENAPI_URL,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
+
+
+@app.get(
+    API_OPENAPI_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)]
+)
+def authenticated_openapi(request: Request) -> JSONResponse:
+    """Return the schema to authenticated clients."""
+    schema = app.openapi()
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    if root_path and app.root_path_in_servers:
+        servers = schema.get("servers", app.servers)
+        if not any(server.get("url") == root_path for server in servers):
+            schema = {**schema, "servers": [{"url": root_path}, *servers]}
+    return JSONResponse(schema)
+
+
+@app.get(API_DOCS_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)])
+def authenticated_docs(request: Request) -> HTMLResponse:
+    """Return Swagger UI to authenticated clients."""
+    return get_swagger_ui_html(
+        openapi_url=request.scope.get("root_path", "").rstrip("/") + API_OPENAPI_URL,
+        title=f"{API_TITLE} - Swagger UI",
+        oauth2_redirect_url=request.scope.get("root_path", "").rstrip("/")
+        + "/docs/oauth2-redirect",
+    )
+
+
+@app.get(API_REDOC_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)])
+def authenticated_redoc(request: Request) -> HTMLResponse:
+    """Return ReDoc to authenticated clients."""
+    return get_redoc_html(
+        openapi_url=request.scope.get("root_path", "").rstrip("/") + API_OPENAPI_URL,
+        title=f"{API_TITLE} - ReDoc",
+    )
+
+
+@app.get(
+    "/docs/oauth2-redirect",
+    include_in_schema=False,
+    dependencies=[Depends(verify_api_key)],
+)
+def authenticated_oauth2_redirect() -> HTMLResponse:
+    """Return Swagger's OAuth redirect page to authenticated clients."""
+    return get_swagger_ui_oauth2_redirect_html()
+
+
 app.openapi = _custom_openapi
 add_middleware(app)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=get_configured_trusted_hosts())
 
 router_prefix = get_configured_api_router_prefix()
 app.include_router(health.router, prefix=router_prefix)

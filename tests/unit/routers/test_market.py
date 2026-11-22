@@ -256,7 +256,9 @@ def test_openapi_documents_mt5_timeframes_consistently(
     client: TestClient,
 ) -> None:
     """Rates endpoints should expose MT5 timeframe names and integer values."""
-    openapi = client.get("/openapi.json").json()
+    openapi = client.get(
+        "/openapi.json", headers={"X-API-Key": "test-api-key-12345"}
+    ).json()
     paths = (
         "/rates/from",
         "/rates/from-pos",
@@ -434,7 +436,9 @@ def test_openapi_documents_mt5_copy_ticks_consistently(
     client: TestClient,
 ) -> None:
     """Tick endpoints should expose MT5 COPY_TICKS names and integer values."""
-    openapi = client.get("/openapi.json").json()
+    openapi = client.get(
+        "/openapi.json", headers={"X-API-Key": "test-api-key-12345"}
+    ).json()
     paths = ("/ticks/from", "/ticks/range")
 
     for path in paths:

@@ -17,6 +17,7 @@ from .constants import (
     ENV_MT5API_PORT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
+    ENV_MT5API_TRUSTED_HOSTS,
     MAX_API_PORT,
 )
 
@@ -69,7 +70,7 @@ def get_configured_api_host() -> str:
     Returns:
         Host address for binding the API server.
     """
-    return os.getenv(ENV_MT5API_HOST, DEFAULT_API_HOST)
+    return os.getenv(ENV_MT5API_HOST, "").strip() or DEFAULT_API_HOST
 
 
 def get_configured_api_port() -> int:
@@ -160,6 +161,21 @@ def get_configured_mt5api_secret_key() -> str | None:
     """Get the configured MT5 API secret key, if any.
 
     Returns:
-        MT5 API secret key string, or ``None`` when authentication is disabled.
+        MT5 API secret key string, or ``None`` when the key is missing.
     """
-    return os.getenv(ENV_MT5API_SECRET_KEY) or None
+    key = os.getenv(ENV_MT5API_SECRET_KEY)
+    return key if key and key.strip() else None
+
+
+def get_configured_trusted_hosts() -> list[str]:
+    """Return allowed Host headers.
+
+    Raises:
+        ValueError: If the allowlist is empty or contains a bare wildcard.
+    """
+    raw = os.getenv(ENV_MT5API_TRUSTED_HOSTS, "localhost,127.0.0.1,[::1]")
+    hosts = [host.strip() for host in raw.split(",") if host.strip()]
+    if not hosts or "*" in hosts:
+        message = "Invalid MT5API_TRUSTED_HOSTS"
+        raise ValueError(message)
+    return hosts

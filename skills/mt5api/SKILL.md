@@ -15,19 +15,21 @@ allowed-tools: Bash
 
 The API base URL defaults to `http://localhost:8000`. Set `MT5API_URL` to
 override. When the server mounts routes under `MT5API_ROUTER_PREFIX`, include
-that prefix in `MT5API_URL` (e.g., `http://localhost:8000/mt5`). When the server
-is configured with `MT5API_SECRET_KEY`, send the same value in the `X-API-Key`
-header. When server-side auth is disabled, omit the header instead of sending
-an empty `X-API-Key`.
+that prefix in `MT5API_URL` (e.g., `http://localhost:8000/mt5`). The server
+requires `MT5API_SECRET_KEY`; send the same value in the `X-API-Key`
+header for every endpoint except `/health`. A missing server key prevents startup.
 
-Use these shell helpers in examples:
+Initialize the URL for all examples, including the public health check:
 
 ```bash
 MT5API_URL="${MT5API_URL:-http://localhost:8000}"
-AUTH_HEADER=()
-if [ -n "${MT5API_SECRET_KEY:-}" ]; then
-  AUTH_HEADER=(-H "X-API-Key: ${MT5API_SECRET_KEY}")
-fi
+```
+
+Before running protected request examples, set up the authentication header:
+
+```bash
+: "${MT5API_SECRET_KEY:?Set the server API key for protected requests}"
+AUTH_HEADER=(-H "X-API-Key: ${MT5API_SECRET_KEY}")
 ```
 
 Login credentials for `/connection/login` are read from the environment so
@@ -66,7 +68,7 @@ All endpoints (except `/health`) return JSON by default. Request Parquet with
   request and never places an order).
 - `/order/send` submits a live order on the connected account and is disabled
   unless the server sets `MT5API_ENABLE_ORDER_SEND=true` and
-  `MT5API_SECRET_KEY`; otherwise it returns `403`. Use it only when the user
+  `MT5API_SECRET_KEY`; if order sending is disabled it returns `403`. Use it only when the user
   explicitly asks to place an order, and confirm the full request first.
 - Historical queries need either `(date_from AND date_to)` or
   `(ticket OR position)`.
@@ -505,8 +507,8 @@ curl -s -X POST "${AUTH_HEADER[@]}" \
 
 Submits a real order through MT5 `order_send`. Run it only after the user has
 confirmed the exact request, `expected_login`, and `expected_server`, because it
-can open or close positions with real money. Authentication must be enabled
-(`AUTH_HEADER` set); an invalid key returns `401`.
+can open or close positions with real money. Set `AUTH_HEADER` as described in
+Configuration; an invalid key returns `401`.
 
 ```bash
 curl -s -X POST "${AUTH_HEADER[@]}" \

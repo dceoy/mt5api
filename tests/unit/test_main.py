@@ -8,32 +8,10 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from mt5api.constants import API_KEY_SECURITY_SCHEME_NAME
-
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
 from mt5api.dependencies import Mt5RuntimeState
-
-
-def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
-    """OpenAPI auth stripping keeps unrelated security schemes."""
-    from mt5api import main  # ruff: ignore[import-outside-top-level]
-
-    openapi_schema: dict[str, Any] = {
-        "components": {
-            "securitySchemes": {API_KEY_SECURITY_SCHEME_NAME: {}, "Other": {}}
-        },
-        "paths": {
-            "/rates/from": {
-                "parameters": [{"name": "symbol", "in": "query"}],
-                "get": {"security": [{API_KEY_SECURITY_SCHEME_NAME: []}]},
-            },
-        },
-    }
-    main._strip_auth_from_openapi(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-    assert openapi_schema["components"]["securitySchemes"] == {"Other": {}}
-    assert "security" not in openapi_schema["paths"]["/rates/from"]["get"]
 
 
 def test_patch_validation_error_responses_updates_422_schema() -> None:
@@ -112,18 +90,14 @@ def test_openapi_helpers_ignore_malformed_dynamic_values() -> None:
     """OpenAPI patchers skip values with unexpected runtime shapes."""
     from mt5api import main  # ruff: ignore[import-outside-top-level]
 
-    main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
-        {"components": [], "paths": []}
-    )
-    main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
-        {"components": {"securitySchemes": []}, "paths": {}}
-    )
     main._patch_validation_error_responses(  # pyright: ignore[reportPrivateUsage]
         {"components": [], "paths": {}},
     )
     main._patch_validation_error_responses(  # pyright: ignore[reportPrivateUsage]
         {"components": {"schemas": []}, "paths": {}},
     )
+
+    assert list(main._iter_openapi_operations({"paths": []})) == []  # pyright: ignore[reportPrivateUsage]
 
     malformed_schema: dict[str, Any] = {
         "paths": {
@@ -176,7 +150,7 @@ def test_lifespan_calls_shutdown_on_exit(
 
     monkeypatch.setattr(main, "shutdown_mt5_client", fake_shutdown)
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, base_url="http://localhost") as client:
         response = client.get("/health")
         status_code = response.status_code
 
@@ -217,3 +191,67 @@ async def test_lifespan_calls_shutdown_when_exception_is_raised(
     release_call = release.await_args
     assert release_call is not None
     assert shutdown_states == [release_call.args[0]]
+
+
+def test_startup_rejects_missing_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The service cannot start with an unset or empty secret."""
+    from mt5api import auth, main  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setattr(auth, "_API_KEY", None)
+    with (
+        pytest.raises(RuntimeError, match="MT5API_SECRET_KEY is required"),
+        TestClient(main.app),
+    ):
+        pass
+
+
+def test_trusted_hosts(client: TestClient) -> None:
+    """Allow local hosts and reject arbitrary Host headers."""
+    assert client.get("/health", headers={"host": "localhost:8000"}).status_code == 200
+    assert client.get("/health", headers={"host": "127.0.0.1:8000"}).status_code == 200
+    assert client.get("/health", headers={"host": "[::1]:8000"}).status_code == 200
+    assert client.get("/health", headers={"host": "evil.example"}).status_code == 400
+
+
+def test_fresh_app_import_rejects_missing_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A fresh import fails even when lifespan is never entered."""
+    import importlib  # ruff: ignore[import-outside-top-level]
+    import sys  # ruff: ignore[import-outside-top-level]
+
+    from mt5api import auth  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.delenv("MT5API_SECRET_KEY", raising=False)
+    monkeypatch.setattr(auth, "_API_KEY", None)
+    monkeypatch.delitem(sys.modules, "mt5api.main", raising=False)
+    with pytest.raises(RuntimeError, match="MT5API_SECRET_KEY is required"):
+        importlib.import_module("mt5api.main")
+
+
+def test_fresh_process_import_without_environment_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unset environment key prevents a fresh application import."""
+    import os  # ruff: ignore[import-outside-top-level]
+    import subprocess  # ruff: ignore[import-outside-top-level, suspicious-subprocess-import]
+    import sys  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.delenv("MT5API_SECRET_KEY", raising=False)
+    script = """
+import sys
+from unittest.mock import Mock
+from tests.mt5_constants import install_mt5_constants
+mt5 = Mock()
+mt5.__name__ = 'MetaTrader5'
+install_mt5_constants(mt5)
+sys.modules['MetaTrader5'] = mt5
+import mt5api.main
+"""
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        env=os.environ.copy(),
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "MT5API_SECRET_KEY is required" in result.stderr

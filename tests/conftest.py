@@ -211,7 +211,7 @@ def client(
     app.dependency_overrides.clear()
     app.dependency_overrides[dependencies.get_mt5_client] = lambda: mock_mt5_client
 
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url="http://localhost") as test_client:
         state = cast("Mt5RuntimeState", getattr(app.state, MT5_RUNTIME_STATE_KEY))
         state.client = cast("Mt5DataClient", mock_mt5_client)
         state.market_book_subscriptions.clear()

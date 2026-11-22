@@ -51,6 +51,8 @@ def test_normalize_api_router_prefix_rejects_invalid_values(raw_prefix: str) -> 
     ("raw_secret_key", "expected_secret_key"),
     [
         (None, None),
+        ("   ", None),
+        (" key ", " key "),
         ("", None),
         ("secret-key", "secret-key"),
     ],
@@ -60,7 +62,7 @@ def test_get_configured_mt5api_secret_key(
     raw_secret_key: str | None,
     expected_secret_key: str | None,
 ) -> None:
-    """MT5 API secret key config should treat empty strings as disabled auth."""
+    """MT5 API secret key config should treat blank keys as missing."""
     from mt5api import config  # ruff: ignore[import-outside-top-level]
 
     if raw_secret_key is None:
@@ -186,3 +188,29 @@ def test_get_configured_max_market_book_subscriptions_rejects_invalid_values(
         match="Invalid MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS",
     ):
         config.get_configured_max_market_book_subscriptions()
+
+
+def test_trusted_hosts_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Allow explicit comma-separated host names."""
+    from mt5api.config import get_configured_trusted_hosts  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.delenv("MT5API_TRUSTED_HOSTS", raising=False)
+    assert get_configured_trusted_hosts() == [
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+    ]
+    monkeypatch.setenv("MT5API_TRUSTED_HOSTS", "example.com, localhost, ")
+    assert get_configured_trusted_hosts() == ["example.com", "localhost"]
+
+
+@pytest.mark.parametrize("raw", ["", "  , ", "*", "localhost,*,"])
+def test_trusted_hosts_rejects_invalid_configuration(
+    monkeypatch: pytest.MonkeyPatch, raw: str
+) -> None:
+    """Empty allowlists and universal wildcards fail configuration."""
+    from mt5api.config import get_configured_trusted_hosts  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setenv("MT5API_TRUSTED_HOSTS", raw)
+    with pytest.raises(ValueError, match="Invalid MT5API_TRUSTED_HOSTS"):
+        get_configured_trusted_hosts()

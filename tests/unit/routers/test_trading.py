@@ -310,7 +310,9 @@ def test_market_book_symbol_length_is_validated(
 
 def test_trading_openapi_uses_mt5_order_type_schema(client: TestClient) -> None:
     """OpenAPI retains the canonical MT5 order-type schema."""
-    openapi = client.get("/openapi.json").json()
+    openapi = client.get(
+        "/openapi.json", headers={"X-API-Key": "test-api-key-12345"}
+    ).json()
     order_type_schema = openapi["components"]["schemas"]["TradeRequest"]["properties"][
         "type"
     ]
@@ -348,7 +350,7 @@ def test_post_order_send_denied_without_configured_auth(
         "/order/send",
         json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
     )
-    assert response.status_code == 403
+    assert response.status_code == 503
     mock_mt5_client.order_send_as_dict.assert_not_called()
 
 

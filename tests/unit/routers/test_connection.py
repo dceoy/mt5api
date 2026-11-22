@@ -58,7 +58,7 @@ def connection_client(
         side_effect=fake_replace,
     )
     app.dependency_overrides.clear()
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url="http://localhost") as test_client:
         yield test_client, recorder
     app.dependency_overrides.clear()
 
@@ -221,7 +221,7 @@ def test_post_connection_login_failure_does_not_leak_password(
 
     mocker.patch.object(dependencies, "Mt5DataClient", LeakyClient)
     app.dependency_overrides.clear()
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url="http://localhost") as test_client:
         response = _login(test_client, password=password)
     assert response.status_code == 503
     assert password not in response.text
@@ -270,7 +270,7 @@ def test_post_connection_login_serializes_concurrent_reconnects(
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(
             transport=transport,
-            base_url="http://testserver",
+            base_url="http://localhost",
         ) as test_client:
             return list(
                 await asyncio.gather(

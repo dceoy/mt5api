@@ -8,7 +8,7 @@ mt5api exposes MT5 market data, account info, trading history, trading state,
 order validation, and operational terminal endpoints over HTTP. It is a
 FastAPI/HTTP adapter over [`pdmt5`](https://github.com/dceoy/pdmt5), which
 provides the core MT5 client, dataframe/order primitives, and canonical MT5
-constant parsing. mt5api adds optional API-key auth and JSON/Parquet response
+constant parsing. mt5api adds API-key auth and JSON/Parquet response
 formatting.
 
 The API supports all MetaTrader5 Python functions through REST operations or
@@ -53,7 +53,7 @@ graph TB
 - REST endpoints for symbols, market data, account info, orders, positions,
   history, margin/profit calculations, order validation, and terminal operations
 - JSON and Apache Parquet responses (content negotiation)
-- Optional API key authentication
+- Required API key authentication
 - Structured JSON logging
 - OpenAPI/Swagger docs built into the API
 
@@ -92,7 +92,7 @@ uv sync
 After installing from PyPI:
 
 ```powershell
-$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required for live order sends
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 python -m mt5api
 ```
@@ -101,11 +101,11 @@ python -m mt5api
 from the environment. You can also invoke `uvicorn` directly:
 
 ```powershell
-uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
 If you cloned the source tree, prepend `uv run` to either command (for example,
-`uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000`).
+`uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000`).
 
 Docs:
 
@@ -124,28 +124,28 @@ To explicitly allow live order submission on a trusted Windows host, set
 `MT5API_ENABLE_ORDER_SEND=true` **and** `MT5API_SECRET_KEY` before launching
 the server. Never expose a trading-enabled instance directly to the public
 Internet; use HTTPS, network access controls, and a dedicated least-privilege
-trading account. With either setting missing, `POST /order/send` returns 403.
+trading account. An authenticated request to `POST /order/send` returns 403
+when order sending is disabled. The server fails to start if the key is missing.
 The endpoint does not automatically call `order_check` or retry requests;
 clients must examine the MT5 `retcode` and avoid ambiguous duplicate orders.
 
 ## Example Requests with curl
 
-Replace `windows-host` with the DNS name or IP address of the Windows machine
-running `mt5api`. If you run the request on that Windows host, `localhost` also
-works. In PowerShell, use `curl.exe` if `curl` resolves to
+Run these requests on the Windows host with the configuration above. In
+PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
 
 ```console
-curl "http://windows-host:8000/health"
+curl "http://localhost:8000/api/v1/health"
 ```
 
 ```console
-# Include X-API-Key only when MT5API_SECRET_KEY is configured on the server.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
+# Include X-API-Key for protected endpoints.
+curl -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/symbols?group=*USD*"
 ```
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 Market-data and calculation endpoints accept MetaTrader 5 constants by official
@@ -180,3 +180,9 @@ If `MT5API_ROUTER_PREFIX` is set, prepend that value to every API route below.
 ## License
 
 MIT License - see [LICENSE](https://github.com/dceoy/mt5api/blob/main/LICENSE).
+
+The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
+by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
+`--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
+allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
+The default allowlist is `localhost,127.0.0.1,[::1]`.

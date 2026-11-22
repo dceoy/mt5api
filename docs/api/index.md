@@ -49,21 +49,26 @@ mt5api provides a FastAPI layer on top of the MetaTrader 5 terminal runtime:
 ## Quick Start
 
 ```powershell
-$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
-uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Replace `windows-host` with the DNS name or IP address of the Windows machine
-running `mt5api`. If you run the request on that Windows host, `localhost` also
-works. In PowerShell, use `curl.exe` if `curl` resolves to
+Run this request on the Windows host with the configuration above. In
+PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
 
 ```console
-# Include X-API-Key only when MT5API_SECRET_KEY is configured on the server.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+# Include X-API-Key for protected endpoints.
+curl -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Examples
 
 See the [REST API](rest-api.md) guide for endpoint examples and request syntax.
+
+The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
+by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
+`--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
+allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
+The default allowlist is `localhost,127.0.0.1,[::1]`.

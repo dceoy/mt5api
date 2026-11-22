@@ -116,34 +116,34 @@ def test_trading_endpoints_require_authentication(
     assert "Missing API key" in data["detail"]
 
 
-def test_version_endpoint_allows_requests_when_auth_disabled(
+def test_version_endpoint_fails_closed_without_key(
     client: TestClient,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    """Test protected endpoints work without API key when auth is disabled."""
+    """Protected endpoints fail closed without a configured key."""
     from mt5api import auth  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 
     response = client.get("/version")
 
-    assert response.status_code == 200
+    assert response.status_code == 503
 
 
-def test_symbols_endpoint_allows_requests_when_auth_disabled(
+def test_symbols_endpoint_fails_closed_without_key(
     client: TestClient,
     mock_mt5_client: Mock,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    """Test router-level protected endpoints work without API key."""
+    """Router-level protected endpoints fail closed without a configured key."""
     from mt5api import auth  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setattr(auth, "_API_KEY", None)
 
     response = client.get("/symbols?group=*USD*")
 
-    assert response.status_code == 200
-    mock_mt5_client.symbols_get_as_df.assert_called_with(group="*USD*")
+    assert response.status_code == 503
+    mock_mt5_client.symbols_get_as_df.assert_not_called()
 
 
 def test_get_api_key_returns_none_when_auth_is_disabled(
@@ -155,3 +155,16 @@ def test_get_api_key_returns_none_when_auth_is_disabled(
     monkeypatch.setattr(auth, "_API_KEY", None)
 
     assert auth.get_api_key() is None
+
+
+def test_login_fails_closed_without_key(
+    client: TestClient, monkeypatch: MonkeyPatch
+) -> None:
+    """Login cannot change accounts without a configured key."""
+    from mt5api import auth  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setattr(auth, "_API_KEY", None)
+    response = client.post(
+        "/connection/login", json={"login": 123, "password": "secret", "server": "demo"}
+    )
+    assert response.status_code == 503

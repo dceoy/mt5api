@@ -21,8 +21,7 @@ def get_api_key() -> str | None:
     """Get the API key configured at startup, if any.
 
     Returns:
-        API key string from ``MT5API_SECRET_KEY``, or ``None`` if authentication is
-        disabled.
+        API key string from ``MT5API_SECRET_KEY``, or ``None`` if it is missing.
     """
     return _API_KEY
 
@@ -41,14 +40,18 @@ def verify_api_key(
         api_key_header_value: API key from the configured request header.
 
     Returns:
-        Verified API key when authentication is enabled, otherwise ``None``.
+        Verified API key.
 
     Raises:
-        HTTPException: 401 if API key is missing or invalid.
+        HTTPException: 401 if API key is missing or invalid; 503 if no key is
+            configured.
     """
     expected_key = get_api_key()
     if expected_key is None:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="MT5API_SECRET_KEY is required",
+        )
 
     if not api_key_header_value:
         raise HTTPException(

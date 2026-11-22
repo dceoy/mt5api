@@ -24,10 +24,10 @@ pip install mt5api
 
 ## Configuration
 
-Set the optional API key and other limits via environment variables:
+Set the required API key and other limits via environment variables:
 
 ```powershell
-$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required for live order sends
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required
 $env:MT5API_ENABLE_ORDER_SEND = "true"         # Optional: defaults to disabled
 $env:MT5API_LOG_LEVEL = "INFO"
 $env:MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS = "100"
@@ -45,7 +45,7 @@ normalized to the same prefix.
 ## Running the API
 
 ```powershell
-uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
 Access the docs at the Windows host address, for example:
@@ -60,9 +60,8 @@ works. In PowerShell, use `curl.exe` if `curl` resolves to
 
 ## Authentication
 
-When `MT5API_SECRET_KEY` is set, all endpoints except `/health` require an
-`X-API-Key` header. When `MT5API_SECRET_KEY` is unset or empty, authentication is
-disabled and those endpoints are accessible without authorization.
+`MT5API_SECRET_KEY` must be set to a nonempty value before startup. All endpoints
+except `/health` require an `X-API-Key` header.
 
 ```console
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"
@@ -161,8 +160,9 @@ endpoint submits a **live order** and is deliberately disabled by default.
   `pdmt5.order_send_as_dict`. The order is rejected with 409 unless the
   connected account matches `expected_login` (and `expected_server`, if given),
   checked under the account lock immediately before sending. Requires `MT5API_ENABLE_ORDER_SEND=true` and
-  `MT5API_SECRET_KEY` on the server; otherwise responds with 403. An invalid or
-  missing API key returns 401 while authentication is enabled. Use a private
+  `MT5API_SECRET_KEY` on the server. An authenticated request returns 403 when
+  order sending is disabled; the server fails to start if its key is missing.
+  An invalid or missing request API key returns 401. Use a private
   network and TLS; the endpoint makes no automatic retries or trade approvals.
   Always inspect the returned MT5 `retcode`: HTTP 200 is not evidence of a fill.
 
@@ -354,9 +354,15 @@ Errors follow RFC 7807 Problem Details:
 
 Minimum security posture for deployments:
 
-- Set `MT5API_SECRET_KEY` to enable API key authentication when needed
+- Set `MT5API_SECRET_KEY` to require API key authentication
 - Configure rate limiting at the reverse proxy or API gateway level
 - Run behind HTTPS in production
 - Restrict access to operational endpoints (`/order/check`,
   `/symbols/{symbol}/select`, `/market-book/{symbol}/subscribe`,
   `/market-book/{symbol}/unsubscribe`) to trusted clients only
+
+The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
+by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
+`--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
+allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
+The default allowlist is `localhost,127.0.0.1,[::1]`.
