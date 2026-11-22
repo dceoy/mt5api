@@ -72,4 +72,4 @@ The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
 by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
 `--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
 allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
-The default allowlist is `localhost,127.0.0.1,[::1],testserver`.
+The default allowlist is `localhost,127.0.0.1,[::1]`.

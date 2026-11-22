@@ -17,9 +17,15 @@ from mt5api.constants import (
 )
 
 
-def test_main_uses_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("raw_host", [None, "", "   "])
+def test_main_uses_defaults(
+    monkeypatch: pytest.MonkeyPatch, raw_host: str | None
+) -> None:
     """main() should use default host/port/log level."""
-    monkeypatch.delenv(ENV_MT5API_HOST, raising=False)
+    if raw_host is None:
+        monkeypatch.delenv(ENV_MT5API_HOST, raising=False)
+    else:
+        monkeypatch.setenv(ENV_MT5API_HOST, raw_host)
     monkeypatch.delenv(ENV_MT5API_PORT, raising=False)
     monkeypatch.delenv(ENV_MT5API_LOG_LEVEL, raising=False)
 

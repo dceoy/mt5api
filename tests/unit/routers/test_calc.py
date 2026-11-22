@@ -301,7 +301,9 @@ def test_openapi_documents_mt5_order_type_consistently(
     client: TestClient,
 ) -> None:
     """Calc endpoints should expose MT5 ORDER_TYPE names and integer values."""
-    openapi = client.get("/openapi.json").json()
+    openapi = client.get(
+        "/openapi.json", headers={"X-API-Key": "test-api-key-12345"}
+    ).json()
     paths = ("/calc/margin", "/calc/profit")
 
     for path in paths:

@@ -310,7 +310,9 @@ def test_market_book_symbol_length_is_validated(
 
 def test_trading_openapi_uses_mt5_order_type_schema(client: TestClient) -> None:
     """OpenAPI retains the canonical MT5 order-type schema."""
-    openapi = client.get("/openapi.json").json()
+    openapi = client.get(
+        "/openapi.json", headers={"X-API-Key": "test-api-key-12345"}
+    ).json()
     order_type_schema = openapi["components"]["schemas"]["TradeRequest"]["properties"][
         "type"
     ]

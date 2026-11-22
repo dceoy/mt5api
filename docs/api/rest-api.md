@@ -24,7 +24,7 @@ pip install mt5api
 
 ## Configuration
 
-Set the optional API key and other limits via environment variables:
+Set the required API key and other limits via environment variables:
 
 ```powershell
 $env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required
@@ -161,7 +161,7 @@ endpoint submits a **live order** and is deliberately disabled by default.
   connected account matches `expected_login` (and `expected_server`, if given),
   checked under the account lock immediately before sending. Requires `MT5API_ENABLE_ORDER_SEND=true` and
   `MT5API_SECRET_KEY` on the server; otherwise responds with 403. An invalid or
-  missing API key returns 401 while authentication is enabled. Use a private
+  missing API key returns 401. Use a private
   network and TLS; the endpoint makes no automatic retries or trade approvals.
   Always inspect the returned MT5 `retcode`: HTTP 200 is not evidence of a fill.
 
@@ -364,4 +364,4 @@ The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
 by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
 `--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
 allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
-The default allowlist is `localhost,127.0.0.1,[::1],testserver`.
+The default allowlist is `localhost,127.0.0.1,[::1]`.

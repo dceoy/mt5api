@@ -20,7 +20,7 @@ system.
 - REST endpoints for symbols, market data, account info, orders, history,
   calculations, and trading operations
 - JSON and Apache Parquet responses
-- Optional API key authentication
+- Required API key authentication
 - Structured JSON logging
 - OpenAPI/Swagger docs built in
 
@@ -46,24 +46,31 @@ $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Once the API is running, use these `curl` examples from any client machine.
+Once the API is running, use these `curl` examples on the Windows host.
 
 Set `MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS` to cap active market-book
 subscriptions. The default limit is `100`.
 
-Replace `windows-host` with the DNS name or IP address of the Windows machine
-running `mt5api`. If you run the request on that Windows host, `localhost` also
-works. In PowerShell, use `curl.exe` if `curl` resolves to
-`Invoke-WebRequest`.
+In PowerShell, use `curl.exe` if `curl` resolves to `Invoke-WebRequest`.
 
 ```console
-curl "http://windows-host:8000/health"
+curl "http://localhost:8000/api/v1/health"
 ```
 
 ```console
 # Include X-API-Key for protected endpoints.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
+curl -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/symbols?group=*USD*"
 ```
+
+For remote clients, set the allowlist to the actual DNS name or IP they use,
+and bind the server to an accessible interface:
+
+```powershell
+$env:MT5API_TRUSTED_HOSTS = "windows-host,localhost,127.0.0.1"
+uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+```
+
+Remote clients can then use `http://windows-host:8000/api/v1/health`.
 
 ## API Reference
 
@@ -78,4 +85,9 @@ The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
 by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
 `--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
 allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
-The default allowlist is `localhost,127.0.0.1,[::1],testserver`.
+The default allowlist is `localhost,127.0.0.1,[::1]`.
+
+A whitespace-only key is missing; leading or trailing spaces in any other key
+are preserved. Documentation endpoints require `X-API-Key` on every request,
+including the schema fetch. For browser access, use a trusted proxy that adds
+the header to those requests.

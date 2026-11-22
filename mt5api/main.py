@@ -7,11 +7,17 @@ import logging
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, cast
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .auth import is_auth_enabled
+from .auth import is_auth_enabled, verify_api_key
 from .config import (
     get_configured_api_router_prefix,
     get_configured_max_market_book_subscriptions,
@@ -228,15 +234,55 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("MT5 connection closed")
 
 
+if not is_auth_enabled():
+    message = "MT5API_SECRET_KEY is required"
+    raise RuntimeError(message)
+
 app = FastAPI(
     title=API_TITLE,
     description=API_DESCRIPTION,
     version=API_VERSION,
     lifespan=lifespan,
-    docs_url=API_DOCS_URL,
-    redoc_url=API_REDOC_URL,
-    openapi_url=API_OPENAPI_URL,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
+
+
+@app.get(
+    API_OPENAPI_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)]
+)
+def authenticated_openapi() -> JSONResponse:
+    """Return the schema to authenticated clients."""
+    return JSONResponse(app.openapi())
+
+
+@app.get(API_DOCS_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)])
+def authenticated_docs() -> HTMLResponse:
+    """Return Swagger UI to authenticated clients."""
+    return get_swagger_ui_html(
+        openapi_url=API_OPENAPI_URL,
+        title=f"{API_TITLE} - Swagger UI",
+        oauth2_redirect_url="/docs/oauth2-redirect",
+    )
+
+
+@app.get(API_REDOC_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)])
+def authenticated_redoc() -> HTMLResponse:
+    """Return ReDoc to authenticated clients."""
+    return get_redoc_html(openapi_url=API_OPENAPI_URL, title=f"{API_TITLE} - ReDoc")
+
+
+@app.get(
+    "/docs/oauth2-redirect",
+    include_in_schema=False,
+    dependencies=[Depends(verify_api_key)],
+)
+def authenticated_oauth2_redirect() -> HTMLResponse:
+    """Return Swagger's OAuth redirect page to authenticated clients."""
+    return get_swagger_ui_oauth2_redirect_html()
+
+
 app.openapi = _custom_openapi
 add_middleware(app)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=get_configured_trusted_hosts())

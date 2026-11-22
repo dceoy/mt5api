@@ -8,12 +8,18 @@ if TYPE_CHECKING:
     from fastapi.testclient import TestClient
 
 
-def test_docs_and_openapi_available(client: TestClient) -> None:
+def test_docs_and_openapi_available(
+    client: TestClient, api_headers: dict[str, str]
+) -> None:
     """Docs and OpenAPI endpoints should be available."""
-    docs_response = client.get("/docs")
+    for path in ("/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect"):
+        assert client.get(path).status_code == 401
+        assert client.get(path, headers=api_headers).status_code == 200
+
+    docs_response = client.get("/docs", headers=api_headers)
     assert docs_response.status_code == 200
 
-    openapi_response = client.get("/openapi.json")
+    openapi_response = client.get("/openapi.json", headers=api_headers)
     assert openapi_response.status_code == 200
     openapi = openapi_response.json()
     assert "paths" in openapi
