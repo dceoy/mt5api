@@ -124,28 +124,28 @@ To explicitly allow live order submission on a trusted Windows host, set
 `MT5API_ENABLE_ORDER_SEND=true` **and** `MT5API_SECRET_KEY` before launching
 the server. Never expose a trading-enabled instance directly to the public
 Internet; use HTTPS, network access controls, and a dedicated least-privilege
-trading account. With either setting missing, `POST /order/send` returns 403.
+trading account. An authenticated request to `POST /order/send` returns 403
+when order sending is disabled. The server fails to start if the key is missing.
 The endpoint does not automatically call `order_check` or retry requests;
 clients must examine the MT5 `retcode` and avoid ambiguous duplicate orders.
 
 ## Example Requests with curl
 
-Replace `windows-host` with the DNS name or IP address of the Windows machine
-running `mt5api`. If you run the request on that Windows host, `localhost` also
-works. In PowerShell, use `curl.exe` if `curl` resolves to
+Run these requests on the Windows host with the configuration above. In
+PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
 
 ```console
-curl "http://windows-host:8000/health"
+curl "http://localhost:8000/api/v1/health"
 ```
 
 ```console
 # Include X-API-Key for protected endpoints.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
+curl -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/symbols?group=*USD*"
 ```
 
 ```console
-curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" -H "Accept: application/parquet" "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 Market-data and calculation endpoints accept MetaTrader 5 constants by official

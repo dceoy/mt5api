@@ -160,8 +160,9 @@ endpoint submits a **live order** and is deliberately disabled by default.
   `pdmt5.order_send_as_dict`. The order is rejected with 409 unless the
   connected account matches `expected_login` (and `expected_server`, if given),
   checked under the account lock immediately before sending. Requires `MT5API_ENABLE_ORDER_SEND=true` and
-  `MT5API_SECRET_KEY` on the server; otherwise responds with 403. An invalid or
-  missing API key returns 401. Use a private
+  `MT5API_SECRET_KEY` on the server. An authenticated request returns 403 when
+  order sending is disabled; the server fails to start if its key is missing.
+  An invalid or missing request API key returns 401. Use a private
   network and TLS; the endpoint makes no automatic retries or trade approvals.
   Always inspect the returned MT5 `retcode`: HTTP 200 is not evidence of a fill.
 

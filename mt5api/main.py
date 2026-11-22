@@ -7,7 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, cast
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.docs import (
     get_redoc_html,
     get_swagger_ui_html,
@@ -252,25 +252,35 @@ app = FastAPI(
 @app.get(
     API_OPENAPI_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)]
 )
-def authenticated_openapi() -> JSONResponse:
+def authenticated_openapi(request: Request) -> JSONResponse:
     """Return the schema to authenticated clients."""
-    return JSONResponse(app.openapi())
+    schema = app.openapi()
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    if root_path and app.root_path_in_servers:
+        servers = schema.get("servers", app.servers)
+        if not any(server.get("url") == root_path for server in servers):
+            schema = {**schema, "servers": [{"url": root_path}, *servers]}
+    return JSONResponse(schema)
 
 
 @app.get(API_DOCS_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)])
-def authenticated_docs() -> HTMLResponse:
+def authenticated_docs(request: Request) -> HTMLResponse:
     """Return Swagger UI to authenticated clients."""
     return get_swagger_ui_html(
-        openapi_url=API_OPENAPI_URL,
+        openapi_url=request.scope.get("root_path", "").rstrip("/") + API_OPENAPI_URL,
         title=f"{API_TITLE} - Swagger UI",
-        oauth2_redirect_url="/docs/oauth2-redirect",
+        oauth2_redirect_url=request.scope.get("root_path", "").rstrip("/")
+        + "/docs/oauth2-redirect",
     )
 
 
 @app.get(API_REDOC_URL, include_in_schema=False, dependencies=[Depends(verify_api_key)])
-def authenticated_redoc() -> HTMLResponse:
+def authenticated_redoc(request: Request) -> HTMLResponse:
     """Return ReDoc to authenticated clients."""
-    return get_redoc_html(openapi_url=API_OPENAPI_URL, title=f"{API_TITLE} - ReDoc")
+    return get_redoc_html(
+        openapi_url=request.scope.get("root_path", "").rstrip("/") + API_OPENAPI_URL,
+        title=f"{API_TITLE} - ReDoc",
+    )
 
 
 @app.get(

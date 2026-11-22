@@ -54,14 +54,13 @@ $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Replace `windows-host` with the DNS name or IP address of the Windows machine
-running `mt5api`. If you run the request on that Windows host, `localhost` also
-works. In PowerShell, use `curl.exe` if `curl` resolves to
+Run this request on the Windows host with the configuration above. In
+PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
 
 ```console
 # Include X-API-Key for protected endpoints.
-curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
+curl -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/rates/from?symbol=EURUSD&timeframe=TIMEFRAME_M1&date_from=2024-01-01T00:00:00Z&count=100"
 ```
 
 ## Examples
