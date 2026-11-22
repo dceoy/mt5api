@@ -139,7 +139,7 @@ trading operations.</p>
 <p>mt5api is a FastAPI/HTTP adapter over
 <a href="https://github.com/dceoy/pdmt5"><code>pdmt5</code></a>. pdmt5 provides the core MT5 client,
 dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
-optional authentication, response formatting, and OpenAPI documentation.</p>
+API-key authentication, response formatting, and OpenAPI documentation.</p>
 <p>The API server must run on Windows because pdmt5 connects through the MetaTrader
 5 Python API, which is Windows-only. Run <code>mt5api</code> on a Windows host with
 MetaTrader 5 installed and logged in. API clients can connect from any operating
@@ -149,7 +149,7 @@ system.</p>
 <li>REST endpoints for symbols, market data, account info, orders, history,
   calculations, and trading operations</li>
 <li>JSON and Apache Parquet responses</li>
-<li>Optional API key authentication</li>
+<li>Required API key authentication</li>
 <li>Structured JSON logging</li>
 <li>OpenAPI/Swagger docs built in</li>
 </ul>
@@ -164,29 +164,41 @@ system.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">mt5api</span>
 </code></pre></div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:MT5API_SECRET_KEY</span> <span class="p">=</span> <span class="s2">"your-secret-api-key"</span>  <span class="c"># Optional: omit to disable auth</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:MT5API_SECRET_KEY</span> <span class="p">=</span> <span class="s2">"your-secret-api-key"</span>  <span class="c"># Required</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">$env:MT5API_ROUTER_PREFIX</span> <span class="p">=</span> <span class="s2">"/api/v1"</span>     <span class="c"># Optional: omit for root-level routes</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">127</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">1</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
-<p>Once the API is running, use these <code>curl</code> examples from any client machine.</p>
+<p>Once the API is running, use these <code>curl</code> examples on the Windows host.</p>
 <p>Set <code>MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS</code> to cap active market-book
 subscriptions. The default limit is <code>100</code>.</p>
-<p>Replace <code>windows-host</code> with the DNS name or IP address of the Windows machine
-running <code>mt5api</code>. If you run the request on that Windows host, <code>localhost</code> also
-works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
-<code>Invoke-WebRequest</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">curl "http://windows-host:8000/health"</span>
+<p>In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to <code>Invoke-WebRequest</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">curl "http://localhost:8000/api/v1/health"</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp"># </span>Include<span class="w"> </span>X-API-Key<span class="w"> </span>only<span class="w"> </span>when<span class="w"> </span>MT5API_SECRET_KEY<span class="w"> </span>is<span class="w"> </span>configured<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>server.
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="go">curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp"># </span>Include<span class="w"> </span>X-API-Key<span class="w"> </span><span class="k">for</span><span class="w"> </span>protected<span class="w"> </span>endpoints.
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="go">curl -H "X-API-Key: your-secret-api-key" "http://localhost:8000/api/v1/symbols?group=*USD*"</span>
 </code></pre></div>
+<p>For remote clients, set the allowlist to the actual DNS name or IP they use,
+and bind the server to an accessible interface:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">$env:MT5API_TRUSTED_HOSTS</span> <span class="p">=</span> <span class="s2">"windows-host,localhost,127.0.0.1"</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
+</code></pre></div>
+<p>Remote clients can then use <code>http://windows-host:8000/api/v1/health</code>.</p>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="api/rest-api/">REST API</a> - Endpoint overview, auth, formats, and examples</li>
 <li><a href="api/deployment/">Deployment</a> - Windows service setup</li>
 </ul>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>MIT License - see <a href="https://github.com/dceoy/mt5api/blob/main/LICENSE">LICENSE</a>.</p></div>
+<p>MIT License - see <a href="https://github.com/dceoy/mt5api/blob/main/LICENSE">LICENSE</a>.</p>
+<p>The server requires a nonempty <code>MT5API_SECRET_KEY</code> and binds to <code>127.0.0.1</code>
+by default. For remote access, explicitly set <code>MT5API_HOST</code> (or the uvicorn
+<code>--host</code> option) and set <code>MT5API_TRUSTED_HOSTS</code> to a comma-separated list of
+allowed Host names or IP addresses, such as <code>windows-host,localhost,127.0.0.1</code>.
+The default allowlist is <code>localhost,127.0.0.1,[::1]</code>.</p>
+<p>A whitespace-only key is missing; leading or trailing spaces in any other key
+are preserved. Documentation endpoints require <code>X-API-Key</code> on every request,
+including the schema fetch. For browser access, use a trusted proxy that adds
+the header to those requests.</p></div>
             </div>
         </div>
 
@@ -268,5 +280,5 @@ works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-11-22 00:39:50.916406+00:00
+Build Date UTC : 2026-11-22 14:13:39.245989+00:00
 -->

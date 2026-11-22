@@ -170,8 +170,8 @@ system.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">mt5api</span>
 </code></pre></div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Set the optional API key and other limits via environment variables:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:MT5API_SECRET_KEY</span> <span class="p">=</span> <span class="s2">"your-secret-api-key"</span>  <span class="c"># Required for live order sends</span>
+<p>Set the required API key and other limits via environment variables:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:MT5API_SECRET_KEY</span> <span class="p">=</span> <span class="s2">"your-secret-api-key"</span>  <span class="c"># Required</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">$env:MT5API_ENABLE_ORDER_SEND</span> <span class="p">=</span> <span class="s2">"true"</span>         <span class="c"># Optional: defaults to disabled</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nv">$env:MT5API_LOG_LEVEL</span> <span class="p">=</span> <span class="s2">"INFO"</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nv">$env:MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS</span> <span class="p">=</span> <span class="s2">"100"</span>
@@ -184,7 +184,7 @@ system.</p>
 <code>/health</code> and <code>/symbols</code>. <code>"api/v1"</code>, <code>"/api/v1"</code>, and <code>"/api/v1/"</code> are
 normalized to the same prefix.</p>
 <h2 id="running-the-api">Running the API<a class="headerlink" href="#running-the-api" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">127</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">1</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
 <p>Access the docs at the Windows host address, for example:</p>
 <ul>
@@ -196,9 +196,8 @@ running <code>mt5api</code>. If you run the request on that Windows host, <code>
 works. In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 <code>Invoke-WebRequest</code>.</p>
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
-<p>When <code>MT5API_SECRET_KEY</code> is set, all endpoints except <code>/health</code> require an
-<code>X-API-Key</code> header. When <code>MT5API_SECRET_KEY</code> is unset or empty, authentication is
-disabled and those endpoints are accessible without authorization.</p>
+<p><code>MT5API_SECRET_KEY</code> must be set to a nonempty value before startup. All endpoints
+except <code>/health</code> require an <code>X-API-Key</code> header.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols"</span>
 </code></pre></div>
 <h2 id="subscription-limits">Subscription Limits<a class="headerlink" href="#subscription-limits" title="Permanent link">&para;</a></h2>
@@ -283,8 +282,9 @@ endpoint submits a <strong>live order</strong> and is deliberately disabled by d
   <code>pdmt5.order_send_as_dict</code>. The order is rejected with 409 unless the
   connected account matches <code>expected_login</code> (and <code>expected_server</code>, if given),
   checked under the account lock immediately before sending. Requires <code>MT5API_ENABLE_ORDER_SEND=true</code> and
-  <code>MT5API_SECRET_KEY</code> on the server; otherwise responds with 403. An invalid or
-  missing API key returns 401 while authentication is enabled. Use a private
+  <code>MT5API_SECRET_KEY</code> on the server. An authenticated request returns 403 when
+  order sending is disabled; the server fails to start if its key is missing.
+  An invalid or missing request API key returns 401. Use a private
   network and TLS; the endpoint makes no automatic retries or trade approvals.
   Always inspect the returned MT5 <code>retcode</code>: HTTP 200 is not evidence of a fill.</li>
 </ul>
@@ -408,13 +408,18 @@ in <code>mt5api.formatters</code> to keep JSON and Parquet responses consistent:
 <h2 id="security-checklist">Security Checklist<a class="headerlink" href="#security-checklist" title="Permanent link">&para;</a></h2>
 <p>Minimum security posture for deployments:</p>
 <ul>
-<li>Set <code>MT5API_SECRET_KEY</code> to enable API key authentication when needed</li>
+<li>Set <code>MT5API_SECRET_KEY</code> to require API key authentication</li>
 <li>Configure rate limiting at the reverse proxy or API gateway level</li>
 <li>Run behind HTTPS in production</li>
 <li>Restrict access to operational endpoints (<code>/order/check</code>,
   <code>/symbols/{symbol}/select</code>, <code>/market-book/{symbol}/subscribe</code>,
   <code>/market-book/{symbol}/unsubscribe</code>) to trusted clients only</li>
-</ul></div>
+</ul>
+<p>The server requires a nonempty <code>MT5API_SECRET_KEY</code> and binds to <code>127.0.0.1</code>
+by default. For remote access, explicitly set <code>MT5API_HOST</code> (or the uvicorn
+<code>--host</code> option) and set <code>MT5API_TRUSTED_HOSTS</code> to a comma-separated list of
+allowed Host names or IP addresses, such as <code>windows-host,localhost,127.0.0.1</code>.
+The default allowlist is <code>localhost,127.0.0.1,[::1]</code>.</p></div>
             </div>
         </div>
 

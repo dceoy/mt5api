@@ -147,7 +147,7 @@ macOS because the <code>MetaTrader5</code> Python package is supported only on W
 <li>
 <p>Path: <code>C:\Path\To\Python\python.exe</code></p>
 </li>
-<li>Arguments: <code>-m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000</code></li>
+<li>Arguments: <code>-m uvicorn mt5api.main:app --host 127.0.0.1 --port 8000</code></li>
 <li>
 <p>Startup directory: your project directory</p>
 </li>
@@ -155,7 +155,7 @@ macOS because the <code>MetaTrader5</code> Python package is supported only on W
 <p>Set environment variables in the NSSM GUI:</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Optional: set MT5API_SECRET_KEY only when you want to require X-API-Key headers.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Required: set a secret API key.
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>MT5API_SECRET_KEY=your-secret-api-key
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>MT5API_LOG_LEVEL=INFO
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS=100
@@ -168,7 +168,7 @@ macOS because the <code>MetaTrader5</code> Python package is supported only on W
 </code></pre></div>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <p>In PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to <code>Invoke-WebRequest</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">curl "http://localhost:8000/health"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">curl "http://localhost:8000/api/v1/health"</span>
 </code></pre></div>
 <p>Expected status: <code>healthy</code> (or <code>unhealthy</code> if MT5 is not connected).</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
@@ -176,7 +176,12 @@ macOS because the <code>MetaTrader5</code> Python package is supported only on W
 <li>Ensure the MT5 terminal is running and logged in.</li>
 <li>Confirm firewall rules allow inbound traffic on the API port.</li>
 <li>Check Windows Event Viewer for NSSM service logs.</li>
-</ul></div>
+</ul>
+<p>The server requires a nonempty <code>MT5API_SECRET_KEY</code> and binds to <code>127.0.0.1</code>
+by default. For remote access with the NSSM command above, change its uvicorn <code>--host</code>
+argument to the desired bind address and set <code>MT5API_TRUSTED_HOSTS</code> to a comma-separated list of
+allowed Host names or IP addresses, such as <code>windows-host,localhost,127.0.0.1</code>.
+The default allowlist is <code>localhost,127.0.0.1,[::1]</code>.</p></div>
             </div>
         </div>
 
