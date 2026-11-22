@@ -1,0 +1,27 @@
+name: Temporary Semgrep lock sync
+on:
+  push:
+    branches: [chore/local-qa-semgrep-20261122]
+    paths: [.github/workflows/semgrep-lock-sync.yml]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - name: Resolve and verify lockfile
+        run: |
+          uv lock --upgrade-package semgrep
+          uv lock --check
+      - name: Commit regenerated lockfile
+        run: |
+          if ! git diff --quiet -- uv.lock; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add uv.lock
+            git commit -m 'build: regenerate uv.lock for Semgrep >=1.186.0'
+            git push origin HEAD:chore/local-qa-semgrep-20261122
+          fi
