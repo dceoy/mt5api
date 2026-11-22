@@ -33,10 +33,18 @@ Repository = "https://github.com/dceoy/mt5api.git"
 [tool.uv]
 required-environments = ["platform_system == 'Windows'"]
 exclude-newer = "1 day"
+override-dependencies = [
+  "mcp==1.30.0",
+  "opentelemetry-api==1.45.2",
+  "opentelemetry-sdk==1.45.2",
+  "opentelemetry-exporter-otlp-proto-http==1.45.2",
+  "wcmatch==11.2",
+]
 exclude-newer-package = { pdmt5 = false }
 
 [dependency-groups]
 dev = [
+  "semgrep >= 1.186.0",
   "httpx >= 0.27.0",
   "httpx2 >= 2.0.0",
   "ruff >= 0.17.1",
