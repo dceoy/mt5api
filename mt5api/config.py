@@ -17,6 +17,7 @@ from .constants import (
     ENV_MT5API_PORT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
+    ENV_MT5API_TRUSTED_HOSTS,
     MAX_API_PORT,
 )
 
@@ -160,6 +161,12 @@ def get_configured_mt5api_secret_key() -> str | None:
     """Get the configured MT5 API secret key, if any.
 
     Returns:
-        MT5 API secret key string, or ``None`` when authentication is disabled.
+        MT5 API secret key string, or ``None`` when the key is missing.
     """
     return os.getenv(ENV_MT5API_SECRET_KEY) or None
+
+
+def get_configured_trusted_hosts() -> list[str]:
+    """Return the allowed Host headers from the comma-separated configuration."""
+    raw = os.getenv(ENV_MT5API_TRUSTED_HOSTS, "localhost,127.0.0.1,[::1],testserver")
+    return [host.strip() for host in raw.split(",") if host.strip()]

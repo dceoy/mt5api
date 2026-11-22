@@ -8,32 +8,10 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from mt5api.constants import API_KEY_SECURITY_SCHEME_NAME
-
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
 from mt5api.dependencies import Mt5RuntimeState
-
-
-def test_strip_auth_from_openapi_preserves_other_security_schemes() -> None:
-    """OpenAPI auth stripping keeps unrelated security schemes."""
-    from mt5api import main  # ruff: ignore[import-outside-top-level]
-
-    openapi_schema: dict[str, Any] = {
-        "components": {
-            "securitySchemes": {API_KEY_SECURITY_SCHEME_NAME: {}, "Other": {}}
-        },
-        "paths": {
-            "/rates/from": {
-                "parameters": [{"name": "symbol", "in": "query"}],
-                "get": {"security": [{API_KEY_SECURITY_SCHEME_NAME: []}]},
-            },
-        },
-    }
-    main._strip_auth_from_openapi(openapi_schema)  # pyright: ignore[reportPrivateUsage]
-    assert openapi_schema["components"]["securitySchemes"] == {"Other": {}}
-    assert "security" not in openapi_schema["paths"]["/rates/from"]["get"]
 
 
 def test_patch_validation_error_responses_updates_422_schema() -> None:
@@ -112,18 +90,14 @@ def test_openapi_helpers_ignore_malformed_dynamic_values() -> None:
     """OpenAPI patchers skip values with unexpected runtime shapes."""
     from mt5api import main  # ruff: ignore[import-outside-top-level]
 
-    main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
-        {"components": [], "paths": []}
-    )
-    main._strip_auth_from_openapi(  # pyright: ignore[reportPrivateUsage]
-        {"components": {"securitySchemes": []}, "paths": {}}
-    )
     main._patch_validation_error_responses(  # pyright: ignore[reportPrivateUsage]
         {"components": [], "paths": {}},
     )
     main._patch_validation_error_responses(  # pyright: ignore[reportPrivateUsage]
         {"components": {"schemas": []}, "paths": {}},
     )
+
+    assert list(main._iter_openapi_operations({"paths": []})) == []  # pyright: ignore[reportPrivateUsage]
 
     malformed_schema: dict[str, Any] = {
         "paths": {
@@ -217,3 +191,23 @@ async def test_lifespan_calls_shutdown_when_exception_is_raised(
     release_call = release.await_args
     assert release_call is not None
     assert shutdown_states == [release_call.args[0]]
+
+
+def test_startup_rejects_missing_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The service cannot start with an unset or empty secret."""
+    from mt5api import auth, main  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setattr(auth, "_API_KEY", None)
+    with (
+        pytest.raises(RuntimeError, match="MT5API_SECRET_KEY is required"),
+        TestClient(main.app),
+    ):
+        pass
+
+
+def test_trusted_hosts(client: TestClient) -> None:
+    """Allow local hosts and reject arbitrary Host headers."""
+    assert client.get("/health", headers={"host": "localhost:8000"}).status_code == 200
+    assert client.get("/health", headers={"host": "127.0.0.1:8000"}).status_code == 200
+    assert client.get("/health", headers={"host": "[::1]:8000"}).status_code == 200
+    assert client.get("/health", headers={"host": "evil.example"}).status_code == 400

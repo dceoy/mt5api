@@ -8,7 +8,7 @@ trading operations.
 mt5api is a FastAPI/HTTP adapter over
 [`pdmt5`](https://github.com/dceoy/pdmt5). pdmt5 provides the core MT5 client,
 dataframe/trading primitives, and canonical MT5 constant parsing. mt5api adds
-optional authentication, response formatting, and OpenAPI documentation.
+API-key authentication, response formatting, and OpenAPI documentation.
 
 The API server must run on Windows because pdmt5 connects through the MetaTrader
 5 Python API, which is Windows-only. Run `mt5api` on a Windows host with
@@ -41,9 +41,9 @@ pip install mt5api
 ## Quick Start
 
 ```powershell
-$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Optional: omit to disable auth
+$env:MT5API_SECRET_KEY = "your-secret-api-key"  # Required
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
-uv run uvicorn mt5api.main:app --host 0.0.0.0 --port 8000
+uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
 Once the API is running, use these `curl` examples from any client machine.
@@ -61,7 +61,7 @@ curl "http://windows-host:8000/health"
 ```
 
 ```console
-# Include X-API-Key only when MT5API_SECRET_KEY is configured on the server.
+# Include X-API-Key for protected endpoints.
 curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group=*USD*"
 ```
 
@@ -73,3 +73,9 @@ curl -H "X-API-Key: your-secret-api-key" "http://windows-host:8000/symbols?group
 ## License
 
 MIT License - see [LICENSE](https://github.com/dceoy/mt5api/blob/main/LICENSE).
+
+The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
+by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
+`--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
+allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
+The default allowlist is `localhost,127.0.0.1,[::1],testserver`.

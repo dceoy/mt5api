@@ -26,13 +26,13 @@ nssm install mt5api
 4. Set the application path and arguments:
 
 - Path: `C:\Path\To\Python\python.exe`
-- Arguments: `-m uvicorn mt5api.main:app --host 0.0.0.0 --port 8000`
+- Arguments: `-m uvicorn mt5api.main:app --host 127.0.0.1 --port 8000`
 - Startup directory: your project directory
 
 5. Set environment variables in the NSSM GUI:
 
 ```
-# Optional: set MT5API_SECRET_KEY only when you want to require X-API-Key headers.
+# Required: set a secret API key.
 MT5API_SECRET_KEY=your-secret-api-key
 MT5API_LOG_LEVEL=INFO
 MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS=100
@@ -60,3 +60,9 @@ Expected status: `healthy` (or `unhealthy` if MT5 is not connected).
 - Ensure the MT5 terminal is running and logged in.
 - Confirm firewall rules allow inbound traffic on the API port.
 - Check Windows Event Viewer for NSSM service logs.
+
+The server requires a nonempty `MT5API_SECRET_KEY` and binds to `127.0.0.1`
+by default. For remote access, explicitly set `MT5API_HOST` (or the uvicorn
+`--host` option) and set `MT5API_TRUSTED_HOSTS` to a comma-separated list of
+allowed Host names or IP addresses, such as `windows-host,localhost,127.0.0.1`.
+The default allowlist is `localhost,127.0.0.1,[::1],testserver`.

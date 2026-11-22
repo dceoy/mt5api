@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from _pytest.monkeypatch import MonkeyPatch
     from fastapi.testclient import TestClient
 
 
@@ -28,23 +27,3 @@ def test_docs_and_openapi_available(client: TestClient) -> None:
             },
         },
     }
-
-
-def test_openapi_does_not_require_api_key_when_auth_disabled(
-    client: TestClient,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    """OpenAPI omits API-key security when authentication is disabled."""
-    from mt5api import auth, main  # ruff: ignore[import-outside-top-level]
-
-    monkeypatch.setattr(auth, "_API_KEY", None)
-    monkeypatch.setattr(main.app, "openapi_schema", None)
-
-    response = client.get("/openapi.json")
-
-    assert response.status_code == 200
-
-    schema = response.json()
-    assert "securitySchemes" not in schema.get("components", {})
-    assert "security" not in schema["paths"]["/version"]["get"]
-    assert "security" not in schema["paths"]["/symbols"]["get"]

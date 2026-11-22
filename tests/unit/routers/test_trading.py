@@ -348,7 +348,7 @@ def test_post_order_send_denied_without_configured_auth(
         "/order/send",
         json={"request": {"action": 8, "order": 123456}, "expected_login": 12345},
     )
-    assert response.status_code == 403
+    assert response.status_code == 503
     mock_mt5_client.order_send_as_dict.assert_not_called()
 
 

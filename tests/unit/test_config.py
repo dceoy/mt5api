@@ -186,3 +186,18 @@ def test_get_configured_max_market_book_subscriptions_rejects_invalid_values(
         match="Invalid MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS",
     ):
         config.get_configured_max_market_book_subscriptions()
+
+
+def test_trusted_hosts_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Allow explicit comma-separated host names."""
+    from mt5api.config import get_configured_trusted_hosts  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.delenv("MT5API_TRUSTED_HOSTS", raising=False)
+    assert get_configured_trusted_hosts() == [
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+        "testserver",
+    ]
+    monkeypatch.setenv("MT5API_TRUSTED_HOSTS", "example.com, localhost, ")
+    assert get_configured_trusted_hosts() == ["example.com", "localhost"]
