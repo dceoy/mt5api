@@ -1,0 +1,20 @@
+---
+name: Renovate
+on:
+  schedule:
+    - cron: '17 0 * * 1'
+  workflow_dispatch:  # checkov:skip=CKV_GHA_7:manual runs do not accept inputs
+permissions: {}
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+jobs:
+  renovate:
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      statuses: write
+    uses: dceoy/gha-for-devops/.github/workflows/renovate.yml@a49d8c5289d9ac33c9eef275f0238dd6a8b306d5  # v2.3.5
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
