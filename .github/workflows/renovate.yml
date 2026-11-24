@@ -1,0 +1,18 @@
+---
+name: Renovate
+on:
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+jobs:
+  renovate:
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      statuses: write
+    uses: dceoy/gha-for-devops/.github/workflows/renovate.yml@2aa5954c98a14b2db3a0bfd9e93807d4b7fdd4dd  # v2.3.7
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
