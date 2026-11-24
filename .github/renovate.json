@@ -5,6 +5,11 @@
   "lockFileMaintenance": {"enabled": true},
   "packageRules": [
     {
+      "description": "Restrict Python to supported minor versions excluding the latest stable series",
+      "matchDatasources": ["python-version"],
+      "allowedVersions": "/^3\\.(11|12|13|14)(\\.\\d+)?$/"
+    },
+    {
       "description": "Dependabot manages GitHub Actions updates",
       "matchManagers": ["github-actions"],
       "enabled": false
