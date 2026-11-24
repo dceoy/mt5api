@@ -1,45 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
   "minimumReleaseAge": "1 day",
-  "enabledManagers": [
-    "pep621"
-  ],
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": [
-      "at any time"
-    ]
-  },
+  "lockFileMaintenance": {"enabled": true},
   "packageRules": [
     {
-      "description": "Dependabot manages regular uv dependency updates",
-      "matchManagers": [
-        "pep621"
-      ],
-      "matchUpdateTypes": [
-        "major",
-        "minor",
-        "patch",
-        "pin",
-        "pinDigest",
-        "digest",
-        "lockfileUpdate",
-        "rollback",
-        "bump",
-        "replacement"
-      ],
+      "description": "Dependabot manages GitHub Actions updates",
+      "matchManagers": ["github-actions"],
       "enabled": false
     },
     {
-      "description": "Review lockfile maintenance updates",
-      "matchUpdateTypes": [
-        "lockFileMaintenance"
-      ],
-      "minimumReleaseAge": null,
-      "automerge": false
+      "description": "Automatically merge minor and patch-level updates",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true,
+      "automergeType": "branch"
     }
   ]
 }
