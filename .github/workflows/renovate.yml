@@ -1,7 +1,7 @@
 ---
 name: Renovate
 on:
-  workflow_dispatch:  # checkov:skip=CKV_GHA_7:manual runs do not accept inputs
+  workflow_dispatch:
 permissions: {}
 concurrency:
   group: renovate
