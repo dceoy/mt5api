@@ -112,6 +112,11 @@ Docs:
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
+Set `MT5API_MT5_PATH` to the full path of the MT5 `terminal64.exe` to pin
+an instance to that terminal, including after `POST /connection/login`. When
+unset or empty, MT5 chooses the terminal as before. Run separate processes on
+different ports to connect to different terminals.
+
 Set `MT5API_ROUTER_PREFIX` to mount the API endpoints under a shared path such
 as `/api/v1`. The default is `""`, which keeps routes like `/health` and
 `/symbols` at the root. `"/api/v1"`, `"api/v1"`, and `"/api/v1/"` are treated

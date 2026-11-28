@@ -8,6 +8,7 @@ from mt5api.constants import (
     DEFAULT_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
+    ENV_MT5API_MT5_PATH,
     ENV_MT5API_PORT,
     ENV_MT5API_SECRET_KEY,
 )
@@ -45,6 +46,20 @@ def test_normalize_api_router_prefix_rejects_invalid_values(raw_prefix: str) -> 
 
     with pytest.raises(ValueError, match="Invalid MT5API_ROUTER_PREFIX"):
         config.normalize_api_router_prefix(raw_prefix)
+
+
+@pytest.mark.parametrize("raw_path", [None, "", r"C:\Program Files\MT5\terminal64.exe"])
+def test_get_configured_mt5_path(
+    monkeypatch: pytest.MonkeyPatch, raw_path: str | None
+) -> None:
+    """The terminal path is optional and otherwise preserved verbatim."""
+    from mt5api import config  # ruff: ignore[import-outside-top-level]
+
+    if raw_path is None:
+        monkeypatch.delenv(ENV_MT5API_MT5_PATH, raising=False)
+    else:
+        monkeypatch.setenv(ENV_MT5API_MT5_PATH, raw_path)
+    assert config.get_configured_mt5_path() == (raw_path or None)
 
 
 @pytest.mark.parametrize(

@@ -114,6 +114,22 @@ def test_post_connection_login_reconnects(
     assert all("s3cret" not in record.getMessage() for record in caplog.records)
 
 
+@pytest.mark.parametrize("path", [None, "", r"C:\Program Files\MT5\terminal64.exe"])
+def test_post_connection_login_preserves_configured_path(
+    connection_client: tuple[TestClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    path: str | None,
+) -> None:
+    """Reconnect uses the instance's configured terminal path."""
+    if path is None:
+        monkeypatch.delenv("MT5API_MT5_PATH", raising=False)
+    else:
+        monkeypatch.setenv("MT5API_MT5_PATH", path)
+    test_client, recorder = connection_client
+    assert _login(test_client).status_code == 200
+    assert recorder["configs"][0].path == (path or None)
+
+
 def test_post_connection_login_releases_market_book_after_success(
     connection_client: tuple[TestClient, dict[str, Any]],
     mocker: MockerFixture,

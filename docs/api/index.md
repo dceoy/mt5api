@@ -54,6 +54,10 @@ $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 uv run uvicorn mt5api.main:app --host 127.0.0.1 --port 8000
 ```
 
+Optionally set `MT5API_MT5_PATH` to the full path of `terminal64.exe` to pin
+this instance to a terminal, including after login. Unset or empty retains
+default terminal selection. Use separate processes and ports for separate terminals.
+
 Run this request on the Windows host with the configuration above. In
 PowerShell, use `curl.exe` if `curl` resolves to
 `Invoke-WebRequest`.
