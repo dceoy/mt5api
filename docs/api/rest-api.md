@@ -34,8 +34,10 @@ $env:MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS = "100"
 $env:MT5API_ROUTER_PREFIX = "/api/v1"     # Optional: omit for root-level routes
 ```
 
-MT5 connection details are managed by the underlying MT5 client configuration
-(for example login/server/path settings).
+Set `MT5API_MT5_PATH` to the full path of the MT5 `terminal64.exe` to pin
+this instance to a terminal, including after `POST /connection/login`. Unset or
+empty leaves terminal selection unchanged. Use separate processes and ports for
+separate terminals.
 
 `MT5API_ROUTER_PREFIX` mounts the API routers under a shared prefix such as
 `/api/v1`. The default is `""`, so endpoints stay at root-level paths like

@@ -10,7 +10,10 @@ from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 from fastapi import Header, Query, Request
 from pdmt5.dataframe import Mt5Config, Mt5DataClient
 
-from .config import get_configured_max_market_book_subscriptions
+from .config import (
+    get_configured_max_market_book_subscriptions,
+    get_configured_mt5_path,
+)
 from .constants import MT5_RUNTIME_STATE_KEY
 from .models import ResponseFormat
 
@@ -132,7 +135,7 @@ async def ensure_mt5_client(state: Mt5RuntimeState) -> Mt5DataClient:
     """
     if state.client is not None:
         return state.client
-    client = Mt5DataClient(config=Mt5Config())
+    client = Mt5DataClient(config=Mt5Config(path=get_configured_mt5_path()))
     try:
         await _initialize_and_install_client(state, client)
     except Exception as exc:

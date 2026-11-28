@@ -73,7 +73,7 @@ def test_get_mt5_client_initializes_and_reuses_state_client(
     """MT5 client initialization is lazy and cached per application."""
 
     class DummyClient:
-        def __init__(self, config: str) -> None:
+        def __init__(self, config: object) -> None:
             self.config = config
             self.initialized = False
 
@@ -83,7 +83,6 @@ def test_get_mt5_client_initializes_and_reuses_state_client(
         def shutdown(self) -> None:
             self.initialized = False
 
-    monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
     request = _request(FastAPI())
     client = asyncio.run(dependencies.get_mt5_client(request))
@@ -98,14 +97,13 @@ def test_get_mt5_client_raises_runtime_error_on_failure(
     """Failed lazy initialization leaves no cached client."""
 
     class FailingClient:
-        def __init__(self, config: str) -> None:
+        def __init__(self, config: object) -> None:
             self.config = config
 
         def initialize_and_login_mt5(self) -> None:
             error_message = "boom"
             raise ValueError(error_message)
 
-    monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
     request = _request(FastAPI())
     with pytest.raises(RuntimeError, match="Failed to initialize MT5 client"):
@@ -237,6 +235,30 @@ def test_replace_mt5_client_cancellation_keeps_client_when_init_fails(
 
     asyncio.run(scenario())
     assert state.client is old_client
+
+
+@pytest.mark.parametrize("path", [None, "", r"C:\Program Files\MT5\terminal64.exe"])
+def test_ensure_mt5_client_uses_configured_path(
+    monkeypatch: pytest.MonkeyPatch, path: str | None
+) -> None:
+    """Lazy initialization passes the configured terminal path to the client."""
+    if path is None:
+        monkeypatch.delenv("MT5API_MT5_PATH", raising=False)
+    else:
+        monkeypatch.setenv("MT5API_MT5_PATH", path)
+
+    class DummyClient:
+        def __init__(self, config: dependencies.Mt5Config) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            pass
+
+    monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
+    state = dependencies.Mt5RuntimeState()
+    client = asyncio.run(dependencies.ensure_mt5_client(state))
+    assert client.config.path == (path or None)
+    assert asyncio.run(dependencies.ensure_mt5_client(state)) is client
 
 
 def test_ensure_mt5_client_reports_initialization_failure(
@@ -452,13 +474,12 @@ def test_get_mt5_client_waits_for_client_lock_before_initializing(
     started = threading.Event()
 
     class DummyClient:
-        def __init__(self, config: str) -> None:
+        def __init__(self, config: object) -> None:
             self.config = config
 
         def initialize_and_login_mt5(self) -> None:
             started.set()
 
-    monkeypatch.setattr(dependencies, "Mt5Config", lambda: "config")
     monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
     request = _request(FastAPI())
     state = dependencies.get_mt5_runtime_state(request)

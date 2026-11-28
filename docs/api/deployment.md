@@ -39,6 +39,11 @@ MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS=100
 MT5API_ROUTER_PREFIX=/api/v1
 ```
 
+Optionally set `MT5API_MT5_PATH` to the full path of `terminal64.exe` for
+this service. The path is retained on login; unset or empty uses the default
+terminal selection. Run separate services on different ports to pin each to a
+different terminal.
+
 6. Start the service:
 
 ```powershell

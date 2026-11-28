@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from pdmt5.dataframe import Mt5Config
 
 from mt5api.auth import verify_api_key
+from mt5api.config import get_configured_mt5_path
 from mt5api.dependencies import (
     get_mt5_runtime_state,
     release_market_book_subscriptions,
@@ -43,6 +44,7 @@ async def post_connection_login(
         Connection metadata for the newly established session.
     """
     config = Mt5Config(
+        path=get_configured_mt5_path(),
         login=request.login,
         password=request.password.get_secret_value(),
         server=request.server,
