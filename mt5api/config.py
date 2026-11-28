@@ -15,6 +15,7 @@ from .constants import (
     ENV_MT5API_LOG_LEVEL,
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
     ENV_MT5API_MT5_PATH,
+    ENV_MT5API_MT5_TERMINALS,
     ENV_MT5API_PORT,
     ENV_MT5API_ROUTER_PREFIX,
     ENV_MT5API_SECRET_KEY,
@@ -165,6 +166,28 @@ def get_configured_mt5_path() -> str | None:
         Terminal path, or ``None`` when unset or empty.
     """
     return os.getenv(ENV_MT5API_MT5_PATH) or None
+
+
+def get_configured_mt5_terminals() -> dict[str, str]:
+    """Parse named terminal paths.
+
+    Returns:
+        Mapping of configured terminal names to executable paths.
+
+    Raises:
+        ValueError: If any entry is malformed or a name is duplicated.
+    """
+    raw = os.getenv(ENV_MT5API_MT5_TERMINALS, "").strip()
+    if not raw:
+        return {}
+    terminals: dict[str, str] = {}
+    for entry in raw.split(","):
+        name, separator, path = entry.partition("=")
+        name, path = name.strip(), path.strip()
+        if not separator or not name or not path or name in terminals:
+            raise ValueError("Invalid MT5API_MT5_TERMINALS")
+        terminals[name] = path
+    return terminals
 
 
 def get_configured_mt5api_secret_key() -> str | None:
