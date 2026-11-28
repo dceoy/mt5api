@@ -161,6 +161,10 @@ macOS because the <code>MetaTrader5</code> Python package is supported only on W
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS=100
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>MT5API_ROUTER_PREFIX=/api/v1
 </code></pre></div>
+<p>Optionally set <code>MT5API_MT5_PATH</code> to the full path of <code>terminal64.exe</code> for
+this service. The path is retained on login; unset or empty uses the default
+terminal selection. Run separate services on different ports to pin each to a
+different terminal.</p>
 <ol>
 <li>Start the service:</li>
 </ol>
