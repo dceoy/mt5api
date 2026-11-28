@@ -168,9 +168,11 @@ JSON and Parquet support.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">$env:MT5API_ROUTER_PREFIX</span> <span class="p">=</span> <span class="s2">"/api/v1"</span>     <span class="c"># Optional: omit for root-level routes</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">uv</span> <span class="n">run</span> <span class="n">uvicorn</span> <span class="n">mt5api</span><span class="p">.</span><span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-host</span> <span class="n">127</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">1</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
 </code></pre></div>
-<p>Optionally set <code>MT5API_MT5_PATH</code> to the full path of <code>terminal64.exe</code> to pin
-this instance to a terminal, including after login. Unset or empty retains
-default terminal selection. Use separate processes and ports for separate terminals.</p>
+<p>Optionally set <code>MT5API_MT5_PATH</code> for the default terminal and
+<code>MT5API_MT5_TERMINALS</code> for comma-separated named <code>name=path</code> pairs. Requests
+can select a name with <code>X-MT5-Terminal</code>; the active terminal is instance-global
+and the last switch wins. See the <a href="rest-api/">REST API guide</a> for examples and
+concurrency limitations.</p>
 <p>Run this request on the Windows host with the configuration above. In
 PowerShell, use <code>curl.exe</code> if <code>curl</code> resolves to
 <code>Invoke-WebRequest</code>.</p>
