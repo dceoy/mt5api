@@ -54,6 +54,7 @@ def initialize_mt5_runtime_state(
     Returns:
         Newly installed runtime state.
     """
+    get_configured_mt5_terminals()  # Validate configuration at startup.
     state = Mt5RuntimeState(
         max_market_book_subscriptions=(
             get_configured_max_market_book_subscriptions()
@@ -109,8 +110,7 @@ async def _initialize_and_install_client(
     ``state.client`` always matches the terminal's connected account before the
     caller releases ``state.client_lock``.
 
-    Raises:
-        asyncio.CancelledError: If cancelled, after the thread has finished.
+    Cancellation propagates only after the native thread finishes.
     """
     init_task = asyncio.ensure_future(
         asyncio.to_thread(client.initialize_and_login_mt5)
@@ -119,7 +119,10 @@ async def _initialize_and_install_client(
         await asyncio.shield(init_task)
     except asyncio.CancelledError:
         while not init_task.done():
-            await asyncio.wait({init_task})
+            try:
+                await asyncio.wait({init_task})
+            except asyncio.CancelledError:
+                continue
         if init_task.exception() is None:
             state.client = client
         raise
@@ -161,33 +164,45 @@ async def get_mt5_client(
     Returns:
         Shared initialized MT5 data client.
 
-    Raises:
-        HTTPException: If the requested terminal name is unknown.
-        asyncio.CancelledError: If the request is cancelled during replacement.
+    Unknown names raise HTTP 400; cancellation propagates after replacement.
     """
     state = get_mt5_runtime_state(request)
-    terminals = get_configured_mt5_terminals()
-    if x_mt5_terminal is not None and x_mt5_terminal not in terminals:
-        raise HTTPException(status_code=400, detail="Unknown MT5 terminal")
+    if x_mt5_terminal is None and state.client is not None:
+        return state.client
     async with state.client_lock:
-        if x_mt5_terminal is not None and (
-            state.client is None or state.active_terminal_name != x_mt5_terminal
-        ):
+        return await select_mt5_client_locked(state, x_mt5_terminal)
+
+
+async def select_mt5_client_locked(
+    state: Mt5RuntimeState, terminal_name: str | None
+) -> Mt5DataClient:
+    """Select a terminal with the client lock already held.
+
+    Returns:
+        The selected client.
+
+    Raises:
+        HTTPException: If the terminal name is unknown.
+        asyncio.CancelledError: If cancelled during replacement.
+    """
+    if terminal_name is not None:
+        terminals = get_configured_mt5_terminals()
+        if terminal_name not in terminals:
+            raise HTTPException(status_code=400, detail="Unknown MT5 terminal")
+        if state.client is None or state.active_terminal_name != terminal_name:
+            path = terminals[terminal_name]
+            await release_market_book_subscriptions(state)
             old_client = state.client
-            path = terminals[x_mt5_terminal]
             try:
                 await replace_mt5_client(state, Mt5Config(path=path))
             except asyncio.CancelledError:
-                # Native initialization can succeed even if the request is cancelled.
                 if state.client is not old_client:
-                    state.active_terminal_name = x_mt5_terminal
+                    state.active_terminal_name = terminal_name
                     state.active_terminal_path = path
-                    await release_market_book_subscriptions(state)
                 raise
-            state.active_terminal_name = x_mt5_terminal
+            state.active_terminal_name = terminal_name
             state.active_terminal_path = path
-            await release_market_book_subscriptions(state)
-        return await ensure_mt5_client(state)
+    return await ensure_mt5_client(state)
 
 
 async def replace_mt5_client(

@@ -122,9 +122,11 @@ curl.exe -H 'X-MT5-Terminal: index' http://localhost:8000/terminal
 curl.exe -H 'X-MT5-Terminal: commodity' http://localhost:8000/terminal
 ```
 
-Use `X-MT5-Terminal` on MT5-client endpoints, including `/health`; unknown names
-return HTTP 400. Without the header, requests use the current active terminal.
-Login retains the active terminal path. Switching releases market-book subscriptions.
+Use `X-MT5-Terminal` on authenticated MT5-client endpoints; unknown names
+return HTTP 400. Public `/health` ignores the header, including unknown names,
+and never switches terminals. Without the header, requests use the current active terminal.
+Login retains the active terminal path. Switching releases market-book subscriptions
+before the switch; if it fails, subscriptions are not restored and clients must resubscribe.
 The active terminal is instance-global: **last switch wins**. Replacement is
 serialized, but ordinary endpoint calls do not hold the lock throughout their MT5
 calls; concurrent requests can observe another request's switch. Serialize requests

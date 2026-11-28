@@ -30,12 +30,12 @@ router = APIRouter(tags=["health"])
     "/health",
     response_model=HealthResponse,
     summary="Health check",
-    description="Check API and MT5 terminal connection status",
+    description="Check the active MT5 terminal; X-MT5-Terminal is ignored.",
 )
 async def get_health(request: Request) -> HealthResponse:
     """Check API health and MT5 terminal connectivity.
 
-    This endpoint does NOT require authentication (public health check).
+    This public endpoint ignores X-MT5-Terminal and never switches terminals.
     Returns 200 OK even if MT5 is unavailable to allow infrastructure
     health monitoring without failing on MT5 outages.
 
