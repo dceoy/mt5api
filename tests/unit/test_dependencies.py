@@ -283,6 +283,53 @@ def test_switch_releases_on_outgoing_terminal(
     assert not state.market_book_subscriptions
 
 
+def test_cancelled_switch_drains_outgoing_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated cancellation waits for outgoing cleanup and skips replacement."""
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "new=new.exe")
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    started, release = threading.Event(), threading.Event()
+    releases: list[str] = []
+
+    class OldClient:
+        def market_book_release(self, *, symbol: str) -> None:
+            started.set()
+            release.wait(timeout=5)
+            releases.append(symbol)
+
+    old = OldClient()
+    state.client = old  # type: ignore[assignment]
+    state.market_book_cleanup_client = old  # type: ignore[assignment]
+    state.market_book_subscriptions.add("EURUSD")
+    state.active_terminal_name = "old"
+    state.active_terminal_path = "old.exe"
+
+    async def scenario() -> None:
+        task = asyncio.create_task(dependencies.get_mt5_client(request, "new"))
+        assert await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        await asyncio.sleep(0.02)
+        task.cancel()
+        await asyncio.sleep(0.02)
+        assert state.client_lock.locked()
+        assert not task.done()
+        assert state.market_book_subscriptions == {"EURUSD"}
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert not state.client_lock.locked()
+        assert not state.market_book_subscriptions
+        assert state.market_book_cleanup_client is None
+        assert state.client is old
+        assert state.active_terminal_name == "old"
+        assert state.active_terminal_path == "old.exe"
+
+    asyncio.run(scenario())
+    assert releases == ["EURUSD"]
+
+
 def test_repeated_cancellation_keeps_switch_lock(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

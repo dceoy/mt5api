@@ -46,7 +46,9 @@ curl.exe -H 'X-MT5-Terminal: commodity' http://localhost:8000/terminal
 `X-MT5-Terminal` selects a configured name on authenticated endpoints using the MT5 client;
 an unknown name returns HTTP 400. Public `/health` ignores this header (even unknown
 names) and never switches. Without the header, the current terminal is used. Login
-preserves its path. Switching releases market-book subscriptions before switching;
+preserves its path and accepts a header only when it names the configured active
+terminal; unknown or different names return HTTP 400 without reconnecting. Switching
+releases market-book subscriptions before switching;
 if switching fails, subscriptions are not restored and clients must resubscribe.
 Active terminal state is instance-global: last switch wins.
 Switches are serialized, but ordinary MT5 calls are not locked for their entire

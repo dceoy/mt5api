@@ -233,7 +233,7 @@ async def replace_mt5_client(
 
 
 async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
-    """Release and clear all market-book subscriptions owned by ``state``."""
+    """Release and clear subscriptions, draining the native worker on cancellation."""
     subscriptions = state.market_book_subscriptions
     if not subscriptions:
         state.market_book_cleanup_client = None
@@ -251,7 +251,19 @@ async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
             except Exception:
                 logger.exception("Failed to release market book for %s", symbol)
 
-    await asyncio.to_thread(release_subscriptions)
+    cleanup_task = asyncio.create_task(asyncio.to_thread(release_subscriptions))
+    try:
+        await asyncio.shield(cleanup_task)
+    except asyncio.CancelledError:
+        while not cleanup_task.done():
+            try:
+                await asyncio.wait({cleanup_task})
+            except asyncio.CancelledError:
+                continue
+        cleanup_task.result()
+        subscriptions.clear()
+        state.market_book_cleanup_client = None
+        raise
     subscriptions.clear()
     state.market_book_cleanup_client = None
 
