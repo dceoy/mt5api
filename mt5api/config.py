@@ -185,7 +185,8 @@ def get_configured_mt5_terminals() -> dict[str, str]:
         name, separator, path = entry.partition("=")
         name, path = name.strip(), path.strip()
         if not separator or not name or not path or name in terminals:
-            raise ValueError("Invalid MT5API_MT5_TERMINALS")
+            message = "Invalid MT5API_MT5_TERMINALS"
+            raise ValueError(message)
         terminals[name] = path
     return terminals
 

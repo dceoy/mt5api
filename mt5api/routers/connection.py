@@ -43,15 +43,15 @@ async def post_connection_login(
     Returns:
         Connection metadata for the newly established session.
     """
-    config = Mt5Config(
-        path=get_configured_mt5_path(),
-        login=request.login,
-        password=request.password.get_secret_value(),
-        server=request.server,
-        timeout=request.timeout,
-    )
     state = get_mt5_runtime_state(app_request)
     async with state.client_lock:
+        config = Mt5Config(
+            path=state.active_terminal_path or get_configured_mt5_path(),
+            login=request.login,
+            password=request.password.get_secret_value(),
+            server=request.server,
+            timeout=request.timeout,
+        )
         await replace_mt5_client(state, config)
         await release_market_book_subscriptions(state)
     sanitized_server = request.server.replace("\r", "").replace("\n", "")

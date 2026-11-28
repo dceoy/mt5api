@@ -7,12 +7,13 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
-from fastapi import Header, Query, Request
+from fastapi import Header, HTTPException, Query, Request
 from pdmt5.dataframe import Mt5Config, Mt5DataClient
 
 from .config import (
     get_configured_max_market_book_subscriptions,
     get_configured_mt5_path,
+    get_configured_mt5_terminals,
 )
 from .constants import MT5_RUNTIME_STATE_KEY
 from .models import ResponseFormat
@@ -31,6 +32,8 @@ class Mt5RuntimeState:
     """Application-scoped owner for MT5 connection and subscription state."""
 
     client: Mt5DataClient | None = None
+    active_terminal_name: str | None = None
+    active_terminal_path: str | None = None
     client_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     market_book_subscriptions: set[str] = field(default_factory=set[str])
     market_book_cleanup_client: Mt5DataClient | None = None
@@ -89,6 +92,8 @@ def shutdown_mt5_client(state: Mt5RuntimeState) -> None:
     if client is None:
         return
     state.client = None
+    state.active_terminal_name = None
+    state.active_terminal_path = None
     client.shutdown()
 
 
@@ -144,23 +149,44 @@ async def ensure_mt5_client(state: Mt5RuntimeState) -> Mt5DataClient:
     return client
 
 
-async def get_mt5_client(request: Request) -> Mt5DataClient:
-    """Get or lazily create the application-scoped MT5 client instance.
+async def get_mt5_client(
+    request: Request,
+    x_mt5_terminal: Annotated[str | None, Header()] = None,
+) -> Mt5DataClient:
+    """Resolve the shared client, optionally switching the active terminal.
 
-    Initialization is serialized with account changes and live order submission
-    by ``state.client_lock``. When a client already exists no native
-    initialization can occur, so the lock is not taken.
-
-    Args:
-        request: Request whose application owns the MT5 runtime state.
+    Replacement is serialized, but the dependency does not hold the lock for
+    the subsequent endpoint call. The active terminal is instance-global.
 
     Returns:
         Shared initialized MT5 data client.
+
+    Raises:
+        HTTPException: If the requested terminal name is unknown.
+        asyncio.CancelledError: If the request is cancelled during replacement.
     """
     state = get_mt5_runtime_state(request)
-    if state.client is not None:
-        return state.client
+    terminals = get_configured_mt5_terminals()
+    if x_mt5_terminal is not None and x_mt5_terminal not in terminals:
+        raise HTTPException(status_code=400, detail="Unknown MT5 terminal")
     async with state.client_lock:
+        if x_mt5_terminal is not None and (
+            state.client is None or state.active_terminal_name != x_mt5_terminal
+        ):
+            old_client = state.client
+            path = terminals[x_mt5_terminal]
+            try:
+                await replace_mt5_client(state, Mt5Config(path=path))
+            except asyncio.CancelledError:
+                # Native initialization can succeed even if the request is cancelled.
+                if state.client is not old_client:
+                    state.active_terminal_name = x_mt5_terminal
+                    state.active_terminal_path = path
+                    await release_market_book_subscriptions(state)
+                raise
+            state.active_terminal_name = x_mt5_terminal
+            state.active_terminal_path = path
+            await release_market_book_subscriptions(state)
         return await ensure_mt5_client(state)
 
 

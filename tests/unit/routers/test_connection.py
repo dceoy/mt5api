@@ -130,6 +130,20 @@ def test_post_connection_login_preserves_configured_path(
     assert recorder["configs"][0].path == (path or None)
 
 
+def test_post_connection_login_preserves_active_terminal_path(
+    connection_client: tuple[TestClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A named active terminal takes precedence over the default path."""
+    monkeypatch.setenv("MT5API_MT5_PATH", "default.exe")
+    state = _runtime_state()
+    state.active_terminal_name = "commodity"
+    state.active_terminal_path = "commodity.exe"
+    test_client, recorder = connection_client
+    assert _login(test_client).status_code == 200
+    assert recorder["configs"][0].path == "commodity.exe"
+
+
 def test_post_connection_login_releases_market_book_after_success(
     connection_client: tuple[TestClient, dict[str, Any]],
     mocker: MockerFixture,
