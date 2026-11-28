@@ -56,6 +56,26 @@ def test_health_endpoint_returns_healthy_status(client: TestClient) -> None:
     assert data["api_version"] == API_VERSION
 
 
+@pytest.mark.parametrize("name", ["commodity", "unknown"])
+def test_health_ignores_terminal_header(
+    client: TestClient, mock_mt5_client: Mock, name: str
+) -> None:
+    """Public health probes never select a terminal, even for unknown names."""
+    from mt5api.dependencies import get_mt5_runtime_state  # ruff: ignore[import-outside-top-level]
+
+    app = cast("FastAPI", client.app)
+    state = get_mt5_runtime_state(_request(app))
+    state.client = cast("Mt5DataClient", mock_mt5_client)
+    state.active_terminal_name = "index"
+    state.active_terminal_path = "index.exe"
+    response = client.get("/health", headers={"X-MT5-Terminal": name})
+    assert response.status_code == 200
+    assert response.json()["mt5_connected"] is True
+    assert state.client is mock_mt5_client
+    assert state.active_terminal_name == "index"
+    assert state.active_terminal_path == "index.exe"
+
+
 def test_version_endpoint_returns_mt5_version(
     client: TestClient,
     api_headers: dict[str, str],

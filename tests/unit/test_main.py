@@ -193,6 +193,18 @@ async def test_lifespan_calls_shutdown_when_exception_is_raised(
     assert shutdown_states == [release_call.args[0]]
 
 
+def test_startup_rejects_malformed_terminals(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Malformed named-terminal configuration prevents application startup."""
+    from mt5api import main  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "invalid")
+    with (
+        pytest.raises(ValueError, match="Invalid MT5API_MT5_TERMINALS"),
+        TestClient(main.app),
+    ):
+        pass
+
+
 def test_startup_rejects_missing_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """The service cannot start with an unset or empty secret."""
     from mt5api import auth, main  # ruff: ignore[import-outside-top-level]

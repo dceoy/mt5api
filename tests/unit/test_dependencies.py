@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import threading
 from operator import add
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from mt5api import dependencies
@@ -109,6 +110,263 @@ def test_get_mt5_client_raises_runtime_error_on_failure(
     with pytest.raises(RuntimeError, match="Failed to initialize MT5 client"):
         asyncio.run(dependencies.get_mt5_client(request))
     assert dependencies.get_mt5_runtime_state(request).client is None
+
+
+def test_named_terminal_switching(
+    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
+) -> None:
+    """Headers switch once, clean subscriptions, and reject unknown names."""
+    monkeypatch.setenv(
+        "MT5API_MT5_TERMINALS", "index=index.exe,commodity=commodity.exe"
+    )
+
+    class DummyClient:
+        def __init__(self, config: dependencies.Mt5Config) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            pass
+
+    monkeypatch.setattr(dependencies, "Mt5DataClient", DummyClient)
+    app = FastAPI()
+
+    @app.get("/")
+    async def endpoint(
+        client: Annotated[
+            dependencies.Mt5DataClient, Depends(dependencies.get_mt5_client)
+        ],
+    ) -> dict[str, str | None]:
+        return {"path": client.config.path}
+
+    state = dependencies.initialize_mt5_runtime_state(app)
+    cleanup = mocker.Mock()
+    state.market_book_cleanup_client = cleanup
+    state.market_book_subscriptions.add("EURUSD")
+    with TestClient(app) as client:
+        assert client.get("/", headers={"X-MT5-Terminal": "commodity"}).json() == {
+            "path": "commodity.exe"
+        }
+        first = state.client
+        assert state.active_terminal_name == "commodity"
+        assert state.active_terminal_path == "commodity.exe"
+        cleanup.market_book_release.assert_called_once_with(symbol="EURUSD")
+        assert not state.market_book_subscriptions
+        assert (
+            client.get("/", headers={"X-MT5-Terminal": "commodity"}).status_code == 200
+        )
+        assert state.client is first
+        assert client.get("/").json() == {"path": "commodity.exe"}
+        assert client.get("/", headers={"X-MT5-Terminal": "unknown"}).status_code == 400
+        assert state.client is first
+        assert client.get("/", headers={"X-MT5-Terminal": "index"}).json() == {
+            "path": "index.exe"
+        }
+        assert state.active_terminal_name == "index"
+
+
+def test_named_terminal_failed_switch_preserves_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed replacement does not change the active terminal."""
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "index=index.exe")
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    old = object()
+    state.client = old  # type: ignore[assignment]
+
+    class FailingClient:
+        def __init__(self, config: object) -> None:
+            pass
+
+        def initialize_and_login_mt5(self) -> None:
+            message = "failed"
+            raise ValueError(message)
+
+    monkeypatch.setattr(dependencies, "Mt5DataClient", FailingClient)
+    with pytest.raises(RuntimeError):
+        asyncio.run(dependencies.get_mt5_client(request, "index"))
+    assert state.client is old
+    assert state.active_terminal_name is None
+
+
+@pytest.mark.parametrize("succeeds", [True, False])
+def test_named_terminal_cancelled_switch(
+    monkeypatch: pytest.MonkeyPatch, succeeds: bool
+) -> None:
+    """Cancellation keeps tracking consistent with native initialization."""
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "index=index.exe")
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    started = threading.Event()
+    release = threading.Event()
+
+    class SlowClient:
+        def __init__(self, config: object) -> None:
+            pass
+
+        def initialize_and_login_mt5(self) -> None:
+            started.set()
+            release.wait(timeout=5)
+            if not succeeds:
+                message = "failed"
+                raise ValueError(message)
+
+    monkeypatch.setattr(dependencies, "Mt5DataClient", SlowClient)
+
+    async def scenario() -> None:
+        task = asyncio.create_task(dependencies.get_mt5_client(request, "index"))
+        await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    asyncio.run(scenario())
+    assert state.active_terminal_name == ("index" if succeeds else None)
+    assert state.active_terminal_path == ("index.exe" if succeeds else None)
+
+
+def test_existing_client_without_header_skips_lock() -> None:
+    """An existing client remains available while the replacement lock is held."""
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    client = object()
+    state.client = client  # type: ignore[assignment]
+
+    async def scenario() -> None:
+        async with state.client_lock:
+            assert (
+                await asyncio.wait_for(dependencies.get_mt5_client(request), 0.5)
+                is client
+            )
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_switch_releases_on_outgoing_terminal(
+    monkeypatch: pytest.MonkeyPatch, fail: bool
+) -> None:
+    """Release targets the outgoing native connection even if switch fails."""
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "new=new.exe")
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    active = ["old.exe"]
+    releases: list[str] = []
+
+    class Client:
+        def __init__(self, config: dependencies.Mt5Config) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            if fail:
+                message = "failed"
+                raise ValueError(message)
+            active[0] = self.config.path or ""
+
+        def market_book_release(self, *, symbol: str) -> None:
+            releases.append(f"{active[0]}:{symbol}")
+
+    monkeypatch.setattr(dependencies, "Mt5DataClient", Client)
+    old = Client(dependencies.Mt5Config(path="old.exe"))
+    state.client = old  # type: ignore[assignment]
+    state.market_book_cleanup_client = old  # type: ignore[assignment]
+    state.market_book_subscriptions.add("EURUSD")
+    if fail:
+        with pytest.raises(RuntimeError):
+            asyncio.run(dependencies.get_mt5_client(request, "new"))
+        assert state.client is old
+    else:
+        asyncio.run(dependencies.get_mt5_client(request, "new"))
+        assert active[0] == "new.exe"
+    assert releases == ["old.exe:EURUSD"]
+    assert not state.market_book_subscriptions
+
+
+def test_cancelled_switch_drains_outgoing_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated cancellation waits for outgoing cleanup and skips replacement."""
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "new=new.exe")
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    started, release = threading.Event(), threading.Event()
+    releases: list[str] = []
+
+    class OldClient:
+        def market_book_release(self, *, symbol: str) -> None:
+            started.set()
+            release.wait(timeout=5)
+            releases.append(symbol)
+
+    old = OldClient()
+    state.client = old  # type: ignore[assignment]
+    state.market_book_cleanup_client = old  # type: ignore[assignment]
+    state.market_book_subscriptions.add("EURUSD")
+    state.active_terminal_name = "old"
+    state.active_terminal_path = "old.exe"
+
+    async def scenario() -> None:
+        task = asyncio.create_task(dependencies.get_mt5_client(request, "new"))
+        assert await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        await asyncio.sleep(0.02)
+        task.cancel()
+        await asyncio.sleep(0.02)
+        assert state.client_lock.locked()
+        assert not task.done()
+        assert state.market_book_subscriptions == {"EURUSD"}
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert not state.client_lock.locked()
+        assert not state.market_book_subscriptions
+        assert state.market_book_cleanup_client is None
+        assert state.client is old
+        assert state.active_terminal_name == "old"
+        assert state.active_terminal_path == "old.exe"
+
+    asyncio.run(scenario())
+    assert releases == ["EURUSD"]
+
+
+def test_repeated_cancellation_keeps_switch_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated cancellation cannot unlock while native initialization runs."""
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "index=index.exe")
+    request = _request(FastAPI())
+    state = dependencies.get_mt5_runtime_state(request)
+    started, release = threading.Event(), threading.Event()
+
+    class SlowClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            started.set()
+            release.wait(timeout=5)
+
+    monkeypatch.setattr(dependencies, "Mt5DataClient", SlowClient)
+
+    async def scenario() -> None:
+        task = asyncio.create_task(dependencies.get_mt5_client(request, "index"))
+        assert await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        await asyncio.sleep(0.02)
+        task.cancel()
+        await asyncio.sleep(0.02)
+        assert state.client_lock.locked()
+        assert not task.done()
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert isinstance(state.client, SlowClient)
+        assert state.active_terminal_name == "index"
+        assert state.active_terminal_path == "index.exe"
+        assert not state.client_lock.locked()
+
+    asyncio.run(scenario())
 
 
 def test_shutdown_mt5_client_clears_state() -> None:

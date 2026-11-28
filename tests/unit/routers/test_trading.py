@@ -319,6 +319,61 @@ def test_trading_openapi_uses_mt5_order_type_schema(client: TestClient) -> None:
     assert_openapi_mt5_order_type_schema(order_type_schema)
 
 
+def test_post_order_send_selects_named_terminal_and_rejects_unknown(
+    client: TestClient,
+    api_headers: dict[str, str],
+    mock_mt5_client: Mock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The live send selects and validates its terminal inside the send lock."""
+    monkeypatch.setenv("MT5API_ENABLE_ORDER_SEND", "true")
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", "commodity=commodity.exe")
+    state = _runtime_state(client)
+    seen: list[str] = []
+
+    class NamedClient:
+        def __init__(self, config: object) -> None:
+            self.config = config
+
+        def initialize_and_login_mt5(self) -> None:
+            assert state.client_lock.locked()
+            seen.append("initialized")
+
+        def shutdown(self) -> None:
+            pass
+
+        def account_info_as_dict(self) -> dict[str, object]:
+            assert state.client_lock.locked()
+            return {"login": 12345, "server": "Demo"}
+
+        def order_send_as_dict(self, request: dict[str, object]) -> dict[str, object]:
+            assert state.client_lock.locked()
+            seen.append("sent")
+            return {"retcode": 10009, "request": request}
+
+    monkeypatch.setattr("mt5api.dependencies.Mt5DataClient", NamedClient)
+    body = {"request": {"action": 8, "order": 123456}, "expected_login": 12345}
+    unknown = client.post(
+        "/order/send", json=body, headers={**api_headers, "X-MT5-Terminal": "unknown"}
+    )
+    assert unknown.status_code == 400
+    assert seen == []
+    mock_mt5_client.order_send_as_dict.assert_not_called()
+    mismatch = client.post(
+        "/order/send",
+        json={**body, "expected_login": 999},
+        headers={**api_headers, "X-MT5-Terminal": "commodity"},
+    )
+    assert mismatch.status_code == 409
+    assert seen == ["initialized"]
+    response = client.post(
+        "/order/send", json=body, headers={**api_headers, "X-MT5-Terminal": "commodity"}
+    )
+    assert response.status_code == 200
+    assert state.active_terminal_path == "commodity.exe"
+    assert seen == ["initialized", "sent"]
+
+
 def test_post_order_send_disabled_by_default(
     client: TestClient,
     api_headers: dict[str, str],
@@ -564,6 +619,8 @@ def test_post_order_send_cancellation_keeps_lock_until_send_finishes() -> None:
             )
         )
         await asyncio.to_thread(started.wait, 5)
+        task.cancel()
+        await asyncio.sleep(0.05)
         task.cancel()
         await asyncio.sleep(0.05)
         locked_while_running = state.client_lock.locked()

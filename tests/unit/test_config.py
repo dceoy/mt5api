@@ -62,6 +62,45 @@ def test_get_configured_mt5_path(
     assert config.get_configured_mt5_path() == (raw_path or None)
 
 
+@pytest.mark.parametrize("raw", [None, "", "  "])
+def test_get_configured_mt5_terminals_empty(
+    monkeypatch: pytest.MonkeyPatch, raw: str | None
+) -> None:
+    """Unset and blank terminal mappings are empty."""
+    from mt5api.config import get_configured_mt5_terminals  # ruff: ignore[import-outside-top-level]
+
+    if raw is None:
+        monkeypatch.delenv("MT5API_MT5_TERMINALS", raising=False)
+    else:
+        monkeypatch.setenv("MT5API_MT5_TERMINALS", raw)
+    assert get_configured_mt5_terminals() == {}
+
+
+def test_get_configured_mt5_terminals(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Names and paths are trimmed."""
+    from mt5api.config import get_configured_mt5_terminals  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setenv(
+        "MT5API_MT5_TERMINALS", r" index = C:\index.exe , commodity = C:\commodity.exe "
+    )
+    assert get_configured_mt5_terminals() == {
+        "index": r"C:\index.exe",
+        "commodity": r"C:\commodity.exe",
+    }
+
+
+@pytest.mark.parametrize("raw", ["a", "=path", "name=", "a=x,", "a=x,a=y"])
+def test_get_configured_mt5_terminals_rejects_invalid(
+    monkeypatch: pytest.MonkeyPatch, raw: str
+) -> None:
+    """Malformed or duplicate entries are rejected."""
+    from mt5api.config import get_configured_mt5_terminals  # ruff: ignore[import-outside-top-level]
+
+    monkeypatch.setenv("MT5API_MT5_TERMINALS", raw)
+    with pytest.raises(ValueError, match="Invalid MT5API_MT5_TERMINALS"):
+        get_configured_mt5_terminals()
+
+
 @pytest.mark.parametrize(
     ("raw_secret_key", "expected_secret_key"),
     [

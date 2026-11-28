@@ -70,6 +70,7 @@ def _login(
     password: str | None = None,
     server: str = "MetaQuotes-Demo",
     timeout: int | None = None,
+    terminal: str | None = None,
 ) -> httpx2.Response:
     """Submit a valid authenticated login request.
 
@@ -84,10 +85,13 @@ def _login(
     }
     if timeout is not None:
         request_body["timeout"] = timeout
+    headers = {API_KEY_HEADER_NAME: "test-api-key-12345"}
+    if terminal is not None:
+        headers["X-MT5-Terminal"] = terminal
     return test_client.post(
         "/connection/login",
         json=request_body,
-        headers={API_KEY_HEADER_NAME: "test-api-key-12345"},
+        headers=headers,
     )
 
 
@@ -128,6 +132,48 @@ def test_post_connection_login_preserves_configured_path(
     test_client, recorder = connection_client
     assert _login(test_client).status_code == 200
     assert recorder["configs"][0].path == (path or None)
+
+
+def test_post_connection_login_preserves_active_terminal_path(
+    connection_client: tuple[TestClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A named active terminal takes precedence over the default path."""
+    monkeypatch.setenv("MT5API_MT5_PATH", "default.exe")
+    state = _runtime_state()
+    state.active_terminal_name = "commodity"
+    state.active_terminal_path = "commodity.exe"
+    test_client, recorder = connection_client
+    assert _login(test_client).status_code == 200
+    assert recorder["configs"][0].path == "commodity.exe"
+
+
+@pytest.mark.parametrize(
+    ("terminal", "expected_status"),
+    [(None, 200), ("commodity", 200), ("index", 400), ("unknown", 400)],
+)
+def test_post_connection_login_terminal_header(
+    connection_client: tuple[TestClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    terminal: str | None,
+    expected_status: int,
+) -> None:
+    """Login only accepts absent or explicitly active terminal selectors."""
+    monkeypatch.setenv(
+        "MT5API_MT5_TERMINALS", "index=index.exe,commodity=commodity.exe"
+    )
+    state = _runtime_state()
+    state.active_terminal_name = "commodity"
+    state.active_terminal_path = "commodity.exe"
+    old_client = state.client
+    test_client, recorder = connection_client
+    response = _login(test_client, terminal=terminal)
+    assert response.status_code == expected_status
+    if expected_status == 200:
+        assert recorder["configs"][0].path == "commodity.exe"
+    else:
+        assert recorder["configs"] == []
+        assert state.client is old_client
 
 
 def test_post_connection_login_releases_market_book_after_success(

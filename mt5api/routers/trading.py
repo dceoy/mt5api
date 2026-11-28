@@ -7,7 +7,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pdmt5.dataframe import Mt5DataClient  # ruff: ignore[typing-only-third-party-import]
 
@@ -17,11 +17,11 @@ from mt5api.constants import (
     ENV_MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS,
 )
 from mt5api.dependencies import (
-    ensure_mt5_client,
     get_mt5_client,
     get_mt5_runtime_state,
     get_response_format,
     run_in_threadpool,
+    select_mt5_client_locked,
 )
 from mt5api.formatters import format_response
 from mt5api.models import (
@@ -132,6 +132,7 @@ async def post_order_send(
     app_request: Request,
     response_format: Annotated[ResponseFormat, Depends(get_response_format)],
     request: OrderSendRequest,
+    x_mt5_terminal: Annotated[str | None, Header()] = None,
 ) -> DataResponse | Response:
     """Send a validated order and preserve the MT5 execution result.
 
@@ -145,13 +146,12 @@ async def post_order_send(
     Returns:
         MT5 order-send result, including retcode, in JSON or Parquet format.
 
-    Raises:
-        asyncio.CancelledError: If the request is cancelled after the send ends.
+    Cancellation propagates only after the native send ends.
     """
     payload = request.request.to_mt5_dict()
     state = get_mt5_runtime_state(app_request)
     async with state.client_lock:
-        active_client = await ensure_mt5_client(state)
+        active_client = await select_mt5_client_locked(state, x_mt5_terminal)
         send_task = asyncio.ensure_future(
             run_in_threadpool(
                 _send_for_expected_account,
@@ -165,7 +165,10 @@ async def post_order_send(
             result: dict[str, Any] = await asyncio.shield(send_task)
         except asyncio.CancelledError:
             while not send_task.done():
-                await asyncio.wait({send_task})
+                try:
+                    await asyncio.wait({send_task})
+                except asyncio.CancelledError:
+                    continue
             send_task.exception()
             raise
     return format_response(result, response_format)

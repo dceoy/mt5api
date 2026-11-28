@@ -39,10 +39,11 @@ MT5API_MAX_MARKET_BOOK_SUBSCRIPTIONS=100
 MT5API_ROUTER_PREFIX=/api/v1
 ```
 
-Optionally set `MT5API_MT5_PATH` to the full path of `terminal64.exe` for
-this service. The path is retained on login; unset or empty uses the default
-terminal selection. Run separate services on different ports to pin each to a
-different terminal.
+Optionally set `MT5API_MT5_PATH` to the default `terminal64.exe` path; unset
+or empty uses MT5's default selection. Set `MT5API_MT5_TERMINALS` to comma-separated
+`name=path` pairs for named terminals in this single service. Select one with
+`X-MT5-Terminal`; login retains the active path. See the [REST API guide](rest-api.md)
+for an index/commodity example and concurrency limitations.
 
 6. Start the service:
 

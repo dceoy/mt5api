@@ -112,10 +112,27 @@ Docs:
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-Set `MT5API_MT5_PATH` to the full path of the MT5 `terminal64.exe` to pin
-an instance to that terminal, including after `POST /connection/login`. When
-unset or empty, MT5 chooses the terminal as before. Run separate processes on
-different ports to connect to different terminals.
+Set `MT5API_MT5_PATH` to the full path of the default MT5 `terminal64.exe`;
+unset or empty lets MT5 choose. Optionally configure named terminals in the
+single instance using `MT5API_MT5_TERMINALS` (comma-separated `name=path` pairs):
+
+```powershell
+$env:MT5API_MT5_TERMINALS = 'index=C:\Program Files\OANDA MetaTrader 5\index\terminal64.exe,commodity=C:\Program Files\OANDA MetaTrader 5\commodity\terminal64.exe'
+curl.exe -H 'X-MT5-Terminal: index' http://localhost:8000/terminal
+curl.exe -H 'X-MT5-Terminal: commodity' http://localhost:8000/terminal
+```
+
+Use `X-MT5-Terminal` on authenticated MT5-client endpoints; unknown names
+return HTTP 400. Public `/health` ignores the header, including unknown names,
+and never switches terminals. Without the header, requests use the current active terminal.
+Login retains the active terminal path; if a login request includes the header,
+it must name the configured active terminal or login returns HTTP 400 without reconnecting.
+Switching releases market-book subscriptions
+before the switch; if it fails, subscriptions are not restored and clients must resubscribe.
+The active terminal is instance-global: **last switch wins**. Replacement is
+serialized, but ordinary endpoint calls do not hold the lock throughout their MT5
+calls; concurrent requests can observe another request's switch. Serialize requests
+externally when terminal/account isolation matters.
 
 Set `MT5API_ROUTER_PREFIX` to mount the API endpoints under a shared path such
 as `/api/v1`. The default is `""`, which keeps routes like `/health` and

@@ -7,12 +7,13 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
-from fastapi import Header, Query, Request
+from fastapi import Header, HTTPException, Query, Request
 from pdmt5.dataframe import Mt5Config, Mt5DataClient
 
 from .config import (
     get_configured_max_market_book_subscriptions,
     get_configured_mt5_path,
+    get_configured_mt5_terminals,
 )
 from .constants import MT5_RUNTIME_STATE_KEY
 from .models import ResponseFormat
@@ -31,6 +32,8 @@ class Mt5RuntimeState:
     """Application-scoped owner for MT5 connection and subscription state."""
 
     client: Mt5DataClient | None = None
+    active_terminal_name: str | None = None
+    active_terminal_path: str | None = None
     client_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     market_book_subscriptions: set[str] = field(default_factory=set[str])
     market_book_cleanup_client: Mt5DataClient | None = None
@@ -51,6 +54,7 @@ def initialize_mt5_runtime_state(
     Returns:
         Newly installed runtime state.
     """
+    get_configured_mt5_terminals()  # Validate configuration at startup.
     state = Mt5RuntimeState(
         max_market_book_subscriptions=(
             get_configured_max_market_book_subscriptions()
@@ -89,6 +93,8 @@ def shutdown_mt5_client(state: Mt5RuntimeState) -> None:
     if client is None:
         return
     state.client = None
+    state.active_terminal_name = None
+    state.active_terminal_path = None
     client.shutdown()
 
 
@@ -104,8 +110,7 @@ async def _initialize_and_install_client(
     ``state.client`` always matches the terminal's connected account before the
     caller releases ``state.client_lock``.
 
-    Raises:
-        asyncio.CancelledError: If cancelled, after the thread has finished.
+    Cancellation propagates only after the native thread finishes.
     """
     init_task = asyncio.ensure_future(
         asyncio.to_thread(client.initialize_and_login_mt5)
@@ -114,7 +119,10 @@ async def _initialize_and_install_client(
         await asyncio.shield(init_task)
     except asyncio.CancelledError:
         while not init_task.done():
-            await asyncio.wait({init_task})
+            try:
+                await asyncio.wait({init_task})
+            except asyncio.CancelledError:
+                continue
         if init_task.exception() is None:
             state.client = client
         raise
@@ -144,24 +152,57 @@ async def ensure_mt5_client(state: Mt5RuntimeState) -> Mt5DataClient:
     return client
 
 
-async def get_mt5_client(request: Request) -> Mt5DataClient:
-    """Get or lazily create the application-scoped MT5 client instance.
+async def get_mt5_client(
+    request: Request,
+    x_mt5_terminal: Annotated[str | None, Header()] = None,
+) -> Mt5DataClient:
+    """Resolve the shared client, optionally switching the active terminal.
 
-    Initialization is serialized with account changes and live order submission
-    by ``state.client_lock``. When a client already exists no native
-    initialization can occur, so the lock is not taken.
-
-    Args:
-        request: Request whose application owns the MT5 runtime state.
+    Replacement is serialized, but the dependency does not hold the lock for
+    the subsequent endpoint call. The active terminal is instance-global.
 
     Returns:
         Shared initialized MT5 data client.
+
+    Unknown names raise HTTP 400; cancellation propagates after replacement.
     """
     state = get_mt5_runtime_state(request)
-    if state.client is not None:
+    if x_mt5_terminal is None and state.client is not None:
         return state.client
     async with state.client_lock:
-        return await ensure_mt5_client(state)
+        return await select_mt5_client_locked(state, x_mt5_terminal)
+
+
+async def select_mt5_client_locked(
+    state: Mt5RuntimeState, terminal_name: str | None
+) -> Mt5DataClient:
+    """Select a terminal with the client lock already held.
+
+    Returns:
+        The selected client.
+
+    Raises:
+        HTTPException: If the terminal name is unknown.
+        asyncio.CancelledError: If cancelled during replacement.
+    """
+    if terminal_name is not None:
+        terminals = get_configured_mt5_terminals()
+        if terminal_name not in terminals:
+            raise HTTPException(status_code=400, detail="Unknown MT5 terminal")
+        if state.client is None or state.active_terminal_name != terminal_name:
+            path = terminals[terminal_name]
+            await release_market_book_subscriptions(state)
+            old_client = state.client
+            try:
+                await replace_mt5_client(state, Mt5Config(path=path))
+            except asyncio.CancelledError:
+                if state.client is not old_client:
+                    state.active_terminal_name = terminal_name
+                    state.active_terminal_path = path
+                raise
+            state.active_terminal_name = terminal_name
+            state.active_terminal_path = path
+    return await ensure_mt5_client(state)
 
 
 async def replace_mt5_client(
@@ -192,7 +233,7 @@ async def replace_mt5_client(
 
 
 async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
-    """Release and clear all market-book subscriptions owned by ``state``."""
+    """Release and clear subscriptions, draining the native worker on cancellation."""
     subscriptions = state.market_book_subscriptions
     if not subscriptions:
         state.market_book_cleanup_client = None
@@ -210,7 +251,19 @@ async def release_market_book_subscriptions(state: Mt5RuntimeState) -> None:
             except Exception:
                 logger.exception("Failed to release market book for %s", symbol)
 
-    await asyncio.to_thread(release_subscriptions)
+    cleanup_task = asyncio.create_task(asyncio.to_thread(release_subscriptions))
+    try:
+        await asyncio.shield(cleanup_task)
+    except asyncio.CancelledError:
+        while not cleanup_task.done():
+            try:
+                await asyncio.wait({cleanup_task})
+            except asyncio.CancelledError:
+                continue
+        cleanup_task.result()
+        subscriptions.clear()
+        state.market_book_cleanup_client = None
+        raise
     subscriptions.clear()
     state.market_book_cleanup_client = None
 
